@@ -13,11 +13,15 @@ experiments against an immutable Translator KGX snapshot. It provides:
 - a dashboard for Neo4j artifacts, schema-validated rules, Pareto surfaces, and
   selected rule portfolios.
 
-The configured source is the Translator June 21, 2026 (`2026_06_21`) build:
+The configured source is the Translator KG release `1.0.2` (Biolink 4.4.4,
+https://kgx-storage.ci.transltr.io/releases/translator_kg/1.0.2/). Set
+`SOURCE_DIR` to the directory holding its `nodes.jsonl`, `edges.jsonl` and
+`graph-metadata.json`.
 
-- `/Users/bizon/Projects/ROBOKOP/ORION/nodes.jsonl`
-- `/Users/bizon/Projects/ROBOKOP/ORION/edges.jsonl`
-- `/Users/bizon/Projects/ROBOKOP/ORION/graph-metadata.json`
+Runs `run-2026-08-21-*` were recorded against the earlier `2026_06_21` build
+under Biolink 4.3.2. Each run is validated against the Biolink version in its
+own `run.json`, so those runs still load if the 4.3.2 reference files are
+present (`scripts/fetch_biolink.sh 4.3.2`).
 
 The source files are read in place and are never copied.
 
@@ -326,8 +330,8 @@ The benchmark builds two query stores from the filtered graph:
 - Neo4j Community for arbitrary Cypher and rule-mining exploration.
 
 Gandalf is pinned to commit
-`82a1fb2e1bcaac6aaa899f3ff4864fc4501c7879`. Its Biolink Model `4.3.2`
-schema and predicate map are downloaded once, verified by SHA-256, and then
+`82a1fb2e1bcaac6aaa899f3ff4864fc4501c7879`. Its Biolink Model `4.4.4`
+schema (with its `attributes.yaml` import) and predicate map are downloaded once, verified by SHA-256, and then
 used locally for builds and server restarts.
 
 The runtime wrapper also supplies the OpenAPI configuration omitted from the
@@ -351,7 +355,7 @@ relationship type. The exact predicate remains in `r.predicate`.
 
 TRAPI query-edge predicates use Biolink descendant expansion. A query for
 `biolink:affects`, for example, matches `biolink:affects` and every predicate
-below it in Biolink Model 4.3.2. This applies to every edge in a rule body, not
+below it in Biolink Model 4.4.4. This applies to every edge in a rule body, not
 only to the treatment target.
 
 Gandalf performs that expansion. Neo4j does not, so Neo4j rule queries must use
@@ -369,7 +373,7 @@ RETURN subject.id AS subject_id, object.id AS object_id
 
 Each rule edge records its authored predicates, full pinned descendant closure,
 and any explicit exclusions. Run validation and the feedback scorer recompute
-the closure from the local Biolink 4.3.2 schema and reject mismatches. Rules
+the closure from the local Biolink schema of the run's recorded version and reject mismatches. Rules
 that exclude descendants must explain the exclusion, use the filtered set for
 their statistics, report a full-closure ablation, and mark TRAPI expressibility
 as partial or none because an ordinary parent-predicate qedge cannot impose the

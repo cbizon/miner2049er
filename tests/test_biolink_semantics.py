@@ -222,3 +222,20 @@ def test_rule_schema_requires_head_and_tier_together():
     legacy["evidence_tier"] = "same_pair"
     with pytest.raises(ValueError):
         validate_document(legacy, "rule.schema.json")
+
+
+def test_rules_validate_against_their_recorded_biolink_version():
+    legacy = benchmark_rule()
+    edge = legacy["graph_pattern"]["edges"][0]
+    edge["predicates"] = ["biolink:affects"]
+    edge["predicate_expansion"] = predicate_expansion_record(
+        ["biolink:affects"], version="4.3.2"
+    )
+    legacy["execution"]["predicate_expansion"]["biolink_version"] = "4.3.2"
+
+    assert "biolink:affects_response_to" in edge["predicate_expansion"][
+        "expanded_predicates"
+    ]
+    validate_rule_biolink_semantics(legacy, "4.3.2", TARGET_PREDICATES)
+    with pytest.raises(ValueError, match="uses Biolink 4.3.2, expected 4.4.4"):
+        validate_rule_biolink_semantics(legacy, BIOLINK_VERSION, TARGET_PREDICATES)

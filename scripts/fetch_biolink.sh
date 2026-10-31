@@ -3,12 +3,28 @@ set -euo pipefail
 
 source "$(dirname "$0")/common.sh"
 
-version="4.3.2"
+# The runtime pin is 4.4.4; 4.3.2 is kept so runs recorded under it still validate.
+version="${1:-4.4.4}"
 target_dir="$ROOT/data/reference/biolink/$version"
-schema="$target_dir/biolink-model.yaml"
-predicate_map="$target_dir/predicate_mapping.yaml"
-schema_sha="d8ea043537d345a6c0a3a6f1052bf0c381307c3a3d4cc4c878c7d362fe7870d7"
 predicate_sha="b532220b1d33f0e51794566fa33a736905b5a41ed1fe38839f9e949cb58c796c"
+case "$version" in
+  4.3.2)
+    files=(biolink-model.yaml predicate_mapping.yaml)
+    shas=(d8ea043537d345a6c0a3a6f1052bf0c381307c3a3d4cc4c878c7d362fe7870d7 "$predicate_sha")
+    ;;
+  4.4.4)
+    files=(biolink-model.yaml attributes.yaml predicate_mapping.yaml)
+    shas=(
+      376e4f455877c0bf7f39231e1163bbda8455516609f66300e8ba37fb373ea71b
+      ca7c400df55a728a3a96a8c1b8ae435540752fc18b3d300a8b47253346f80d80
+      "$predicate_sha"
+    )
+    ;;
+  *)
+    echo "No pinned checksums for Biolink Model $version" >&2
+    exit 1
+    ;;
+esac
 
 verify() {
   local path="$1"
@@ -35,18 +51,14 @@ download() {
 
 mkdir -p "$target_dir"
 
-if ! verify "$schema" "$schema_sha"; then
-  download \
-    "https://raw.githubusercontent.com/biolink/biolink-model/refs/tags/v${version}/biolink-model.yaml" \
-    "$schema" \
-    "$schema_sha"
-fi
-
-if ! verify "$predicate_map" "$predicate_sha"; then
-  download \
-    "https://raw.githubusercontent.com/biolink/biolink-model/refs/tags/v${version}/predicate_mapping.yaml" \
-    "$predicate_map" \
-    "$predicate_sha"
-fi
+for index in "${!files[@]}"; do
+  file="${files[$index]}"
+  if ! verify "$target_dir/$file" "${shas[$index]}"; then
+    download \
+      "https://raw.githubusercontent.com/biolink/biolink-model/refs/tags/v${version}/${file}" \
+      "$target_dir/$file" \
+      "${shas[$index]}"
+  fi
+done
 
 echo "Biolink Model $version reference files verified"

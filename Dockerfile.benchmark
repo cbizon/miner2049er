@@ -10,7 +10,7 @@ COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 COPY schemas ./schemas
 COPY config ./config
-COPY data/reference/biolink/4.3.2 ./data/reference/biolink/4.3.2
+COPY data/reference/biolink/4.4.4 ./data/reference/biolink/4.4.4
 RUN uv sync --frozen --no-dev
 
 CMD ["uvicorn", "miner2049er.dashboard_server:APP", "--host", "0.0.0.0", "--port", "6431"]

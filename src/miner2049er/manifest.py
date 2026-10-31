@@ -6,12 +6,16 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from miner2049er.gandalf_runtime import BIOLINK_VERSION
 from miner2049er.settings import edges_path, graph_version, metadata_path, nodes_path
 
 GANDALF_COMMIT = "82a1fb2e1bcaac6aaa899f3ff4864fc4501c7879"
 NEO4J_IMAGE = "neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe"
-BIOLINK_VERSION = "4.3.2"
-BIOLINK_SCHEMA_SHA256 = "d8ea043537d345a6c0a3a6f1052bf0c381307c3a3d4cc4c878c7d362fe7870d7"
+# Must match scripts/fetch_biolink.sh for BIOLINK_VERSION.
+BIOLINK_SCHEMA_SHA256 = "376e4f455877c0bf7f39231e1163bbda8455516609f66300e8ba37fb373ea71b"
+BIOLINK_ATTRIBUTES_SHA256 = (
+    "ca7c400df55a728a3a96a8c1b8ae435540752fc18b3d300a8b47253346f80d80"
+)
 BIOLINK_PREDICATE_MAP_SHA256 = (
     "b532220b1d33f0e51794566fa33a736905b5a41ed1fe38839f9e949cb58c796c"
 )
@@ -67,6 +71,7 @@ def build_manifest(include_hashes: bool = True) -> dict:
             "biolink_model": {
                 "version": BIOLINK_VERSION,
                 "schema_sha256": BIOLINK_SCHEMA_SHA256,
+                "attributes_sha256": BIOLINK_ATTRIBUTES_SHA256,
                 "predicate_map_sha256": BIOLINK_PREDICATE_MAP_SHA256,
             },
         },

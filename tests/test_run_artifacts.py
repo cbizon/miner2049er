@@ -218,7 +218,7 @@ def test_run_can_continue_across_rounds_and_close(tmp_path: Path):
     assert "Explore pathway and anatomy mechanisms" in prompt
     assert "Do not rewrite or delete prior JSONL records" in prompt
     assert "Every new Neo4j artifact" in prompt
-    assert "Biolink Model `4.3.2`" in prompt
+    assert "Biolink Model `4.4.4`" in prompt
     assert "miner-expand-predicate biolink:affects" in prompt
     assert "training statistics, ablations, predictions, and reruns" in prompt
     assert "uses_treatment_edges" in prompt

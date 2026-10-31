@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE_DIR = Path("/Users/bizon/Projects/ROBOKOP/ORION")
-DEFAULT_GRAPH_VERSION = "2026_06_21"
+DEFAULT_GRAPH_VERSION = "1.0.2"
 
 
 def source_dir() -> Path:

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
-  "benchmark_id": "translator-treats-2026-06-21-v1",
-  "graph_version": "2026_06_21",
+  "benchmark_id": "translator-treats-1.0.2-v1",
+  "graph_version": "1.0.2",
   "biolink": {
-    "version": "4.3.2",
+    "version": "4.4.4",
     "predicate_expansion": "descendants"
   },
   "target": {
@@ -16,7 +16,7 @@
   },
   "split": {
     "algorithm": "sha256-ranked-pairs-v1",
-    "seed": "translator-treats-2026-06-21-v1",
+    "seed": "translator-treats-1.0.2-v1",
     "training_fraction": 0.7,
     "feedback_fraction": 0.2,
     "final_fraction": 0.1

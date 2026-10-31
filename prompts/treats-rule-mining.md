@@ -114,7 +114,7 @@ Cypher or documented post-processing.
 
 ### Biolink Predicate Semantics
 
-This benchmark is pinned to Biolink Model `4.3.2`. In TRAPI, a query edge
+This benchmark is pinned to Biolink Model `4.4.4`. In TRAPI, a query edge
 predicate means that predicate or any of its Biolink descendants. This rule
 applies to every body edge, not only to the `biolink:treats` target. All
 training statistics, ablations, predictions, and reruns must use those same
@@ -143,7 +143,7 @@ Do not calculate rule statistics with an exact relationship type such as
 different rules. Relationship-type unions may be used as an optimization only
 when they cover the same recorded descendant set.
 
-Broad parents can introduce unexpected evidence. In Biolink 4.3.2,
+Broad parents can introduce unexpected evidence. In Biolink 4.4.4,
 `biolink:affects` includes treatment-oriented descendants, and
 `biolink:related_to` is substantially broader. Therefore
 `uses_treatment_edges` refers to the effective expanded predicates, not merely
@@ -357,7 +357,7 @@ improvement that is not explained solely by collapsing prediction volume.
 - The target is exactly `biolink:treats`, interpreted with its Biolink predicate
   descendants. Neo4j does not perform this expansion automatically.
 - Every graph-pattern edge must record its authored predicates, complete
-  Biolink 4.3.2 descendant expansion, exclusions, and exclusion rationale.
+  Biolink 4.4.4 descendant expansion, exclusions, and exclusion rationale.
 - Predictions submitted to the scorer must come from the recorded expanded
   predicates. The rule's `execution.predicate_expansion` section must explain
   how its Cypher or TRAPI execution enforced that set.

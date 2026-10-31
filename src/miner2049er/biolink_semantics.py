@@ -26,45 +26,54 @@ def _ordered_unique(values: Iterable[str]) -> tuple[str, ...]:
 
 
 @cache
-def predicate_descendants(predicate: str) -> tuple[str, ...]:
+def predicate_descendants(
+    predicate: str,
+    version: str = BIOLINK_VERSION,
+) -> tuple[str, ...]:
     if not predicate.startswith("biolink:"):
         raise ValueError(f"Biolink predicates must use the biolink: prefix: {predicate}")
-    descendants = local_toolkit().get_descendants(
+    descendants = local_toolkit(version).get_descendants(
         predicate,
         formatted=True,
         reflexive=True,
     )
     if predicate not in descendants:
-        raise ValueError(f"Unknown Biolink predicate in version {BIOLINK_VERSION}: {predicate}")
+        raise ValueError(f"Unknown Biolink predicate in version {version}: {predicate}")
     return _ordered_unique(descendants)
 
 
-def predicate_closure(predicates: Iterable[str]) -> tuple[str, ...]:
+def predicate_closure(
+    predicates: Iterable[str],
+    version: str = BIOLINK_VERSION,
+) -> tuple[str, ...]:
     authored = _ordered_unique(predicates)
     if not authored:
         raise ValueError("At least one predicate is required")
     return _ordered_unique(
         descendant
         for predicate in authored
-        for descendant in predicate_descendants(predicate)
+        for descendant in predicate_descendants(predicate, version)
     )
 
 
 @cache
-def treatment_evidence_predicates() -> frozenset[str]:
-    return frozenset(predicate_descendants(TREATMENT_EVIDENCE_ROOT))
+def treatment_evidence_predicates(version: str = BIOLINK_VERSION) -> frozenset[str]:
+    return frozenset(predicate_descendants(TREATMENT_EVIDENCE_ROOT, version))
 
 
-def rule_treatment_predicates(rule: dict[str, Any]) -> frozenset[str]:
+def rule_treatment_predicates(
+    rule: dict[str, Any],
+    version: str = BIOLINK_VERSION,
+) -> frozenset[str]:
     effective_predicates = {
         predicate
         for edge in rule["graph_pattern"]["edges"]
         for predicate in edge["predicate_expansion"]["expanded_predicates"]
     }
-    return frozenset(effective_predicates & treatment_evidence_predicates())
+    return frozenset(effective_predicates & treatment_evidence_predicates(version))
 
 
-def rule_evidence_tier(rule: dict[str, Any]) -> str:
+def rule_evidence_tier(rule: dict[str, Any], version: str = BIOLINK_VERSION) -> str:
     pattern = rule["graph_pattern"]
     head = pattern["head"]
     node_ids = {node["id"] for node in pattern["nodes"]}
@@ -76,7 +85,7 @@ def rule_evidence_tier(rule: dict[str, Any]) -> str:
     if head["subject"] == head["object"]:
         raise ValueError(f"Rule {rule['rule_id']} head subject and object must differ")
     head_nodes = {head["subject"], head["object"]}
-    treatment = treatment_evidence_predicates()
+    treatment = treatment_evidence_predicates(version)
     treatment_edges = [
         edge
         for edge in pattern["edges"]
@@ -97,9 +106,10 @@ def predicate_expansion_record(
     predicates: Iterable[str],
     excluded_predicates: Iterable[str] = (),
     exclusion_rationale: str | None = None,
+    version: str = BIOLINK_VERSION,
 ) -> dict[str, Any]:
     authored = _ordered_unique(predicates)
-    closure = predicate_closure(authored)
+    closure = predicate_closure(authored, version)
     excluded = _ordered_unique(excluded_predicates)
     unknown_exclusions = set(excluded) - set(closure)
     if unknown_exclusions:
@@ -118,7 +128,7 @@ def predicate_expansion_record(
         raise ValueError("An exclusion rationale is allowed only with exclusions")
     return {
         "policy": "biolink_descendants",
-        "biolink_version": BIOLINK_VERSION,
+        "biolink_version": version,
         "expanded_predicates": sorted(set(closure) - set(excluded)),
         "excluded_predicates": list(excluded),
         "exclusion_rationale": exclusion_rationale,
@@ -130,11 +140,8 @@ def validate_rule_biolink_semantics(
     expected_biolink_version: str,
     target_predicates: Iterable[str],
 ) -> None:
-    if expected_biolink_version != BIOLINK_VERSION:
-        raise ValueError(
-            f"Benchmark requires Biolink {expected_biolink_version}, but the local "
-            f"runtime is pinned to {BIOLINK_VERSION}"
-        )
+    """Check a rule against the Biolink version its run was recorded under."""
+    version = expected_biolink_version
     has_exclusions = False
     effective_predicates: set[str] = set()
     for edge in rule["graph_pattern"]["edges"]:
@@ -149,6 +156,7 @@ def validate_rule_biolink_semantics(
             edge["predicates"],
             expansion["excluded_predicates"],
             expansion["exclusion_rationale"],
+            version,
         )
         for field in (
             "policy",
@@ -181,13 +189,13 @@ def validate_rule_biolink_semantics(
             "fully expressed by an unfiltered TRAPI predicate"
         )
     configured_targets = set(target_predicates)
-    missing_targets = configured_targets - treatment_evidence_predicates()
+    missing_targets = configured_targets - treatment_evidence_predicates(version)
     if missing_targets:
         raise ValueError(
             "Benchmark target predicates are outside the treatment-evidence closure: "
             f"{sorted(missing_targets)}"
         )
-    treatment_predicates = effective_predicates & treatment_evidence_predicates()
+    treatment_predicates = effective_predicates & treatment_evidence_predicates(version)
     if bool(treatment_predicates) != rule["uses_treatment_edges"]:
         required_value = str(bool(treatment_predicates)).lower()
         raise ValueError(
@@ -198,7 +206,7 @@ def validate_rule_biolink_semantics(
     # Rules recorded before head marking carry neither field; the schema
     # requires them together.
     if "head" in rule["graph_pattern"]:
-        expected_tier = rule_evidence_tier(rule)
+        expected_tier = rule_evidence_tier(rule, version)
         if rule["evidence_tier"] != expected_tier:
             raise ValueError(
                 f"Rule {rule['rule_id']} has evidence_tier "

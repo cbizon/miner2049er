@@ -201,7 +201,7 @@ def test_dashboard_handles_empty_and_initialized_run_directories(tmp_path: Path)
     assert "round-0001" in run.text
     assert "Run history" in run.text
     assert "Disease-associated gene count" in run.text
-    assert "Biolink 4.3.2 with descendant expansion" in run.text
+    assert "Biolink 4.4.4 with descendant expansion" in run.text
     assert "Treats included" in run.text
     assert "Treats excluded" in run.text
     assert "All rules" in run.text
@@ -233,7 +233,7 @@ def test_dashboard_handles_empty_and_initialized_run_directories(tmp_path: Path)
     rule_page = client.get("/benchmark/run/test-run/rule/test-rule")
     assert rule_page.status_code == 200
     assert "Biolink predicate semantics" in rule_page.text
-    assert "245 effective predicates after Biolink expansion" in rule_page.text
+    assert "247 effective predicates after Biolink expansion" in rule_page.text
     assert "trapi_subpredicate_expansion" in rule_page.text
     assert "Treatment-oriented premises:" in rule_page.text
     assert 'class="rule-diagram"' in rule_page.text

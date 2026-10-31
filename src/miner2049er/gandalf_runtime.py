@@ -8,23 +8,25 @@ from linkml_runtime.utils.schemaview import SchemaView
 
 from miner2049er.settings import ROOT
 
-BIOLINK_VERSION = "4.3.2"
-BIOLINK_DIR = ROOT / "data" / "reference" / "biolink" / BIOLINK_VERSION
-BIOLINK_SCHEMA = BIOLINK_DIR / "biolink-model.yaml"
-PREDICATE_MAP = BIOLINK_DIR / "predicate_mapping.yaml"
+# Version used for new runs and the Gandalf server. Runs recorded under an
+# earlier version are still validated against their own recorded version.
+BIOLINK_VERSION = "4.4.4"
+BIOLINK_ROOT = ROOT / "data" / "reference" / "biolink"
 OPENAPI_CONFIG_DIR = Path(__file__).resolve().parent
 
 
-def local_toolkit() -> Toolkit:
-    for path in (BIOLINK_SCHEMA, PREDICATE_MAP):
+def local_toolkit(version: str = BIOLINK_VERSION) -> Toolkit:
+    schema = BIOLINK_ROOT / version / "biolink-model.yaml"
+    predicate_map = BIOLINK_ROOT / version / "predicate_mapping.yaml"
+    for path in (schema, predicate_map):
         if not path.is_file():
             raise FileNotFoundError(
                 f"Missing pinned Biolink reference file: {path}. "
-                "Run scripts/fetch_biolink.sh."
+                f"Run scripts/fetch_biolink.sh {version}."
             )
     toolkit = Toolkit.__new__(Toolkit)
-    toolkit.view = SchemaView(str(BIOLINK_SCHEMA))
-    toolkit.pmap = yaml.safe_load(PREDICATE_MAP.read_text(encoding="utf-8"))
+    toolkit.view = SchemaView(str(schema))
+    toolkit.pmap = yaml.safe_load(predicate_map.read_text(encoding="utf-8"))
     return toolkit
 
 

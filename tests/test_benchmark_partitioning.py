@@ -16,7 +16,7 @@ def _config() -> BenchmarkConfig:
         {
             "schema_version": "1.0",
             "benchmark_id": "test-benchmark",
-            "graph_version": "2026_06_21",
+            "graph_version": "1.0.2",
             "biolink": {
                 "version": BIOLINK_VERSION,
                 "predicate_expansion": "descendants",
