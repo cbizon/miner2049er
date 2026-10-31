@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
 from miner2049er.rule_diagram import DIAGRAM_CSS, render_rule_diagram
+from miner2049er.rule_set_selector import run_surfaces, surface_eligible
 from miner2049er.rule_viewer import BASE_CSS
 from miner2049er.run_artifacts import DEFAULT_RUNS_DIR, load_run
 from miner2049er.schema_validation import read_jsonl, validate_document
@@ -27,6 +28,14 @@ SURFACES = {
         "description": (
             "All rules are eligible, including rules whose premises use "
             "treatment-oriented predicates."
+        ),
+    },
+    "same-pair-excluded": {
+        "title": "Same-pair treatment evidence excluded",
+        "short_title": "Same pair excluded",
+        "description": (
+            "Transfer and treatment-free rules are eligible. Rules whose premises "
+            "assert treatment evidence for the predicted pair itself are not."
         ),
     },
     "treats-excluded": {
@@ -143,7 +152,8 @@ def _surface_evaluations(
     return [
         evaluation
         for evaluation in evaluations
-        if not rules.get(evaluation["rule_id"], {}).get("uses_treatment_edges", True)
+        if evaluation["rule_id"] in rules
+        and surface_eligible(rules[evaluation["rule_id"]], surface)
     ]
 
 
@@ -151,9 +161,27 @@ def _surface_rules(
     rules: list[dict[str, Any]],
     surface: str,
 ) -> list[dict[str, Any]]:
-    if surface == "treats-included":
-        return rules
-    return [rule for rule in rules if not rule["uses_treatment_edges"]]
+    return [rule for rule in rules if surface_eligible(rule, surface)]
+
+
+def _available_surfaces(run: dict[str, Any], surface: str) -> dict[str, dict[str, str]]:
+    available = {name: SURFACES[name] for name in run_surfaces(run["rules"])}
+    if surface not in available:
+        raise HTTPException(status_code=404, detail="Unknown Pareto surface")
+    return available
+
+
+EVIDENCE_TIER_LABELS = {
+    "same_pair": "Same-pair treatment evidence",
+    "transfer": "Transfers known treatments",
+    "treatment_free": "Treatment-free",
+}
+
+
+def _evidence_label(rule: dict[str, Any]) -> str:
+    if "evidence_tier" in rule:
+        return EVIDENCE_TIER_LABELS[rule["evidence_tier"]]
+    return "Uses treatment edges" if rule["uses_treatment_edges"] else "Treatment-free"
 
 
 def _main_table_round_id(
@@ -352,6 +380,7 @@ def render_run(
     round_id: str = "all",
 ) -> str:
     manifest = run["manifest"]
+    available_surfaces = _available_surfaces(run, surface)
     rounds = {item["round_id"]: item for item in run["rounds"]}
     rules = {rule["rule_id"]: rule for rule in run["rules"]}
     if round_id not in {"all", "latest"} and round_id not in rounds:
@@ -410,11 +439,7 @@ def render_run(
         evaluation = evaluations_by_rule.get(rule_id)
         metrics = evaluation["metrics"] if evaluation else None
         counts = evaluation["counts"] if evaluation else None
-        treatment_use = (
-            "Uses treatment edges"
-            if rule["uses_treatment_edges"]
-            else "Treatment-free"
-        )
+        treatment_use = _evidence_label(rule)
         surface_status = (
             "Pareto"
             if rule_id in front
@@ -444,7 +469,7 @@ def render_run(
 <td data-sort-value="{escape(rule["family_id"].casefold())}">{escape(rule["family_id"])}</td>
 <td data-sort-value="{escape(rule.get("status", "unknown").casefold())}">{escape(rule.get("status", "unknown"))}</td>
 <td data-sort-value="{mechanism_rank}">{escape(rule["mechanism"]["score"])}</td>
-<td data-sort-value="{1 if rule["uses_treatment_edges"] else 0}">{treatment_use}</td>
+<td data-sort-value="{escape(treatment_use.casefold())}">{treatment_use}</td>
 <td data-sort-value="{escape(surface_status.casefold())}">{surface_status}</td>
 <td data-sort-value="{prediction_count}">{prediction_count:,}</td>
 <td data-sort-value="{known_hits if known_hits is not None else ""}">{f"{known_hits:,}" if known_hits is not None else "—"}</td>
@@ -476,7 +501,7 @@ def render_run(
         f'href="/benchmark/run/{escape(manifest["run_id"])}?partition={partition}'
         f'&amp;surface={name}&amp;view={rule_view}&amp;round_id={round_id}">'
         f'{escape(config["short_title"])}</a>'
-        for name, config in SURFACES.items()
+        for name, config in available_surfaces.items()
     )
     view_tabs = "".join(
         f'<a class="{"active" if name == rule_view else ""}" '
@@ -731,8 +756,7 @@ def _rule_set_evaluation_map(
 
 
 def render_rule_sets(run: dict[str, Any], surface: str) -> str:
-    if surface not in SURFACES:
-        raise HTTPException(status_code=404, detail="Unknown Pareto surface")
+    available_surfaces = _available_surfaces(run, surface)
     manifest = run["manifest"]
     rule_sets = [
         rule_set
@@ -775,7 +799,7 @@ def render_rule_sets(run: dict[str, Any], surface: str) -> str:
         f'<a class="{"active" if name == surface else ""}" '
         f'href="/benchmark/run/{escape(manifest["run_id"])}/rule-sets'
         f'?surface={name}">{escape(config["short_title"])}</a>'
-        for name, config in SURFACES.items()
+        for name, config in available_surfaces.items()
     )
     duplicate_count = (
         sum(
@@ -959,7 +983,8 @@ def render_rule(run: dict[str, Any], rule_id: str) -> str:
             if evaluation["partition"] == item["partition"]
         ]
         surface_links = []
-        for surface, config in SURFACES.items():
+        for surface in run_surfaces(run["rules"]):
+            config = SURFACES[surface]
             eligible = _surface_evaluations(partition_evaluations, rules, surface)
             if rule_id in _pareto_ids(eligible):
                 surface_links.append(
@@ -1007,7 +1032,7 @@ def render_rule(run: dict[str, Any], rule_id: str) -> str:
         score_strip = '<p class="metric-note">Not yet scored on feedback.</p>'
     limitations = "".join(f"<li>{escape(item)}</li>" for item in rule["limitations"])
     treatment_class = "treatment-using" if rule["uses_treatment_edges"] else "treatment-free"
-    treatment_label = "Uses treatment premises" if rule["uses_treatment_edges"] else "Treatment-free"
+    treatment_label = _evidence_label(rule)
     body = f"""<main class="shell rule-detail">
 <a class="back-link" href="/benchmark/run/{escape(manifest["run_id"])}">← Back to run</a>
 <header class="detail-top"><div class="detail-title">
@@ -1034,7 +1059,8 @@ def render_rule(run: dict[str, Any], rule_id: str) -> str:
 <div class="card-body"><p>{escape(rule["plain_language_rule"])}</p>
 <p><strong>Hypothesis:</strong> {escape(rule["hypothesis"])}</p>
 <p><strong>Treatment-oriented premises:</strong>
-{"yes" if rule["uses_treatment_edges"] else "no"}</p></div></details>
+{"yes" if rule["uses_treatment_edges"] else "no"}</p>
+<p><strong>Evidence tier:</strong> {escape(rule.get("evidence_tier", "not recorded"))}</p></div></details>
 <details class="rule-fold"><summary>Derived features</summary>
 <div class="card-body"><ul>{features}</ul></div></details>
 <details class="rule-fold"><summary>Biolink predicate semantics</summary>

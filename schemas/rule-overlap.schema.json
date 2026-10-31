@@ -46,6 +46,7 @@
           "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
           "family_id": {"type": "string", "minLength": 1},
           "uses_treatment_edges": {"type": "boolean"},
+          "evidence_tier": {"enum": ["same_pair", "transfer", "treatment_free"]},
           "prediction_count": {"type": "integer", "minimum": 0},
           "feedback_eligible_predictions": {"type": "integer", "minimum": 0},
           "training_hits": {"type": "integer", "minimum": 0},

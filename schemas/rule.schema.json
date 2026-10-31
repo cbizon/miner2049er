@@ -4,6 +4,9 @@
   "title": "Treats rule",
   "type": "object",
   "additionalProperties": false,
+  "if": {"properties": {"graph_pattern": {"required": ["head"]}}},
+  "then": {"required": ["evidence_tier"]},
+  "else": {"not": {"required": ["evidence_tier"]}},
   "required": [
     "schema_version",
     "run_id",
@@ -45,6 +48,15 @@
       "additionalProperties": false,
       "required": ["nodes", "edges", "constraints"],
       "properties": {
+        "head": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "object"],
+          "properties": {
+            "subject": {"type": "string", "minLength": 1},
+            "object": {"type": "string", "minLength": 1}
+          }
+        },
         "nodes": {
           "type": "array",
           "minItems": 2,
@@ -196,6 +208,7 @@
       }
     },
     "uses_treatment_edges": {"type": "boolean"},
+    "evidence_tier": {"enum": ["same_pair", "transfer", "treatment_free"]},
     "execution": {
       "type": "object",
       "additionalProperties": false,

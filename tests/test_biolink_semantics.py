@@ -5,8 +5,11 @@ from miner2049er.biolink_semantics import (
     FILTERED_EXPANSION,
     predicate_closure,
     predicate_expansion_record,
+    rule_evidence_tier,
+    rule_treatment_predicates,
     validate_rule_biolink_semantics,
 )
+from miner2049er.schema_validation import validate_document
 from tests.benchmark_examples import benchmark_rule
 
 TARGET_PREDICATES = (
@@ -113,3 +116,109 @@ def test_explicit_descendant_exclusion_requires_partial_trapi_execution():
             BIOLINK_VERSION,
             TARGET_PREDICATES,
         )
+
+
+def _tiered_rule(edges: list[tuple[str, str, str]]) -> dict:
+    """Benchmark rule over chemical, disease, a second drug and a gene."""
+    rule = benchmark_rule()
+    pattern = rule["graph_pattern"]
+    pattern["head"] = {"subject": "chemical", "object": "disease"}
+    pattern["nodes"].extend(
+        [
+            {
+                "id": "known_drug",
+                "role": "known treatment",
+                "categories": ["biolink:ChemicalEntity"],
+                "explanation": "A drug already known to treat the disease.",
+            },
+            {
+                "id": "gene",
+                "role": "shared target",
+                "categories": ["biolink:Gene"],
+                "explanation": "The target both drugs affect.",
+            },
+        ]
+    )
+    pattern["edges"] = [
+        {
+            "id": f"e{index}",
+            "subject": subject,
+            "object": object_,
+            "predicates": [predicate],
+            "predicate_expansion": predicate_expansion_record([predicate]),
+            "direction": "forward",
+            "explanation": "Test edge.",
+        }
+        for index, (subject, predicate, object_) in enumerate(edges)
+    ]
+    rule["uses_treatment_edges"] = bool(rule_treatment_predicates(rule))
+    rule["evidence_tier"] = rule_evidence_tier(rule)
+    return rule
+
+
+SHARED_TARGET = [
+    ("chemical", "biolink:directly_physically_interacts_with", "gene"),
+    ("known_drug", "biolink:directly_physically_interacts_with", "gene"),
+]
+
+
+@pytest.mark.parametrize(
+    ("edges", "tier"),
+    (
+        (SHARED_TARGET, "treatment_free"),
+        (
+            [*SHARED_TARGET, ("known_drug", "biolink:treats", "disease")],
+            "transfer",
+        ),
+        (
+            [*SHARED_TARGET, ("chemical", "biolink:studied_to_treat", "disease")],
+            "same_pair",
+        ),
+    ),
+)
+def test_evidence_tier_follows_where_treatment_edges_sit(edges, tier):
+    rule = _tiered_rule(edges)
+
+    assert rule["evidence_tier"] == tier
+    validate_document(rule, "rule.schema.json")
+    validate_rule_biolink_semantics(rule, BIOLINK_VERSION, TARGET_PREDICATES)
+
+
+def test_same_pair_tier_wins_over_transfer():
+    rule = _tiered_rule(
+        [
+            *SHARED_TARGET,
+            ("known_drug", "biolink:treats", "disease"),
+            ("chemical", "biolink:studied_to_treat", "disease"),
+        ]
+    )
+
+    assert rule["evidence_tier"] == "same_pair"
+
+
+def test_rule_validation_rejects_a_misstated_evidence_tier():
+    rule = _tiered_rule([*SHARED_TARGET, ("known_drug", "biolink:treats", "disease")])
+    rule["evidence_tier"] = "treatment_free"
+
+    with pytest.raises(ValueError, match="pattern is transfer"):
+        validate_rule_biolink_semantics(rule, BIOLINK_VERSION, TARGET_PREDICATES)
+
+
+def test_evidence_tier_rejects_head_on_unknown_node():
+    rule = _tiered_rule(SHARED_TARGET)
+    rule["graph_pattern"]["head"]["object"] = "missing"
+
+    with pytest.raises(ValueError, match="head references unknown nodes"):
+        rule_evidence_tier(rule)
+
+
+def test_rule_schema_requires_head_and_tier_together():
+    rule = _tiered_rule(SHARED_TARGET)
+    del rule["evidence_tier"]
+    with pytest.raises(ValueError):
+        validate_document(rule, "rule.schema.json")
+
+    legacy = benchmark_rule()
+    legacy["evidence_tier"] = "same_pair"
+    with pytest.raises(ValueError):
+        validate_document(legacy, "rule.schema.json")

@@ -22,6 +22,7 @@ from miner2049er.biolink_semantics import (
     FULL_EXPANSION,
     neo4j_relationship_type,
     predicate_expansion_record,
+    rule_evidence_tier,
     rule_treatment_predicates,
     validate_rule_biolink_semantics,
 )
@@ -139,6 +140,7 @@ def build_rule(candidate: dict[str, Any], manifest: dict[str, Any]) -> dict[str,
         "hypothesis": candidate["hypothesis"],
         "variant_parameters": candidate.get("variant_parameters", {}),
         "graph_pattern": {
+            "head": candidate["graph_pattern"]["head"],
             "nodes": candidate["graph_pattern"]["nodes"],
             "edges": edges,
             "constraints": candidate["graph_pattern"]["constraints"],
@@ -146,6 +148,7 @@ def build_rule(candidate: dict[str, Any], manifest: dict[str, Any]) -> dict[str,
         "derived_features": candidate.get("derived_features", []),
         "mechanism": candidate["mechanism"],
         "uses_treatment_edges": False,
+        "evidence_tier": "treatment_free",
         "execution": {
             "cypher": cypher,
             "predicate_expansion": {
@@ -165,6 +168,7 @@ def build_rule(candidate: dict[str, Any], manifest: dict[str, Any]) -> dict[str,
         "limitations": candidate.get("limitations", []),
     }
     rule["uses_treatment_edges"] = bool(rule_treatment_predicates(rule))
+    rule["evidence_tier"] = rule_evidence_tier(rule)
     validate_document(rule, "rule.schema.json")
     validate_rule_biolink_semantics(
         rule,
@@ -398,6 +402,7 @@ def record_rule(
         "prediction_count": prediction_count,
         "duplicate_rows_collapsed": duplicate_rows,
         "uses_treatment_edges": rule["uses_treatment_edges"],
+        "evidence_tier": rule["evidence_tier"],
         "validation": validation,
         "feedback": {"status": "not_requested"},
     }

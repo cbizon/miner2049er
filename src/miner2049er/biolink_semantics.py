@@ -13,6 +13,12 @@ FULL_EXPANSION = "trapi_subpredicate_expansion"
 FILTERED_EXPANSION = "trapi_subpredicate_expansion_with_exclusions"
 TREATMENT_EVIDENCE_ROOT = "biolink:treats_or_applied_or_studied_to_treat"
 TOKEN_PATTERN = re.compile(r"[^A-Za-z0-9_]")
+# What a rule's premises know about the pair it predicts:
+# same_pair: a treatment-evidence edge joins the predicted chemical and disease.
+# transfer: treatment-evidence edges appear only elsewhere, e.g. another drug
+#   treating the same disease, so known treatments carry over by mechanism.
+# treatment_free: no treatment-evidence edge in the pattern.
+EVIDENCE_TIERS = ("same_pair", "transfer", "treatment_free")
 
 
 def _ordered_unique(values: Iterable[str]) -> tuple[str, ...]:
@@ -56,6 +62,31 @@ def rule_treatment_predicates(rule: dict[str, Any]) -> frozenset[str]:
         for predicate in edge["predicate_expansion"]["expanded_predicates"]
     }
     return frozenset(effective_predicates & treatment_evidence_predicates())
+
+
+def rule_evidence_tier(rule: dict[str, Any]) -> str:
+    pattern = rule["graph_pattern"]
+    head = pattern["head"]
+    node_ids = {node["id"] for node in pattern["nodes"]}
+    missing = {head["subject"], head["object"]} - node_ids
+    if missing:
+        raise ValueError(
+            f"Rule {rule['rule_id']} head references unknown nodes: {sorted(missing)}"
+        )
+    if head["subject"] == head["object"]:
+        raise ValueError(f"Rule {rule['rule_id']} head subject and object must differ")
+    head_nodes = {head["subject"], head["object"]}
+    treatment = treatment_evidence_predicates()
+    treatment_edges = [
+        edge
+        for edge in pattern["edges"]
+        if set(edge["predicate_expansion"]["expanded_predicates"]) & treatment
+    ]
+    if not treatment_edges:
+        return "treatment_free"
+    if any({edge["subject"], edge["object"]} == head_nodes for edge in treatment_edges):
+        return "same_pair"
+    return "transfer"
 
 
 def neo4j_relationship_type(predicate: str) -> str:
@@ -164,6 +195,15 @@ def validate_rule_biolink_semantics(
             f"{sorted(treatment_predicates)} and must set uses_treatment_edges "
             f"{required_value}"
         )
+    # Rules recorded before head marking carry neither field; the schema
+    # requires them together.
+    if "head" in rule["graph_pattern"]:
+        expected_tier = rule_evidence_tier(rule)
+        if rule["evidence_tier"] != expected_tier:
+            raise ValueError(
+                f"Rule {rule['rule_id']} has evidence_tier "
+                f"{rule['evidence_tier']} but its pattern is {expected_tier}"
+            )
 
 
 def parse_args() -> argparse.Namespace:

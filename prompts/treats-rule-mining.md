@@ -211,6 +211,7 @@ A minimal candidate has this form:
   "plain_language_rule": "A chemical is linked to a disease by a causal relationship.",
   "hypothesis": "Causal chemical-disease evidence may predict treatment.",
   "graph_pattern": {
+    "head": {"subject": "chemical", "object": "disease"},
     "nodes": [
       {
         "id": "chemical",
@@ -363,6 +364,22 @@ improvement that is not explained solely by collapsing prediction volume.
 - A rule may use treatment-oriented evidence, but it must set
   `uses_treatment_edges` accurately after descendant expansion. Treatment-free
   rules are analyzed separately.
+- Every candidate must name its predicted pair in `graph_pattern.head`: the
+  node ID of the predicted chemical (`subject`) and of the predicted disease
+  (`object`). `miner-record-rule` derives the rule's `evidence_tier` from where
+  treatment-evidence edges sit relative to that pair:
+  - `same_pair`: a treatment-evidence edge joins the predicted chemical and
+    disease themselves, such as a clinical trial for the same pair. These rules
+    restate existing treatment evidence rather than predict new treatments.
+  - `transfer`: treatment-evidence edges appear only elsewhere in the pattern,
+    such as another drug that treats the same disease and shares a target with
+    the predicted chemical. Known treatments define a mechanism, and the rule
+    carries it to a new chemical or disease.
+  - `treatment_free`: no treatment-evidence edge appears in the pattern.
+
+  Transfer rules are a legitimate and valuable kind of rule, not a lesser
+  version of treatment-free rules. Explain in the hypothesis which mechanism
+  the known treatments establish and why it should carry over.
 - Do not use external information to apply a rule.
 - Do not attempt to access, reconstruct, enumerate, or infer individual hidden
   labels.
@@ -371,20 +388,22 @@ improvement that is not explained solely by collapsing prediction volume.
 
 ### Required Pareto Surfaces
 
-For every available evaluation partition, maintain and report two distinct
+For every available evaluation partition, maintain and report three distinct
 precision-recall Pareto surfaces:
 
 1. **Treats included:** all eligible rules compete on one surface. This includes
    both treatment-free rules and rules with `uses_treatment_edges=true`; it does
    not mean only treatment-using rules.
-2. **Treats excluded:** only rules with `uses_treatment_edges=false` compete on
+2. **Same pair excluded:** rules with `evidence_tier` `transfer` or
+   `treatment_free` compete on this surface; `same_pair` rules do not.
+3. **Treats excluded:** only rules with `uses_treatment_edges=false` compete on
    this surface.
 
 Compute dominance independently within each surface. A treatment-free rule may
 be dominated on the treats-included surface while remaining Pareto-optimal on
-the treats-excluded surface. Record both memberships and counts explicitly.
-Never combine the surfaces or use the treats-included surface as a substitute
-for the treatment-free comparison.
+the treats-excluded surface. Record all memberships and counts explicitly.
+Never combine the surfaces or use a broader surface as a substitute for a
+narrower comparison.
 
 ## Explanation Requirements
 
@@ -515,8 +534,8 @@ During the controller's final wrap-up window, before the round deadline:
 1. Rerun every surviving rule from its recorded executable query.
 2. Validate all artifacts against their schemas.
 3. Identify distinct rule families separately from parameter variants.
-4. Recompute both feedback Pareto surfaces: treats included and treats
-   excluded.
+4. Recompute all three feedback Pareto surfaces: treats included, same pair
+   excluded, and treats excluded.
 5. Record failed families and graph limitations, not only successful rules.
 6. Append a `final_summary` research event with
    `uv run miner-log-research-event`.

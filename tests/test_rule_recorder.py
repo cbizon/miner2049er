@@ -29,6 +29,7 @@ def _candidate(
         "hypothesis": "A causal chemical-disease edge may predict treatment.",
         "variant_parameters": {},
         "graph_pattern": {
+            "head": {"subject": "chemical", "object": "disease"},
             "nodes": [
                 {
                     "id": "chemical",
@@ -152,6 +153,9 @@ def test_record_rule_builds_expansions_and_appends_sorted_predictions(
     assert "{{predicates:" not in rule["execution"]["cypher"]
     assert "{{relationship_types:" not in rule["execution"]["cypher"]
     assert rule["uses_treatment_edges"] is False
+    assert rule["evidence_tier"] == "treatment_free"
+    assert result["evidence_tier"] == "treatment_free"
+    assert rule["graph_pattern"]["head"] == {"subject": "chemical", "object": "disease"}
     assert [prediction["subject_id"] for prediction in predictions] == [
         "CHEBI:1",
         "CHEBI:2",

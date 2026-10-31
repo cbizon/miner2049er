@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+import pytest
+
 from miner2049er.rule_set_selector import (
+    UNTIERED_SURFACES,
     build_overlap_report,
     build_rule_sets,
+    run_surfaces,
+    surface_eligible,
 )
 from tests.benchmark_examples import benchmark_rule
 
@@ -184,3 +189,61 @@ def test_selector_excludes_rejected_rules_and_requires_matching_execution_for_lo
     }
     assert exclusions["rejected"]["reason"] == "rule_rejected"
     assert exclusions["execution-variant"]["reason"] == "zero_marginal_confidence"
+
+
+def _tiered(rule_id: str, tier: str) -> dict:
+    rule = _rule(rule_id, treatment=tier != "treatment_free")
+    rule["evidence_tier"] = tier
+    return rule
+
+
+def test_same_pair_excluded_surface_keeps_transfer_and_treatment_free_rules():
+    rules = [
+        _tiered("free", "treatment_free"),
+        _tiered("transfer", "transfer"),
+        _tiered("same", "same_pair"),
+    ]
+    predictions = {
+        "free": {("C:1", "D:1")},
+        "transfer": {("C:2", "D:2")},
+        "same": {("C:3", "D:3")},
+    }
+    evaluations = {
+        "free": _evaluation("free", 0.5, 1, 1),
+        "transfer": _evaluation("transfer", 0.7, 1, 1),
+        "same": _evaluation("same", 0.9, 1, 1),
+    }
+
+    rule_sets = build_rule_sets(
+        run_id="test-run",
+        through_round_id="round-0001",
+        surface="same-pair-excluded",
+        rules=rules,
+        predictions=predictions,
+        training_labels=set(),
+        evaluations=evaluations,
+        generated_at="2026-10-31T12:00:00+00:00",
+    )
+
+    assert sorted(member["rule_id"] for member in rule_sets[-1]["members"]) == [
+        "free",
+        "transfer",
+    ]
+    excluded = {item["rule_id"]: item for item in rule_sets[-1]["excluded_rules"]}
+    assert excluded["same"]["reason"] == "surface_ineligible"
+    assert "predicted pair" in excluded["same"]["explanation"]
+
+
+def test_run_surfaces_depend_on_whether_rules_carry_tiers():
+    tiered = [_tiered("a", "transfer"), _tiered("b", "treatment_free")]
+    legacy = [_rule("c"), _rule("d", treatment=True)]
+
+    assert "same-pair-excluded" in run_surfaces(tiered)
+    assert run_surfaces(legacy) == UNTIERED_SURFACES
+    with pytest.raises(ValueError, match="mixes rules"):
+        run_surfaces([*tiered, *legacy])
+
+
+def test_same_pair_surface_refuses_untiered_rules():
+    with pytest.raises(ValueError, match="no evidence_tier"):
+        surface_eligible(_rule("legacy"), "same-pair-excluded")

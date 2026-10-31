@@ -17,7 +17,32 @@ DEFAULT_EVALUATIONS_DIR = ROOT / "data" / "evaluations"
 DEFAULT_OUTPUT_ROOT = ROOT / "results" / "rule-sets"
 DEFAULT_PUBLIC_BENCHMARK_ROOT = ROOT / "data" / "benchmark"
 SELECTION_METHOD = "greedy_marginal_f0_5_coverage_v1"
-SURFACES = ("treats-included", "treats-excluded")
+SURFACES = ("treats-included", "same-pair-excluded", "treats-excluded")
+# Runs recorded before evidence tiers cannot be split at the same-pair boundary.
+UNTIERED_SURFACES = ("treats-included", "treats-excluded")
+
+
+def surface_eligible(rule: dict[str, Any], surface: str) -> bool:
+    if surface == "treats-included":
+        return True
+    if surface == "treats-excluded":
+        return not rule["uses_treatment_edges"]
+    if surface == "same-pair-excluded":
+        if "evidence_tier" not in rule:
+            raise ValueError(
+                f"Rule {rule['rule_id']} has no evidence_tier for surface {surface}"
+            )
+        return rule["evidence_tier"] != "same_pair"
+    raise ValueError(f"Unknown rule-set surface: {surface}")
+
+
+def run_surfaces(rules: list[dict[str, Any]]) -> tuple[str, ...]:
+    tiered = {"evidence_tier" in rule for rule in rules}
+    if tiered == {True}:
+        return SURFACES
+    if tiered == {False} or not rules:
+        return UNTIERED_SURFACES
+    raise ValueError("Run mixes rules with and without evidence_tier")
 
 
 def _now() -> str:
@@ -175,6 +200,11 @@ def build_overlap_report(
                 "round_id": rule["round_id"],
                 "family_id": rule["family_id"],
                 "uses_treatment_edges": rule["uses_treatment_edges"],
+                **(
+                    {"evidence_tier": rule["evidence_tier"]}
+                    if "evidence_tier" in rule
+                    else {}
+                ),
                 "prediction_count": len(pairs),
                 "feedback_eligible_predictions": len(pairs - training_labels),
                 "training_hits": len(pairs & training_labels),
@@ -278,9 +308,13 @@ def _excluded_rules(
         pairs = predictions[rule_id]
         evaluation = evaluations.get(rule_id)
         redundant_with = sorted(selected & supersets_by_rule.get(rule_id, set()))
-        if surface == "treats-excluded" and rule["uses_treatment_edges"]:
+        if not surface_eligible(rule, surface):
             reason = "surface_ineligible"
-            explanation = "The rule uses treatment-oriented premises."
+            explanation = (
+                "The rule uses treatment evidence for the predicted pair."
+                if surface == "same-pair-excluded"
+                else "The rule uses treatment-oriented premises."
+            )
         elif rule["status"] == "rejected":
             reason = "rule_rejected"
             explanation = "The mining agent explicitly rejected this rule."
@@ -377,7 +411,7 @@ def build_rule_sets(
     remaining = {
         rule["rule_id"]
         for rule in rules
-        if (surface == "treats-included" or not rule["uses_treatment_edges"])
+        if surface_eligible(rule, surface)
         and rule["status"] != "rejected"
         and predictions[rule["rule_id"]]
         and rule["rule_id"] in evaluations
@@ -616,7 +650,7 @@ def generate_rule_set_analysis(
         if relation["prediction_relation"] == "exact_duplicate":
             supersets_by_rule[right_rule_id].add(left_rule_id)
     rule_sets = []
-    for surface in SURFACES:
+    for surface in run_surfaces(rules):
         rule_sets.extend(
             build_rule_sets(
                 run_id=run_id,
