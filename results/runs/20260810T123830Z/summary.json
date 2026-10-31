@@ -1,0 +1,217 @@
+{
+  "created_at": "2026-08-10T12:38:30.163560+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I03-R019",
+      "name": "Low-fanout causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Restricting the causal target to genes linked to at most 12 diseases removes literature-derived disease hubs while retaining specific causal mechanisms.",
+      "body": "R017 plus causal gene disease degree <=12",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Retains direct target engagement and directional perturbation while requiring a comparatively specific causal gene-disease link.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse patterns are TRAPI-expressible; causal-gene degree and absence constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 244,
+        "validation_hits": 3,
+        "training_hits": 23,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 218
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10655737704918032,
+        "visible_target_recall": 0.0009450421634195987,
+        "visible_target_f0_5": 0.004563324908733502,
+        "validation_precision_lower_bound": 0.013574660633484163,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004636785162287482
+      },
+      "runtime_seconds": 0.18438141600927338
+    },
+    {
+      "id": "TREAT-I03-R020",
+      "name": "Causal target with disease-process corroboration",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A direct inhibitory causal-target mechanism is more reliable when the same gene participates in a process independently supported by the disease's associated genes.",
+      "body": "R017 plus disease -process support-> process <-involved_in- same causal target gene",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Adds a nonlinear systems-level branch corroborating that the directly engaged causal target participates in disease-supported biology.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The source graph motif is TRAPI-expressible; the derived process-support cardinality, degree, and absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 58,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 53
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08620689655172414,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009010957324106112,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.23071041598450392
+    },
+    {
+      "id": "TREAT-I03-R021",
+      "name": "Independently associated causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-target mechanism is more reliable when the same gene-disease pair also has a dedicated gene-associated-with-condition assertion.",
+      "body": "R017 plus same gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Adds an independent relation family supporting the exact target-disease pair, reducing reliance on a lone text-mined causal assertion.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005440301755404033,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.15562370797852054
+    },
+    {
+      "id": "TREAT-I03-R022",
+      "name": "Clinical-stage causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching clinical-trial evidence should strongly enrich for treatment relationships.",
+      "body": "R017 plus drug -in_clinical_trials_for-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Retains a target-level mechanism and adds graph-internal translational evidence without using a semantic treats descendant.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 47,
+        "validation_hits": 3,
+        "training_hits": 20,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 24
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.48936170212765956,
+        "visible_target_recall": 0.0008359988368711835,
+        "visible_target_f0_5": 0.004151624548736461,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0061000406669377795
+      },
+      "runtime_seconds": 0.13225433300249279
+    },
+    {
+      "id": "TREAT-I03-R023",
+      "name": "Applied causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching applied-to-treat evidence should be a high-precision treatment rule.",
+      "body": "R017 plus drug -applied_to_treat-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Combines a target-level mechanism with graph-internal treatment-use evidence, although the latter is close to the prediction target.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 24,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7083333333333334,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.003078817733990148,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020981955518254306
+      },
+      "runtime_seconds": 0.1316829170100391
+    }
+  ]
+}

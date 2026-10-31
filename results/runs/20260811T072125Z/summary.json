@@ -1,0 +1,112 @@
+{
+  "created_at": "2026-08-11T07:21:25.410471+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I06-R046",
+      "name": "Causal-target indication transfer",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R037",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A known non-blind indication can support a new indication when the drug inhibits the same tissue-localized causal gene for both diseases.",
+      "body": "drug treats training anchor disease and binds/decreases gene; same gene causes anchor and candidate disease; candidate satisfies R037 tissue and adverse constraints",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Transfers efficacy through an explicit shared inhibited causal target and candidate-disease tissue context rather than generic disease similarity, but it depends on an existing treatment edge and still lacks disease activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The shared-target and treatment-anchor motifs are TRAPI-expressible; source exclusion, derived anatomy context, exact absence, NPMI, and degree constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nMATCH (gene)-[:CAUSES]->(anchor)\nWHERE anchor <> object\n  AND any(\n    source IN coalesce(treatment.primary_knowledge_sources, [])\n    WHERE NOT source IN [$validation_source, $blind_source]\n  )\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_min_anatomy_disease_degree <= 200\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 16,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.25,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007252683492892369,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0776403329800814
+    },
+    {
+      "id": "TREAT-I06-R047",
+      "name": "Anatomy-corroborated causal-target transfer",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R046",
+      "library_status": "candidate",
+      "status": "failed",
+      "hypothesis": "Causal-target indication transfer should become more specific when the known anchor and candidate diseases also share a relatively specific anatomy.",
+      "body": "R046 plus anchor and candidate disease share located_in|occurs_in anatomy with disease degree <=200",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines a known indication, shared inhibited causal target, target expression context, and shared disease anatomy; treatment dependence and disease activity direction remain limitations.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The branched graph motif is TRAPI-expressible; source exclusion, anatomy specificity, exact absence, NPMI, and degree constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nMATCH (gene)-[:CAUSES]->(anchor)\nMATCH (anchor)-[:LOCATED_IN|OCCURS_IN]->(shared_anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE anchor <> object\n  AND any(\n    source IN coalesce(treatment.primary_knowledge_sources, [])\n    WHERE NOT source IN [$validation_source, $blind_source]\n  )\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_min_anatomy_disease_degree <= 200\n  AND shared_anatomy._miner_disease_location_degree <= 200\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "error": "ClientError: {code: Neo.ClientError.Transaction.TransactionTimedOutClientConfiguration} {message: The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer timeout. }",
+      "runtime_seconds": 601.1226626660209
+    }
+  ]
+}

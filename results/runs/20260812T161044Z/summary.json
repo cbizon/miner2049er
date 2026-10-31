@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T16:10:44.089128+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R318",
+      "name": "Multisource LOF disinhibited-effector suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R313",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "LOF downstream suppression is more reliable when independent databases support direct drug binding to the disinhibited effector.",
+      "body": "R313 plus at least two distinct primary binding sources for the drug-effector pair",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The signed downstream mechanism is unchanged, while independent binding evidence reduces reliance on a single target database.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive path is TRAPI-expressible; distinct binding-source aggregation and provenance constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n\nWITH subject, object, collect(DISTINCT binding) AS bindings\nWITH subject, object,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 2\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 436,
+        "validation_hits": 2,
+        "training_hits": 4,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 430
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013761467889908258,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.001025430680885972,
+        "validation_precision_lower_bound": 0.004629629629629629,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.002451581269919098
+      },
+      "runtime_seconds": 1.5841247499920428
+    },
+    {
+      "id": "TREAT-I09-R319",
+      "name": "Multisource LOF disinhibited-effector activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "The multisource binding gate should not rescue the matched direction that further activates a disinhibited LOF effector.",
+      "body": "R317 plus at least two distinct primary binding sources for the drug-effector pair",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Binding confidence is high, but the drug direction reinforces the LOF downstream defect.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same aggregation constraints as R318.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n\nWITH subject, object, collect(DISTINCT binding) AS bindings\nWITH subject, object,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 2\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 128,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 128
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0558810000075027
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"id":"edge-1","category":["biolink:ChemicalAffectsGeneAssociation"],"subject":"CHEBI:1","predicate":"biolink:affects","object":"NCBIGene:1","object_aspect_qualifier":"activity_or_abundance","publications":["PMID:1"],"sources":[{"resource_id":"infores:test","resource_role":"primary_knowledge_source"}],"knowledge_level":"knowledge_assertion","agent_type":"manual_agent"}

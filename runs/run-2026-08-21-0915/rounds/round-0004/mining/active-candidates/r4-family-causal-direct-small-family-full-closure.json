@@ -1,0 +1,318 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-family-causal-direct-small-family-full-closure",
+  "family_id": "panther-family-disease-target-bridge",
+  "name": "Specific PANTHER Family Causal Bridge (Full Descendant Control)",
+  "status": "baseline",
+  "plain_language_rule": "Predict treatment when The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; Chemical causally affects regulator in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; The drug target belongs to the PANTHER gene family The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control.; The distinct disease-associated gene belongs to the same PANTHER family The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control.; The downstream gene causes or contributes to the disease The pinned descendant closure is biolink:causes, biolink:contributes_to. No predicate descendants are excluded in this control.; Every distinct gene in the complete PANTHER family is counted The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control. The upstream regulator and downstream disease gene must be distinct. The family must contain at most fourteen distinct GeneOrGeneProduct nodes through PANTHER member-of edges. Fourteen is the observed 90th percentile across all graph PANTHER families.",
+  "hypothesis": "Excluding the largest evolutionary families may suppress generic family similarity while retaining the independently observed drug and disease arms.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "regulator",
+        "role": "Drug-engaged upstream gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Drug-engaged upstream gene or gene product."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      },
+      {
+        "id": "family",
+        "role": "PANTHER family containing both distinct genes",
+        "categories": [
+          "biolink:GeneFamily"
+        ],
+        "explanation": "PANTHER family containing both distinct genes."
+      },
+      {
+        "id": "member",
+        "role": "Gene counted in the complete family-membership neighborhood",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Gene counted in the complete family-membership neighborhood."
+      }
+    ],
+    "edges": [
+      {
+        "id": "direct",
+        "subject": "chemical",
+        "object": "disease",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control."
+      },
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "regulator",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects regulator in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": "decreased",
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "target_member",
+        "subject": "regulator",
+        "object": "family",
+        "predicates": [
+          "biolink:member_of"
+        ],
+        "direction": "forward",
+        "explanation": "The drug target belongs to the PANTHER gene family The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control.",
+        "source_constraints": [
+          "infores:panther"
+        ]
+      },
+      {
+        "id": "disease_member",
+        "subject": "gene",
+        "object": "family",
+        "predicates": [
+          "biolink:member_of"
+        ],
+        "direction": "forward",
+        "explanation": "The distinct disease-associated gene belongs to the same PANTHER family The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control.",
+        "source_constraints": [
+          "infores:panther"
+        ]
+      },
+      {
+        "id": "causal",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:contributes_to"
+        ],
+        "direction": "forward",
+        "explanation": "The downstream gene causes or contributes to the disease The pinned descendant closure is biolink:causes, biolink:contributes_to. No predicate descendants are excluded in this control."
+      },
+      {
+        "id": "member_count",
+        "subject": "member",
+        "object": "family",
+        "predicates": [
+          "biolink:member_of"
+        ],
+        "direction": "forward",
+        "explanation": "Every distinct gene in the complete PANTHER family is counted The pinned descendant closure is biolink:member_of. At least one primary source must be infores:panther. No predicate descendants are excluded in this control.",
+        "source_constraints": [
+          "infores:panther"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "distinct-genes",
+        "kind": "other",
+        "expression": "The upstream regulator and downstream disease gene must be distinct.",
+        "explanation": "The upstream regulator and downstream disease gene must be distinct."
+      },
+      {
+        "id": "family-size",
+        "kind": "degree",
+        "expression": "The family must contain at most fourteen distinct GeneOrGeneProduct nodes through PANTHER member-of edges. Fourteen is the observed 90th percentile across all graph PANTHER families.",
+        "explanation": "The family must contain at most fourteen distinct GeneOrGeneProduct nodes through PANTHER member-of edges. Fourteen is the observed 90th percentile across all graph PANTHER families."
+      }
+    ]
+  },
+  "derived_features": [
+    {
+      "name": "complete curated causal drug-target access path",
+      "definition": "A stored Drug-to-GeneOrGeneProduct relationship exists for a causes-qualified member of the full affects descendant closure with ChEMBL, Guide to Pharmacology, or DrugCentral primary-source support.",
+      "inputs": [
+        "The full pinned affects descendant closure on Drug-to-GeneOrGeneProduct edges",
+        "Raw qualified_predicate and primary_knowledge_sources properties"
+      ],
+      "construction": "Filter raw edges by causes qualification and any of the three sources, group by canonical endpoint pair, count distinct raw relationship identities, and merge one compact relationship per pair. Missing qualifiers or source arrays do not qualify. The rule uses only presence, then rematches raw edges with its recorded exact predicates, qualifiers, and sources. Removing the initial access-path MATCH and WITH before the marked comment gives the otherwise identical unmaterialized query.",
+      "formula": "compact presence iff count(distinct qualifying raw relationship)>0",
+      "interpretation": "This is a query acceleration, not a prediction threshold or an extra biological condition. Full-closure and exact-filtered target rules both rematch their own raw evidence. No training or held-out treatment labels define the access path.",
+      "neo4j_artifact_id": "r0004-curated-causal-target-v1"
+    },
+    {
+      "name": "complete PANTHER family member degree",
+      "definition": "The number of distinct canonical GeneOrGeneProduct members of a family through member_of edges with PANTHER primary provenance.",
+      "inputs": [
+        "All original gene-to-family member_of edges with infores:panther primary-source support"
+      ],
+      "construction": "For each candidate family, count distinct endpoint gene nodes across its entire incoming qualifying membership neighborhood, not only drug targets or disease genes.",
+      "formula": "family_degree=count(distinct qualifying member genes); require family_degree<=14",
+      "interpretation": "The fixed all-family 90th-percentile bound penalizes large families. It does not imply functional equivalence or shared tissue context.",
+      "neo4j_artifact_id": null
+    }
+  ],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Excluding the largest evolutionary families may suppress generic family similarity while retaining the independently observed drug and disease arms. Association does not establish a corrective clinical mechanism."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[compact:MINER_R0004_CURATED_TARGET]->(regulator:GeneOrGeneProduct) WHERE compact.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT chemical,regulator /* END CURATED ACCESS PATH */ MATCH (chemical:Drug)-[direct:{{relationship_types:direct}}]->(disease:Disease) WHERE direct.predicate IN {{predicates:direct}} MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(regulator:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND target.object_direction_qualifier = \"decreased\" AND target.object_aspect_qualifier IN [\"activity\",\"activity_or_abundance\"] AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(target.primary_knowledge_sources,[])) MATCH (regulator:GeneOrGeneProduct)-[target_member:{{relationship_types:target_member}}]->(family:GeneFamily) WHERE target_member.predicate IN {{predicates:target_member}} AND any(source IN [\"infores:panther\"] WHERE source IN coalesce(target_member.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[disease_member:{{relationship_types:disease_member}}]->(family:GeneFamily) WHERE disease_member.predicate IN {{predicates:disease_member}} AND any(source IN [\"infores:panther\"] WHERE source IN coalesce(disease_member.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[causal:{{relationship_types:causal}}]->(disease:Disease) WHERE causal.predicate IN {{predicates:causal}} AND (regulator<>gene) WITH DISTINCT chemical,disease,family CALL { WITH family MATCH (member:GeneOrGeneProduct)-[member_count:{{relationship_types:member_count}}]->(family:GeneFamily) WHERE member_count.predicate IN {{predicates:member_count}} AND any(source IN [\"infores:panther\"] WHERE source IN coalesce(member_count.primary_knowledge_sources,[])) RETURN count(DISTINCT member) AS family_degree } WITH chemical,disease,family,family_degree WHERE family_degree<=14 RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT family) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "regulator": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "family": {
+                "categories": [
+                  "biolink:GeneFamily"
+                ]
+              },
+              "member": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "direct": {
+                "subject": "chemical",
+                "object": "disease",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              },
+              "target": {
+                "subject": "chemical",
+                "object": "regulator",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "target_member": {
+                "subject": "regulator",
+                "object": "family",
+                "predicates": [
+                  "biolink:member_of"
+                ]
+              },
+              "disease_member": {
+                "subject": "gene",
+                "object": "family",
+                "predicates": [
+                  "biolink:member_of"
+                ]
+              },
+              "causal": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:contributes_to"
+                ]
+              },
+              "member_count": {
+                "subject": "member",
+                "object": "family",
+                "predicates": [
+                  "biolink:member_of"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; target_member: enforce primary-source membership in infores:panther; disease_member: enforce primary-source membership in infores:panther; member_count: enforce primary-source membership in infores:panther; The upstream regulator and downstream disease gene must be distinct.; The family must contain at most fourteen distinct GeneOrGeneProduct nodes through PANTHER member-of edges. Fourteen is the observed 90th percentile across all graph PANTHER families."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Shared evolutionary family does not establish equivalent function, tissue expression, or regulatory direction.",
+    "The full affects closure includes ameliorates_condition and is classified as treatment-using even if no such edge satisfies the other constraints in this graph."
+  ],
+  "parent_rule_id": "r4-family-causal-direct-small-family"
+}

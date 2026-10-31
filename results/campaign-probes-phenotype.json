@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-08-12T01:02:50.618238+00:00",
+  "probes": [
+    {
+      "name": "phenotype_bridge_coverage",
+      "started_at": "2026-08-12T01:02:50.618512+00:00",
+      "status": "completed",
+      "runtime_seconds": 78.79454133298714,
+      "rows": [
+        {
+          "base_path_rows": 1998,
+          "base_pairs": 1790,
+          "exact_rows": 0,
+          "ontology_bridge_rows": 2,
+          "anatomy_bridge_rows": 0,
+          "process_bridge_rows": 0
+        }
+      ]
+    }
+  ]
+}

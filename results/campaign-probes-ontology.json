@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-08-12T01:02:35.241276+00:00",
+  "probes": [
+    {
+      "name": "ontology_transfer_coverage",
+      "started_at": "2026-08-12T01:02:35.285642+00:00",
+      "status": "failed",
+      "error": "CypherSyntaxError: {code: Neo.ClientError.Statement.SyntaxError} {message: Invalid input 'BETWEEN': expected an expression, 'FOREACH', 'ORDER BY', 'CALL', 'CREATE', 'LOAD CSV', 'DELETE', 'DETACH', 'FINISH', 'INSERT', 'LIMIT', 'MATCH', 'MERGE', 'NODETACH', 'OFFSET', 'OPTIONAL', 'REMOVE', 'RETURN', 'SET', 'SKIP', 'UNION', 'UNWIND', 'USE', 'WITH' or '}' (line 33, column 24 (offset: 1485))\n\"                     ) BETWEEN 2 AND 200\"\n                        ^}"
+    }
+  ]
+}

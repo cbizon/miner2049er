@@ -1,0 +1,1052 @@
+{
+  "created_at": "2026-08-11T13:51:41.963828+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I08-R064",
+      "name": "SemMed treatment-parent with multisource binding and genetic support",
+      "iteration": 8,
+      "parent_rule": "TREAT-I07-R063",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A SemMed treatment-family assertion becomes highly predictive when a directly inhibited causal target has non-SemMed disease evidence and binding support from at least four resources.",
+      "body": "direct inhibited causal target plus SemMed treatment-parent assertion, non-SemMed gene-disease evidence, >=4 binding sources, and non-hub disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines a direct perturbation path, causal disease genetics, independent genetic support, and binding consensus; the treatment-family assertion is literature-derived and disease activity direction remains absent.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The causal-target and treatment-parent motifs are TRAPI-expressible; binding-source cardinality, derived genetic evidence, and disease degree require Cypher.",
+      "trapi_template": "trapi/direct-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_non_semmed_primary_source_count >= 1)\n  AND (size(binding_sources) >= 4)\n  AND (object._miner_disease_descendant_degree <= 500)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 1,
+        "training_hits": 19,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.9523809523809523,
+        "visible_target_recall": 0.0007269555103227683,
+        "visible_target_f0_5": 0.0036237135816785046,
+        "validation_precision_lower_bound": 0.5,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021195421788893602
+      },
+      "runtime_seconds": 0.8036215410102159
+    },
+    {
+      "id": "TREAT-I08-R065",
+      "name": "Five-source TTD-GtoPdb binding consensus with triple translation",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R066",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A directly inhibited causal target supported by both TTD and GtoPdb binding records should be highly predictive when at least three translational evidence channels agree.",
+      "body": "direct inhibited causal target plus TTD and GtoPdb binding, >=5 binding sources, and >=3 translational evidence channels",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds strong target-binding consensus and multiple translational channels to a causal-target path, but the translational evidence is treatment-oriented and causal activity direction is missing.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The causal-target motif is TRAPI-expressible; binding provenance cardinality and the multi-channel evidence count require Cypher.",
+      "trapi_template": "trapi/direct-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE ('infores:ttd' IN binding_sources)\n  AND ('infores:gtopdb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (size(binding_sources) >= 5)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 31,
+        "validation_hits": 1,
+        "training_hits": 28,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.9354838709677419,
+        "visible_target_recall": 0.001054085489968014,
+        "visible_target_f0_5": 0.0052467795628889854,
+        "validation_precision_lower_bound": 0.3333333333333333,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021159542953872196
+      },
+      "runtime_seconds": 0.7869199590058997
+    },
+    {
+      "id": "TREAT-I08-R066",
+      "name": "Five-source TTD binding consensus with triple translation",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R067",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Requiring TTD among five binding sources and agreement from three translational channels should retain high precision while broadening beyond the GtoPdb subset.",
+      "body": "direct inhibited causal target plus TTD binding, >=5 binding sources, and >=3 translational evidence channels",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses binding consensus and multiple translational channels around a causal target; treatment dependence and missing disease activity direction prevent a high mechanism score.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The causal-target motif is TRAPI-expressible; binding provenance cardinality and the multi-channel evidence count require Cypher.",
+      "trapi_template": "trapi/direct-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE ('infores:ttd' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (size(binding_sources) >= 5)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 36,
+        "validation_hits": 1,
+        "training_hits": 32,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.9166666666666666,
+        "visible_target_recall": 0.0011994765920325676,
+        "visible_target_f0_5": 0.005966155626265548,
+        "validation_precision_lower_bound": 0.25,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021123785382340518
+      },
+      "runtime_seconds": 0.7028618329786696
+    },
+    {
+      "id": "TREAT-I08-R067",
+      "name": "Clinical DGIdb target with four-channel translation and independent genetics",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R068",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Clinical-stage causal-target predictions should be selective when DGIdb supports binding, four translational channels agree, and disease genetics includes a non-SemMed source.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and non-SemMed gene-disease evidence",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines direct perturbation, causal genetics, target curation, and multiple translational signals, while still depending on treatment evidence and lacking causal activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and derived gene-disease evidence require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ('infores:dgidb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_non_semmed_primary_source_count >= 1)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 39,
+        "validation_hits": 1,
+        "training_hits": 33,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.8717948717948718,
+        "visible_target_recall": 0.001235824367548706,
+        "visible_target_f0_5": 0.006144282203267313,
+        "validation_precision_lower_bound": 0.16666666666666666,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002105263157894737
+      },
+      "runtime_seconds": 0.7316432090010494
+    },
+    {
+      "id": "TREAT-I08-R068",
+      "name": "Clinical DGIdb target with four-channel translation and selective anatomy",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R069",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A clinically studied DGIdb-supported causal target should generalize when four translational channels agree and its best shared anatomy expresses at most 8,000 human genes.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and anatomy expression degree <=8000",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds target curation and tissue selectivity to a multi-channel translational causal-target path; treatment dependence and disease direction remain limitations.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and anatomy degree require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ('infores:dgidb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_min_anatomy_gene_degree <= 8000)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 55,
+        "validation_hits": 1,
+        "training_hits": 45,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.8363636363636363,
+        "visible_target_recall": 0.001671997673742367,
+        "visible_target_f0_5": 0.008293667964806,
+        "validation_precision_lower_bound": 0.1,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020911752404851524
+      },
+      "runtime_seconds": 0.8457368329982273
+    },
+    {
+      "id": "TREAT-I08-R069",
+      "name": "Clinical DGIdb target with four-channel translation and tissue concordance",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R070",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A clinically studied DGIdb-supported causal target should remain predictive when four translational channels agree and at least one Bgee disease-anatomy overlap exists.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and >=1 Bgee disease-anatomy overlap",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target curation, tissue concordance, causal genetics, and multiple translational signals, but does not establish whether inhibition reverses disease.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and anatomy cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ('infores:dgidb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_bgee_anatomy_count >= 1)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 61,
+        "validation_hits": 1,
+        "training_hits": 49,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.819672131147541,
+        "visible_target_recall": 0.0018173887758069205,
+        "visible_target_f0_5": 0.009007061536244415,
+        "validation_precision_lower_bound": 0.08333333333333333,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020842017507294703
+      },
+      "runtime_seconds": 0.7650757079827599
+    },
+    {
+      "id": "TREAT-I08-R070",
+      "name": "Clinical DGIdb target with four-channel translation and positive literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R071",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Disease-relative literature concentration should select relevant causal genes within clinically supported, DGIdb-bound, four-channel predictions.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and causal-publication NPMI >=0.25",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses disease-relative causal literature, curated binding, and multiple translational signals; literature concentration cannot supply the missing disease activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ('infores:dgidb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.25)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 65,
+        "validation_hits": 1,
+        "training_hits": 51,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 13
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.8,
+        "visible_target_recall": 0.0018900843268391974,
+        "visible_target_f0_5": 0.009361947285035286,
+        "validation_precision_lower_bound": 0.07142857142857142,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002077274615704196
+      },
+      "runtime_seconds": 0.7491782080032863
+    },
+    {
+      "id": "TREAT-I08-R071",
+      "name": "Clinical DGIdb target with four-channel translation and nonnegative literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R072",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Relaxing disease-relative literature concentration to nonnegative NPMI should add coverage without abandoning the clinical, DGIdb, and four-channel evidence core.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and causal-publication NPMI >=0",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains causal genetics, curated binding, and multiple translational signals at a broader literature threshold, with the same treatment and direction limitations.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ('infores:dgidb' IN binding_sources)\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.0)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 71,
+        "validation_hits": 1,
+        "training_hits": 55,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7887323943661971,
+        "visible_target_recall": 0.002035475428903751,
+        "visible_target_f0_5": 0.010073391854943157,
+        "validation_precision_lower_bound": 0.0625,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002070393374741201
+      },
+      "runtime_seconds": 0.7002547910087742
+    },
+    {
+      "id": "TREAT-I08-R072",
+      "name": "Applied and clinical causal target with four-channel translation and relation diversity",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R073",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Agreement between applied-use and clinical evidence should be more reliable when four translational channels agree and the gene-disease pair has at least three direct relation types.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and >=3 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines a direct perturbation path with relation diversity and several translational signals, but therapeutic evidence and missing disease activity direction remain.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; channel and relation-type cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_direct_relation_type_count >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 75,
+        "validation_hits": 1,
+        "training_hits": 57,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7733333333333333,
+        "visible_target_recall": 0.002108170979936028,
+        "visible_target_f0_5": 0.01042715374658421,
+        "validation_precision_lower_bound": 0.05555555555555555,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002063557573256294
+      },
+      "runtime_seconds": 0.7385456660413183
+    },
+    {
+      "id": "TREAT-I08-R073",
+      "name": "Clinical four-channel causal target with tissue and nonnegative literature support",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R074",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Clinical four-channel predictions should broaden safely when a Bgee disease-anatomy overlap and nonnegative disease-relative literature concentration support the causal target.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, >=4 translational channels, Bgee tissue overlap, and causal-publication NPMI >=0",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds tissue localization and disease-relative literature to multi-channel clinical evidence, but still lacks causal activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; channel count, anatomy cardinality, and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.0)\n  AND (evidence._miner_bgee_anatomy_count >= 1)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 79,
+        "validation_hits": 1,
+        "training_hits": 59,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 19
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.759493670886076,
+        "visible_target_recall": 0.0021808665309683045,
+        "visible_target_f0_5": 0.010780508840017248,
+        "validation_precision_lower_bound": 0.05,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020567667626491155
+      },
+      "runtime_seconds": 0.7946177909616381
+    },
+    {
+      "id": "TREAT-I08-R074",
+      "name": "Applied and clinical four-channel target with positive literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R075",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Applied and clinical agreement should extend to more causal targets when four translational channels agree and causal-publication NPMI is at least 0.25.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and causal-publication NPMI >=0.25",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines direct target perturbation, causal literature concentration, and multiple therapeutic signals, while disease direction remains unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; channel cardinality and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.25)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 83,
+        "validation_hits": 1,
+        "training_hits": 62,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 20
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7590361445783133,
+        "visible_target_recall": 0.00228990985751672,
+        "visible_target_f0_5": 0.011313029737106739,
+        "validation_precision_lower_bound": 0.047619047619047616,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002053388090349076
+      },
+      "runtime_seconds": 0.7373549590120092
+    },
+    {
+      "id": "TREAT-I08-R075",
+      "name": "Applied and clinical four-channel target with repeated causal literature",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R076",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Three causal publications should provide a broader but still selective alternative to positive NPMI within applied, clinical, four-channel predictions.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and >=3 causal publications",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses repeated causal literature and multi-channel therapeutic support around a direct perturbation path; raw publication count cannot establish disease direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; channel cardinality and publication count require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_count >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 88,
+        "validation_hits": 1,
+        "training_hits": 65,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 22
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.75,
+        "visible_target_recall": 0.002398953184065135,
+        "visible_target_f0_5": 0.011843238587424634,
+        "validation_precision_lower_bound": 0.043478260869565216,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002046663937781416
+      },
+      "runtime_seconds": 0.7296139170066454
+    },
+    {
+      "id": "TREAT-I08-R076",
+      "name": "Clinical targeted-text four-channel target with positive literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R077",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Targeted text-mining treatment-family evidence can broaden the clinical causal-target rule when four channels agree and causal-publication NPMI is positive.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=4 translational channels, and causal-publication NPMI >=0.25",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds targeted literature evidence and disease-relative causal support to a direct perturbation mechanism, but treatment orientation and disease direction remain limitations.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.25)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 92,
+        "validation_hits": 1,
+        "training_hits": 67,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 24
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7391304347826086,
+        "visible_target_recall": 0.002471648735097412,
+        "visible_target_f0_5": 0.012195121951219511,
+        "validation_precision_lower_bound": 0.04,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002039983680130559
+      },
+      "runtime_seconds": 0.7839255839935504
+    },
+    {
+      "id": "TREAT-I08-R077",
+      "name": "Applied and clinical four-channel target with nonnegative literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R078",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A nonnegative literature-concentration threshold should increase coverage within the applied, clinical, four-channel causal-target family.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and causal-publication NPMI >=0",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains a direct perturbation path and several therapeutic signals at a broader literature threshold, but treatment dependence and disease direction remain.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; channel cardinality and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.0)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 99,
+        "validation_hits": 1,
+        "training_hits": 72,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 26
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7373737373737373,
+        "visible_target_recall": 0.002653387612678104,
+        "visible_target_f0_5": 0.01307868711480579,
+        "validation_precision_lower_bound": 0.037037037037037035,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020333468889792597
+      },
+      "runtime_seconds": 0.6432892080047168
+    },
+    {
+      "id": "TREAT-I08-R078",
+      "name": "Clinical targeted-text four-channel target with nonnegative literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R079",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Relaxing NPMI to zero should broaden the clinical targeted-text four-channel family while retaining disease-relative support.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=4 translational channels, and causal-publication NPMI >=0",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines direct perturbation, targeted treatment literature, and multi-channel evidence; the broader NPMI threshold does not resolve disease direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 4)\n  AND (evidence._miner_causal_publication_npmi >= 0.0)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 108,
+        "validation_hits": 1,
+        "training_hits": 77,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 30
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7222222222222222,
+        "visible_target_recall": 0.002835126490258796,
+        "visible_target_f0_5": 0.01395648439736616,
+        "validation_precision_lower_bound": 0.03225806451612903,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020202020202020198
+      },
+      "runtime_seconds": 0.7685090839513578
+    },
+    {
+      "id": "TREAT-I08-R079",
+      "name": "Applied clinical targeted-text target with relation diversity",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R080",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Applied, clinical, and targeted-text agreement should support a broader cohort when the causal gene-disease pair has at least three direct relation types.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses three translational channels and relation diversity around a causal target, but remains treatment-oriented and directionally incomplete.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_direct_relation_type_count >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 124,
+        "validation_hits": 1,
+        "training_hits": 80,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 43
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6532258064516129,
+        "visible_target_recall": 0.0029441698168072112,
+        "visible_target_f0_5": 0.014460154241645243,
+        "validation_precision_lower_bound": 0.022727272727272728,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0019786307874950534
+      },
+      "runtime_seconds": 0.7147669579717331
+    },
+    {
+      "id": "TREAT-I08-R080",
+      "name": "Applied clinical targeted-text target with positive literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R081",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Positive disease-relative causal literature should select the strongest targets supported by applied, clinical, and targeted-text evidence.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and causal-publication NPMI >=0.25",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines disease-relative causal evidence with three translational channels, while therapeutic dependence and disease direction remain unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_causal_publication_npmi >= 0.25)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 138,
+        "validation_hits": 1,
+        "training_hits": 88,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 49
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.644927536231884,
+        "visible_target_recall": 0.003234952020936319,
+        "visible_target_f0_5": 0.01585661345496009,
+        "validation_precision_lower_bound": 0.02,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.001960015680125441
+      },
+      "runtime_seconds": 0.708326667023357
+    },
+    {
+      "id": "TREAT-I08-R081",
+      "name": "Applied clinical targeted-text target with repeated causal literature",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R082",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Three causal publications should provide a higher-coverage alternative within the applied, clinical, targeted-text causal-target family.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 causal publications",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses repeated causal literature and three treatment-oriented channels around a direct perturbation path; disease activity direction is still missing.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and publication count require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_causal_publication_count >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 144,
+        "validation_hits": 1,
+        "training_hits": 91,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 52
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6388888888888888,
+        "visible_target_recall": 0.003343995347484734,
+        "visible_target_f0_5": 0.01637710054115637,
+        "validation_precision_lower_bound": 0.018867924528301886,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0019508388607101057
+      },
+      "runtime_seconds": 0.6938823749660514
+    },
+    {
+      "id": "TREAT-I08-R082",
+      "name": "Applied clinical targeted-text target with nonnegative literature NPMI",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R083",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A nonnegative NPMI threshold should extend the three-channel applied, clinical, and targeted-text family without discarding disease-relative relevance.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and causal-publication NPMI >=0",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains a causal-target path and three translational channels with broad literature support, but remains treatment-oriented and directionally incomplete.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and NPMI require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_causal_publication_npmi >= 0.0)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 159,
+        "validation_hits": 1,
+        "training_hits": 99,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 59
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6289308176100629,
+        "visible_target_recall": 0.003634777551613841,
+        "visible_target_f0_5": 0.017763251385533606,
+        "validation_precision_lower_bound": 0.016666666666666666,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.00192975685063682
+      },
+      "runtime_seconds": 0.644563083013054
+    },
+    {
+      "id": "TREAT-I08-R083",
+      "name": "Applied clinical targeted-text target with two gene-disease relations",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R084",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Two direct gene-disease relation types should retain modest mechanistic corroboration while broadening the three-channel translational family.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=2 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines three treatment-oriented channels with direct relation diversity around a causal target, without resolving causal activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_direct_relation_type_count >= 2)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 161,
+        "validation_hits": 1,
+        "training_hits": 100,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 60
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6273291925465838,
+        "visible_target_recall": 0.0036711253271299797,
+        "visible_target_f0_5": 0.017935786333285974,
+        "validation_precision_lower_bound": 0.01639344262295082,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0019267822736030833
+      },
+      "runtime_seconds": 0.6394305839785375
+    },
+    {
+      "id": "TREAT-I08-R084",
+      "name": "Applied clinical targeted-text causal-target consensus",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R085",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Agreement among applied use, independent clinical trials, and targeted-text treatment evidence should define a broad causal-target consensus rule.",
+      "body": "direct inhibited causal target plus applied use, multiomics clinical trial, and targeted-text treatment-parent evidence",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses a direct perturbation path and three translational channels, but the evidence is treatment-oriented and disease activity direction is unavailable.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and evidence intersection require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n})\n  AND (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 164,
+        "validation_hits": 1,
+        "training_hits": 101,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 62
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6219512195121951,
+        "visible_target_recall": 0.003707473102646118,
+        "visible_target_f0_5": 0.018105651803464923,
+        "validation_precision_lower_bound": 0.015873015873015872,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.001920860545524395
+      },
+      "runtime_seconds": 0.6898022909881547
+    },
+    {
+      "id": "TREAT-I08-R085",
+      "name": "Clinical targeted-text triple-channel target with repeated causal literature",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R086",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Clinical and targeted-text evidence should scale to a broader target cohort when at least three translational channels agree and the causal relation has three publications.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=3 causal publications",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines repeated causal literature and multi-channel treatment evidence around a direct target perturbation, but disease direction remains absent.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and publication count require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (evidence._miner_causal_publication_count >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 186,
+        "validation_hits": 5,
+        "training_hits": 106,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 75
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5967741935483871,
+        "visible_target_recall": 0.004034603082291364,
+        "visible_target_f0_5": 0.01964184597961495,
+        "validation_precision_lower_bound": 0.0625,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.00935979034069637
+      },
+      "runtime_seconds": 0.7989306249655783
+    },
+    {
+      "id": "TREAT-I08-R086",
+      "name": "Clinical targeted-text triple-channel target with two causal publications",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R087",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Lowering the causal-publication requirement from three to two should add coverage within the clinical targeted-text triple-channel family.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=2 causal publications",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains repeated causal literature and multi-channel translational evidence at a broader threshold, with treatment dependence and missing disease direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and publication count require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (evidence._miner_causal_publication_count >= 2)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 203,
+        "validation_hits": 5,
+        "training_hits": 111,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 87
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5714285714285714,
+        "visible_target_recall": 0.004216341959872056,
+        "visible_target_f0_5": 0.020477333709927978,
+        "validation_precision_lower_bound": 0.05434782608695652,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.009194556822361163
+      },
+      "runtime_seconds": 0.7234649590100162
+    },
+    {
+      "id": "TREAT-I08-R087",
+      "name": "Clinical targeted-text triple-channel target with relation corroboration",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R088",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Two direct gene-disease relation types should retain corroboration while broadening the clinical targeted-text triple-channel family.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=2 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds direct relation diversity to clinical and targeted treatment evidence around a causal target, but treatment orientation and disease direction remain.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and relation-type count require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (evidence._miner_direct_relation_type_count >= 2)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 211,
+        "validation_hits": 5,
+        "training_hits": 115,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 91
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5687203791469194,
+        "visible_target_recall": 0.004361733061936609,
+        "visible_target_f0_5": 0.021159542953872196,
+        "validation_precision_lower_bound": 0.052083333333333336,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.009140767824497258
+      },
+      "runtime_seconds": 0.8068844579975121
+    },
+    {
+      "id": "TREAT-I08-R088",
+      "name": "Clinical targeted-text triple-channel causal-target consensus",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R089",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Clinical and targeted-text treatment evidence with agreement from a third translational channel should define a broad causal-target consensus.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 translational channels",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses a direct causal-target path and at least three treatment-oriented signals, but does not establish whether target inhibition corrects disease.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and channel cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 215,
+        "validation_hits": 5,
+        "training_hits": 116,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 94
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5627906976744186,
+        "visible_target_recall": 0.004398080837452748,
+        "visible_target_f0_5": 0.02132384040603412,
+        "validation_precision_lower_bound": 0.050505050505050504,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.009100837277029487
+      },
+      "runtime_seconds": 0.7941852919757366
+    },
+    {
+      "id": "TREAT-I08-R089",
+      "name": "Clinical triple-channel causal-target consensus",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R090",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Independent clinical evidence plus agreement from at least two additional translational channels should support a higher-coverage causal-target rule.",
+      "body": "direct inhibited causal target plus multiomics clinical trial and >=3 translational evidence channels",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines direct perturbation and causal genetics with several translational signals, but remains treatment-oriented and lacks disease activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; provenance and channel cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 226,
+        "validation_hits": 5,
+        "training_hits": 117,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 104
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5398230088495575,
+        "visible_target_recall": 0.004434428612968886,
+        "visible_target_f0_5": 0.021466779279279282,
+        "validation_precision_lower_bound": 0.045871559633027525,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.00897021887334051
+      },
+      "runtime_seconds": 0.8285406660288572
+    },
+    {
+      "id": "TREAT-I08-R090",
+      "name": "Clinical targeted-text causal target with relation corroboration",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R091",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Clinical and targeted-text treatment evidence should remain useful without a channel-count threshold when the causal gene-disease pair has two direct relation types.",
+      "body": "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, and >=2 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines a direct causal-target path with two treatment evidence sources and relation diversity, but disease activity direction is unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND (evidence._miner_direct_relation_type_count >= 2)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 291,
+        "validation_hits": 6,
+        "training_hits": 121,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 164
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.436426116838488,
+        "visible_target_recall": 0.004616167490549578,
+        "visible_target_f0_5": 0.022143953131538573,
+        "validation_precision_lower_bound": 0.03529411764705882,
+        "validation_recall": 0.002552105487026797,
+        "validation_f0_5": 0.009897723523589575
+      },
+      "runtime_seconds": 0.7483906249981374
+    },
+    {
+      "id": "TREAT-I08-R091",
+      "name": "Clinical targeted-text causal-target evidence pair",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R092",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The intersection of independent clinical trials and targeted-text treatment-family evidence should provide a broad evidence-backed causal-target rule.",
+      "body": "direct inhibited causal target plus multiomics clinical trial and targeted-text treatment-parent evidence",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses direct perturbation and causal genetics with two treatment-oriented evidence sources; disease activity direction remains missing.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and evidence intersection require Cypher.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n})\n  AND (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 296,
+        "validation_hits": 6,
+        "training_hits": 122,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 168
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.43243243243243246,
+        "visible_target_recall": 0.004652515266065717,
+        "visible_target_f0_5": 0.02230275996654586,
+        "validation_precision_lower_bound": 0.034482758620689655,
+        "validation_recall": 0.002552105487026797,
+        "validation_f0_5": 0.009845749917952085
+      },
+      "runtime_seconds": 0.7251467499881983
+    },
+    {
+      "id": "TREAT-I08-R092",
+      "name": "Targeted-text triple-channel causal target with relation corroboration",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R093",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Targeted-text treatment evidence plus two additional translational channels should remain predictive when the causal gene-disease pair has two direct relation types.",
+      "body": "direct inhibited causal target plus targeted-text treatment-parent evidence, >=3 translational channels, and >=2 direct gene-disease relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines direct perturbation, relation diversity, and several treatment-oriented signals, while causal disease direction remains unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and relation-type count require Cypher.",
+      "trapi_template": "trapi/direct-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\n  AND (evidence._miner_direct_relation_type_count >= 2)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 306,
+        "validation_hits": 5,
+        "training_hits": 126,
+        "contraindicated_pairs": 22,
+        "unresolved_or_blind_pairs": 175
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.42810457516339867,
+        "visible_target_recall": 0.004761558592614132,
+        "visible_target_f0_5": 0.02279370824053452,
+        "validation_precision_lower_bound": 0.027777777777777776,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.008140670791273202
+      },
+      "runtime_seconds": 0.8603543330100365
+    },
+    {
+      "id": "TREAT-I08-R093",
+      "name": "Targeted-text triple-channel causal-target consensus",
+      "iteration": 8,
+      "parent_rule": "TREAT-I08-R092",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Targeted-text treatment-family evidence with agreement from two additional translational channels should define the broad end of the new causal-target frontier.",
+      "body": "direct inhibited causal target plus targeted-text treatment-parent evidence and >=3 translational evidence channels",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses direct perturbation and causal genetics with at least three treatment-oriented signals, but lacks explicit disease activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive motifs are TRAPI-expressible; targeted provenance and channel cardinality require Cypher.",
+      "trapi_template": "trapi/direct-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, gene, evidence,\n     collect(DISTINCT binding) AS bindings\nWITH subject, object, gene, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE (EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n})\n  AND ((\n  CASE WHEN EXISTS {\n  MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n  WHERE 'infores:multiomics-clinicaltrials'\n        IN coalesce(trial.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT]->(object)\n  WHERE 'infores:semmeddb' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CONTRIBUTES_TO]->(object)\n  WHERE 'infores:text-mining-provider-targeted'\n        IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END +\n  CASE WHEN EXISTS {\n  MATCH (subject)-[relation:CORRELATED_WITH]->(object)\n  WHERE 'infores:ctd' IN coalesce(relation.primary_knowledge_sources, [])\n} THEN 1 ELSE 0 END\n) >= 3)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 316,
+        "validation_hits": 5,
+        "training_hits": 127,
+        "contraindicated_pairs": 22,
+        "unresolved_or_blind_pairs": 184
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.4177215189873418,
+        "visible_target_recall": 0.00479790636813027,
+        "visible_target_f0_5": 0.022935779816513763,
+        "validation_precision_lower_bound": 0.026455026455026454,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.00804634695848085
+      },
+      "runtime_seconds": 0.8773800419876352
+    }
+  ]
+}

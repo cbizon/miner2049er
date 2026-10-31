@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T15:59:06.006699+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R302",
+      "name": "GOF voltage-gated channel activity suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R298",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activity suppression is especially coherent when the GOF driver enables a voltage-gated ion-channel activity.",
+      "body": "R298 plus driver enables a descendant of GO voltage-gated ion channel activity",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule matches channel-blocking pharmacology to explicit GOF channelopathies using an ontology-native molecular-function constraint.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, activity-effect, molecular-function, and variant-qualified disease paths are TRAPI-expressible; ontology closure and disease constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[:ENABLES]->(:MolecularActivity)\n      -[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005244'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 120,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 120
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.962932540976908
+    },
+    {
+      "id": "TREAT-I09-R303",
+      "name": "GOF voltage-gated channel activity increase control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a GOF voltage-gated channel is the matched worsening control for R302.",
+      "body": "R302 with increased rather than decreased channel activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug effect reinforces rather than suppresses the GOF channel mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R302.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[:ENABLES]->(:MolecularActivity)\n      -[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005244'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7685642500291578
+    },
+    {
+      "id": "TREAT-I09-R304",
+      "name": "LOF catalytic-enzyme activity restoration",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R299",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activity restoration is especially coherent when the LOF driver enables a catalytic activity.",
+      "body": "R299 plus driver enables a descendant of GO catalytic activity",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule maps enzyme activation to an explicit LOF catalytic disease mechanism, though activity effects remain context-dependent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, activity-effect, molecular-function, and variant-qualified disease paths are TRAPI-expressible; ontology closure and disease constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[:ENABLES]->(:MolecularActivity)\n      -[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0003824'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 86,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 84
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.023255813953488372,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00035898908673176336,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9195984579855576
+    },
+    {
+      "id": "TREAT-I09-R305",
+      "name": "LOF catalytic-enzyme activity decrease control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing a LOF catalytic enzyme is the matched worsening control for R304.",
+      "body": "R304 with decreased rather than increased enzyme activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug effect reinforces rather than restores the LOF enzyme mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R304.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[:ENABLES]->(:MolecularActivity)\n      -[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0003824'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 464,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 462
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.004310344827586207,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.000340506673930809,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.5585352909984067
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T01:32:21.728490+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R117",
+      "name": "Shared inhibited-target drug-peer transfer",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An unlabeled drug can inherit an indication from a non-blind treated peer when both drugs directly bind and decrease the same causal disease target.",
+      "body": "candidate and training-treated peer share a directly bound, decreased causal disease gene",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule transfers an indication through an identical directional target mechanism, but shared target action does not guarantee equivalent exposure or therapeutic context.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive peer, target, and disease paths are TRAPI-expressible; source exclusion, drug distinctness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (peer)-[peer_effect:AFFECTS]->(gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\nMATCH (subject)-[subject_effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE subject <> peer\n  AND peer_effect.qualified_predicate = 'biolink:causes'\n  AND peer_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect.object_direction_qualifier = 'decreased'\n  AND subject_effect.qualified_predicate = 'biolink:causes'\n  AND subject_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 458,
+        "validation_hits": 4,
+        "training_hits": 82,
+        "contraindicated_pairs": 11,
+        "unresolved_or_blind_pairs": 372
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.18777292576419213,
+        "visible_target_recall": 0.0031259086943879037,
+        "visible_target_f0_5": 0.014653762268266085,
+        "validation_precision_lower_bound": 0.010638297872340425,
+        "validation_recall": 0.0017014036580178648,
+        "validation_f0_5": 0.005188067444876783
+      },
+      "runtime_seconds": 1.575443334004376
+    },
+    {
+      "id": "TREAT-I09-R118",
+      "name": "Chemical-class shared-target peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R117",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Shared-target indication transfer is more credible when candidate and treated peer also share a relatively specific chemical class.",
+      "body": "R117 plus shared immediate chemical class containing at most 30 drugs",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines an identical directional target mechanism with chemical ontology similarity, but class membership is not a pharmacokinetic equivalence.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion, shared-class identity, and class/ontology degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (peer)-[peer_effect:AFFECTS]->(gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\nMATCH (subject)-[subject_effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[:SUBCLASS_OF]->(chemical_class)<-[:SUBCLASS_OF]-(peer)\nWHERE subject <> peer\n  AND peer_effect.qualified_predicate = 'biolink:causes'\n  AND peer_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect.object_direction_qualifier = 'decreased'\n  AND subject_effect.qualified_predicate = 'biolink:causes'\n  AND subject_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect.object_direction_qualifier = 'decreased'\n  AND chemical_class._miner_drug_member_degree <= 30\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 89,
+        "validation_hits": 2,
+        "training_hits": 16,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 71
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.20224719101123595,
+        "visible_target_recall": 0.0006542599592904915,
+        "visible_target_f0_5": 0.003229510549734463,
+        "validation_precision_lower_bound": 0.0273972602739726,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.0037835792659856224
+      },
+      "runtime_seconds": 4.174764541967306
+    },
+    {
+      "id": "TREAT-I09-R119",
+      "name": "Dual-shared-target drug-peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R117",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A candidate drug is more likely to share an indication when it and a treated peer both directly inhibit two causal disease targets.",
+      "body": "candidate and training-treated peer share two distinct directly bound, decreased causal disease genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule transfers an indication through a two-target directional mechanism, but target activity direction in disease and drug exposure remain incomplete.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The repeated positive paths are TRAPI-expressible; two-target cardinality, source exclusion, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (peer)-[peer_effect1:AFFECTS]->(gene1)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1)\nMATCH (subject)-[subject_effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (peer)-[peer_effect2:AFFECTS]->(gene2)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2)\nMATCH (subject)-[subject_effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE subject <> peer\n  AND gene1.id < gene2.id\n  AND peer_effect1.qualified_predicate = 'biolink:causes'\n  AND peer_effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect1.object_direction_qualifier = 'decreased'\n  AND subject_effect1.qualified_predicate = 'biolink:causes'\n  AND subject_effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect1.object_direction_qualifier = 'decreased'\n  AND peer_effect2.qualified_predicate = 'biolink:causes'\n  AND peer_effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect2.object_direction_qualifier = 'decreased'\n  AND subject_effect2.qualified_predicate = 'biolink:causes'\n  AND subject_effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 28,
+        "validation_hits": 1,
+        "training_hits": 13,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 14
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5,
+        "visible_target_recall": 0.0005088688572259378,
+        "visible_target_f0_5": 0.002534028381117869,
+        "validation_precision_lower_bound": 0.06666666666666667,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002073828287017835
+      },
+      "runtime_seconds": 1.595256333006546
+    },
+    {
+      "id": "TREAT-I09-R120",
+      "name": "Interacting causal-module drug-peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R117",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A candidate drug can inherit an indication when it inhibits a causal disease target that directly interacts with the causal target inhibited by a treated peer.",
+      "body": "training-treated peer and candidate inhibit distinct interacting causal genes for the same disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule transfers across a molecularly connected causal module, but the unsigned interaction does not establish equivalent downstream consequences.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The peer, target, interaction, and disease paths are TRAPI-expressible; source exclusion, target distinctness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(peer_gene:Gene)\nMATCH (peer)-[peer_effect:AFFECTS]->(peer_gene)\nMATCH (peer_gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(subject_gene:Gene)\nMATCH (subject)-[subject_effect:AFFECTS]->(subject_gene)\nMATCH (subject_gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (peer_gene)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(subject_gene)\nWHERE subject <> peer\n  AND subject_gene <> peer_gene\n  AND peer_effect.qualified_predicate = 'biolink:causes'\n  AND peer_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect.object_direction_qualifier = 'decreased'\n  AND subject_effect.qualified_predicate = 'biolink:causes'\n  AND subject_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2857142857142857,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036310820624546115,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 24.802025500044692
+    },
+    {
+      "id": "TREAT-I09-R121",
+      "name": "Tissue-localized interacting-module peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R120",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Interacting-target peer transfer is more credible when both causal targets are expressed in the same specific disease anatomy.",
+      "body": "R120 plus Bgee expression of both targets in one disease anatomy with disease-location degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule transfers across an interacting causal module localized to a disease tissue, but interaction direction and disease activity direction remain incomplete.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion, shared anatomy identity, Bgee provenance, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(peer_gene:Gene)\nMATCH (peer)-[peer_effect:AFFECTS]->(peer_gene)\nMATCH (peer_gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(subject_gene:Gene)\nMATCH (subject)-[subject_effect:AFFECTS]->(subject_gene)\nMATCH (subject_gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (peer_gene)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(subject_gene)\nMATCH (peer_gene)-[peer_expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (subject_gene)-[subject_expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE subject <> peer\n  AND subject_gene <> peer_gene\n  AND peer_effect.qualified_predicate = 'biolink:causes'\n  AND peer_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect.object_direction_qualifier = 'decreased'\n  AND subject_effect.qualified_predicate = 'biolink:causes'\n  AND subject_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(peer_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(subject_expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2857142857142857,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036310820624546115,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 25.12705691694282
+    },
+    {
+      "id": "TREAT-I09-R122",
+      "name": "Contradiction-gated shared-target peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R117",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Explicit adverse and opposite-direction evidence can remove false transfers between drugs sharing an inhibited causal target.",
+      "body": "R117 excluding direct adverse disease edges, shared side-effect phenotypes, and opposite target-increase assertions",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The identical target mechanism is retained while graph-native evidence inconsistent with treatment is excluded.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion and multiple NOT EXISTS gates require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (peer)-[peer_effect:AFFECTS]->(gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\nMATCH (subject)-[subject_effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE subject <> peer\n  AND peer_effect.qualified_predicate = 'biolink:causes'\n  AND peer_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect.object_direction_qualifier = 'decreased'\n  AND subject_effect.qualified_predicate = 'biolink:causes'\n  AND subject_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[opposite:AFFECTS]->(gene)\n    WHERE opposite.qualified_predicate = 'biolink:causes'\n      AND opposite.object_aspect_qualifier = 'activity_or_abundance'\n      AND opposite.object_direction_qualifier = 'increased'\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 351,
+        "validation_hits": 2,
+        "training_hits": 65,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 284
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.1908831908831909,
+        "visible_target_recall": 0.0024353009595812734,
+        "visible_target_f0_5": 0.011585281505049106,
+        "validation_precision_lower_bound": 0.006993006993006993,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.0028612303290414883
+      },
+      "runtime_seconds": 4.514028667006642
+    }
+  ]
+}

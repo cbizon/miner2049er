@@ -1,0 +1,708 @@
+{
+  "created_at": "2026-08-12T13:27:31.704148+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R200",
+      "name": "Positive-feedback GOF driver suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target can break a positive regulatory feedback loop that sustains a GOF disease driver.",
+      "body": "drug decreases target; target and GOF driver regulate each other upward",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Reciprocal same-sign regulation forms a positive feedback loop, and target inhibition is directionally corrective for the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The loop is TRAPI-expressible; reciprocal node identity, SIGNOR provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'upregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 181,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 172
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.049723756906077346,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.0015937101572460687,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.5162186250090599
+    },
+    {
+      "id": "TREAT-I09-R201",
+      "name": "Process- and anatomy-localized GOF feedback suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R200",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A GOF feedback-breaking mechanism is most credible when target and driver share a compact process and affected anatomy.",
+      "body": "R200 plus shared compact process and Bgee expression in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The reciprocal corrective loop is localized independently by molecular process and affected tissue.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; shared process/anatomy identity, Bgee provenance, and degree constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'upregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n  MATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n        <-[:INVOLVED_IN]-(driver)\n  WHERE process._miner_gene_member_degree <= 100\n}\n  AND EXISTS {\n  MATCH (target)-[target_expression:EXPRESSED_IN]->\n        (anatomy:AnatomicalEntity)\n        <-[driver_expression:EXPRESSED_IN]-(driver)\n  MATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\n  WHERE 'infores:bgee' IN\n        coalesce(target_expression.primary_knowledge_sources, [])\n    AND 'infores:bgee' IN\n        coalesce(driver_expression.primary_knowledge_sources, [])\n}\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 7,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 14
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012682997535874766,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 15.072008083981927
+    },
+    {
+      "id": "TREAT-I09-R202",
+      "name": "Double-negative feedback LOF restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting one arm of a double-negative feedback loop can release and restore a LOF disease driver.",
+      "body": "drug decreases target; target and LOF driver downregulate each other",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Mutual inhibition forms a positive feedback loop whose target arm can be suppressed to release the LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The loop is TRAPI-expressible; reciprocal node identity, SIGNOR provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'downregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 96,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 96
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.34167195798363537
+    },
+    {
+      "id": "TREAT-I09-R203",
+      "name": "Process- and anatomy-localized LOF feedback restoration",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R202",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "LOF release through double-negative feedback is most credible when both genes share a compact process and affected anatomy.",
+      "body": "R202 plus shared compact process and Bgee expression in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The restorative feedback mechanism is localized independently by process and affected tissue.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; shared process/anatomy identity, Bgee provenance, and degree constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'downregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n  MATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n        <-[:INVOLVED_IN]-(driver)\n  WHERE process._miner_gene_member_degree <= 100\n}\n  AND EXISTS {\n  MATCH (target)-[target_expression:EXPRESSED_IN]->\n        (anatomy:AnatomicalEntity)\n        <-[driver_expression:EXPRESSED_IN]-(driver)\n  MATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\n  WHERE 'infores:bgee' IN\n        coalesce(target_expression.primary_knowledge_sources, [])\n    AND 'infores:bgee' IN\n        coalesce(driver_expression.primary_knowledge_sources, [])\n}\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 6
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 10.335222958005033
+    },
+    {
+      "id": "TREAT-I09-R204",
+      "name": "Positive-feedback GOF release diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target that mutually downregulates a GOF driver releases that driver and is matched negative evidence.",
+      "body": "drug decreases target; target and GOF driver downregulate each other",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same nonlinear architecture is retained, but the composed drug effect worsens the GOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The loop is TRAPI-expressible; reciprocal identity, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'downregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 21
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3429291669744998
+    },
+    {
+      "id": "TREAT-I09-R205",
+      "name": "Positive-feedback LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target that mutually upregulates a LOF driver further suppresses that driver and is matched negative evidence.",
+      "body": "drug decreases target; target and LOF driver upregulate each other",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same nonlinear architecture is retained, but the composed drug effect worsens the LOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The loop is TRAPI-expressible; reciprocal identity, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'upregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 86,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 86
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.47396620898507535
+    },
+    {
+      "id": "TREAT-I09-R206",
+      "name": "Dual-upstream GOF driver suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug is more likely to suppress a GOF disease driver when it inhibits two distinct upstream activators.",
+      "body": "drug decreases two bound targets; both SIGNOR-upregulate one GOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two independent drug-target arms converge directionally on the same explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The convergent paths are TRAPI-expressible; two-target cardinality, SIGNOR provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'upregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 306,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 302
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013071895424836602,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0006959910913140311,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 13.354933082999196
+    },
+    {
+      "id": "TREAT-I09-R207",
+      "name": "Interacting dual-upstream GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R206",
+      "library_status": "candidate",
+      "status": "failed",
+      "hypothesis": "Dual-upstream GOF suppression is more credible when the two drug targets physically interact.",
+      "body": "R206 plus direct physical interaction between the two upstream targets",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Interaction connects the two corrective target arms into a molecular module around the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target ordering, cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'upregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(target2)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "error": "ClientError: {code: Neo.ClientError.Transaction.TransactionTimedOutClientConfiguration} {message: The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer timeout. }",
+      "runtime_seconds": 300.2252473749686
+    },
+    {
+      "id": "TREAT-I09-R208",
+      "name": "Process-convergent dual-upstream GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R206",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-upstream GOF suppression is more credible when both targets and the driver share a compact process.",
+      "body": "R206 plus all three genes in one compact biological process",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The two corrective target arms converge within a discrete disease-driver process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; three-node process identity, compactness, cardinality, source, and variant form require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'upregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target1)-[:INVOLVED_IN]->(process:BiologicalProcess)\n          <-[:INVOLVED_IN]-(target2)\n    MATCH (driver)-[:INVOLVED_IN]->(process)\n    WHERE process._miner_gene_member_degree <= 100\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 47,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 47
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 180.58334220800316
+    },
+    {
+      "id": "TREAT-I09-R209",
+      "name": "Dual-upstream LOF driver release",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug is more likely to restore a LOF disease driver when it inhibits two distinct upstream repressors.",
+      "body": "drug decreases two bound targets; both SIGNOR-downregulate one LOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two independent drug-target arms converge directionally to release the same explicit LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The convergent paths are TRAPI-expressible; two-target cardinality, SIGNOR provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'downregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 189,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 188
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.005291005291005291,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.000176878449129758,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.7482922080089338
+    },
+    {
+      "id": "TREAT-I09-R210",
+      "name": "Interacting dual-upstream LOF release",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R209",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-upstream LOF release is more credible when the two drug targets physically interact.",
+      "body": "R209 plus direct physical interaction between the two upstream targets",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Interaction connects the two restorative target arms into a molecular module around the LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target ordering, cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'downregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(target2)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 28,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 28
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 40.45002229203237
+    },
+    {
+      "id": "TREAT-I09-R211",
+      "name": "Process-convergent dual-upstream LOF release",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R209",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-upstream LOF release is more credible when both targets and the driver share a compact process.",
+      "body": "R209 plus all three genes in one compact biological process",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The two restorative target arms converge within a discrete disease-driver process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; three-node process identity, compactness, cardinality, source, and variant form require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'downregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target1)-[:INVOLVED_IN]->(process:BiologicalProcess)\n          <-[:INVOLVED_IN]-(target2)\n    MATCH (driver)-[:INVOLVED_IN]->(process)\n    WHERE process._miner_gene_member_degree <= 100\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 6
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 41.57285845797742
+    },
+    {
+      "id": "TREAT-I09-R212",
+      "name": "Dual-upstream GOF release diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting two upstream repressors of a GOF driver releases that driver and is matched negative evidence.",
+      "body": "drug decreases two bound targets; both downregulate one GOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Convergent target evidence is preserved, but both arms have the adverse direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'downregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 75,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 74
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013333333333333334,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00017977851287214152,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.7247657499974594
+    },
+    {
+      "id": "TREAT-I09-R213",
+      "name": "Dual-upstream LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting two upstream activators of a LOF driver further suppresses that driver and is matched negative evidence.",
+      "body": "drug decreases two bound targets; both upregulate one LOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Convergent target evidence is preserved, but both arms have the adverse direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'upregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 329,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 329
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 13.061011834011879
+    },
+    {
+      "id": "TREAT-I09-R214",
+      "name": "Coherent feed-forward GOF suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target can suppress a GOF driver when direct and two-step regulatory paths agree on driver activation.",
+      "body": "drug decreases target; direct and indirect SIGNOR paths coherently activate GOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "A signed feed-forward loop supplies two internally consistent causal paths from the drug target to the explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The feed-forward paths are TRAPI-expressible; sign composition, shared endpoints, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'upregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier =\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 375,
+        "validation_hits": 0,
+        "training_hits": 10,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 365
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.02666666666666667,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0017234247897421756,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 11.372004584001843
+    },
+    {
+      "id": "TREAT-I09-R215",
+      "name": "Process-localized feed-forward GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R214",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A coherent GOF feed-forward mechanism is more credible when target, intermediate, and driver share a compact process.",
+      "body": "R214 plus all three genes in one compact biological process",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The internally consistent direct and indirect paths are localized to one discrete process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; sign algebra, three-node process identity, compactness, source, and variant form require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'upregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier =\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n          <-[:INVOLVED_IN]-(middle)\n    MATCH (driver)-[:INVOLVED_IN]->(process)\n    WHERE process._miner_gene_member_degree <= 100\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 26,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 26
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 181.4946245829924
+    },
+    {
+      "id": "TREAT-I09-R216",
+      "name": "Coherent feed-forward LOF restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target can restore a LOF driver when direct and two-step regulatory paths agree on driver repression.",
+      "body": "drug decreases target; direct and indirect SIGNOR paths coherently repress LOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "A signed feed-forward loop supplies two internally consistent repressive paths whose inhibition releases the explicit LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The feed-forward paths are TRAPI-expressible; sign composition, shared endpoints, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'downregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier <>\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 464,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 459
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.010775862068965518,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0008512666848270226,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.52579995803535
+    },
+    {
+      "id": "TREAT-I09-R217",
+      "name": "Process-localized feed-forward LOF restoration",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R216",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A coherent LOF feed-forward mechanism is more credible when target, intermediate, and driver share a compact process.",
+      "body": "R216 plus all three genes in one compact biological process",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The internally consistent direct and indirect repressive paths are localized to one discrete process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; sign algebra, three-node process identity, compactness, source, and variant form require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'downregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier <>\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n    MATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n          <-[:INVOLVED_IN]-(middle)\n    MATCH (driver)-[:INVOLVED_IN]->(process)\n    WHERE process._miner_gene_member_degree <= 100\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 41.956188625015784
+    },
+    {
+      "id": "TREAT-I09-R218",
+      "name": "Coherent feed-forward GOF release diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target with coherent repressive paths to a GOF driver releases that driver and is matched negative evidence.",
+      "body": "drug decreases target; direct and indirect paths coherently repress GOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The feed-forward architecture is preserved, but both paths imply adverse GOF release.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; sign composition, identity, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'downregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier <>\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 208,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 207
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.004807692307692308,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.0001764041772509173,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.342442166991532
+    },
+    {
+      "id": "TREAT-I09-R219",
+      "name": "Coherent feed-forward LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target with coherent activating paths to a LOF driver suppresses that driver and is matched negative evidence.",
+      "body": "drug decreases target; direct and indirect paths coherently activate LOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The feed-forward architecture is preserved, but both paths imply adverse LOF suppression.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; sign composition, identity, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[direct:REGULATES]->(driver:Gene)\nMATCH (target)-[regulation1:REGULATES]->(middle:Gene)\nMATCH (middle)-[regulation2:REGULATES]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:signor' IN coalesce(direct.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND direct.qualified_predicate = 'biolink:causes'\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND direct.object_direction_qualifier = 'upregulated'\n  AND regulation1.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation2.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation1.object_direction_qualifier =\n      regulation2.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 642,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 642
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 11.22645224997541
+    }
+  ]
+}

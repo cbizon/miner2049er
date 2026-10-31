@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T14:15:31.845394+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R246",
+      "name": "Top-three causal-module coverage",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug that inhibits at least two of a disease's top three causal genes covers a substantial disease mechanism without requiring one shared pathway annotation.",
+      "body": "drug directly binds and decreases at least two top-three causal genes for disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule encodes multi-target coverage of a disease-relative causal module, though disease-driving activity direction remains unknown.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Repeated target paths are TRAPI-expressible; disease-relative rank, distinct-gene cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 42,
+        "validation_hits": 2,
+        "training_hits": 12,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 28
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 0.0005088688572259378,
+        "visible_target_f0_5": 0.0025289017341040463,
+        "validation_precision_lower_bound": 0.06666666666666667,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004046944556859571
+      },
+      "runtime_seconds": 0.42091770900879055
+    },
+    {
+      "id": "TREAT-I09-R247",
+      "name": "Top-five causal-module majority coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R246",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting at least three of the top five causal genes provides stronger coverage of a disease mechanism.",
+      "body": "drug directly binds and decreases at least three top-five causal genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Three high-ranked targets provide broad causal-module coverage, but the graph still lacks disease activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Repeated target paths are TRAPI-expressible; rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 5\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 3\nRETURN subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 4,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003632664922987503,
+        "validation_precision_lower_bound": 0.3333333333333333,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021159542953872196
+      },
+      "runtime_seconds": 0.38331116701010615
+    },
+    {
+      "id": "TREAT-I09-R248",
+      "name": "Lower-ranked causal-module coverage diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Two inhibited causal genes ranked four through ten provide a matched lower-relevance control for top-module coverage.",
+      "body": "drug directly binds and decreases at least two causal genes ranked 4 through 10",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The multi-target architecture is retained while disease-relative relevance is deliberately reduced.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Repeated target paths are TRAPI-expressible; rank range, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank >= 4 AND evidence._miner_disease_rank <= 10\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018165964249382356,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.15385212504770607
+    }
+  ]
+}

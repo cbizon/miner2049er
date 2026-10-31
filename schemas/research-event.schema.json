@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/research-event.schema.json",
+  "title": "Append-only research event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "round_id",
+    "sequence",
+    "timestamp",
+    "event_type",
+    "summary",
+    "details"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "event_type": {
+      "enum": [
+        "hypothesis",
+        "query",
+        "observation",
+        "evaluation",
+        "ablation",
+        "materialization",
+        "failure",
+        "graph_limitation",
+        "checkpoint",
+        "final_summary"
+      ]
+    },
+    "rule_id": {"type": ["string", "null"]},
+    "summary": {"type": "string", "minLength": 1},
+    "details": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "hypothesis"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/hypothesisDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "query"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/queryDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "observation"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/observationDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "evaluation"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/evaluationDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "ablation"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/ablationDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "materialization"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/materializationDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "failure"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/failureDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "graph_limitation"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/graphLimitationDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "checkpoint"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/checkpointDetails"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "final_summary"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "details": {"$ref": "#/$defs/finalSummaryDetails"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["number", "integer", "string", "boolean", "null"]
+      }
+    },
+    "hypothesisDetails": {
+      "type": "object",
+      "required": [
+        "mechanism_family",
+        "rationale",
+        "proposed_test",
+        "variables_to_explore",
+        "success_criterion",
+        "next_action"
+      ],
+      "properties": {
+        "mechanism_family": {"type": "string", "minLength": 1},
+        "rationale": {"type": "string", "minLength": 1},
+        "proposed_test": {"type": "string", "minLength": 1},
+        "variables_to_explore": {"$ref": "#/$defs/stringArray"},
+        "success_criterion": {"type": "string", "minLength": 1},
+        "next_action": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "queryDetails": {
+      "type": "object",
+      "required": [
+        "purpose",
+        "query_language",
+        "query_text",
+        "outcome",
+        "result_summary",
+        "next_action"
+      ],
+      "properties": {
+        "purpose": {"type": "string", "minLength": 1},
+        "query_language": {
+          "enum": ["cypher", "trapi", "python", "shell", "other"]
+        },
+        "query_text": {"type": "string", "minLength": 1},
+        "parameters": {"type": "object"},
+        "outcome": {
+          "enum": ["completed", "empty", "partial", "failed", "timed_out"]
+        },
+        "result_summary": {"type": "string", "minLength": 1},
+        "runtime_seconds": {"type": ["number", "null"], "minimum": 0},
+        "next_action": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "observationDetails": {
+      "type": "object",
+      "required": ["source", "finding", "implication", "next_action"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "finding": {"type": "string", "minLength": 1},
+        "examples": {"type": "array", "items": {"type": "object"}},
+        "implication": {"type": "string", "minLength": 1},
+        "next_action": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "evaluationDetails": {
+      "type": "object",
+      "required": [
+        "method",
+        "metrics",
+        "interpretation",
+        "decision",
+        "next_action"
+      ],
+      "properties": {
+        "method": {"type": "string", "minLength": 1},
+        "metrics": {"$ref": "#/$defs/metrics"},
+        "comparison": {"type": ["string", "null"]},
+        "interpretation": {"type": "string", "minLength": 1},
+        "decision": {
+          "enum": ["retain", "refine", "reject", "defer", "diagnostic_only"]
+        },
+        "next_action": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "ablationDetails": {
+      "type": "object",
+      "required": [
+        "baseline",
+        "variant",
+        "changed_components",
+        "metrics",
+        "interpretation",
+        "decision"
+      ],
+      "properties": {
+        "baseline": {"type": "string", "minLength": 1},
+        "variant": {"type": "string", "minLength": 1},
+        "changed_components": {"$ref": "#/$defs/stringArray"},
+        "metrics": {"$ref": "#/$defs/metrics"},
+        "interpretation": {"type": "string", "minLength": 1},
+        "decision": {
+          "enum": ["keep_change", "remove_change", "inconclusive", "retest"]
+        },
+        "next_action": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "materializationDetails": {
+      "type": "object",
+      "required": [
+        "purpose",
+        "feature_definition",
+        "status",
+        "creation_query",
+        "verification_summary",
+        "ablation_plan"
+      ],
+      "properties": {
+        "artifact_id": {"type": ["string", "null"]},
+        "purpose": {"type": "string", "minLength": 1},
+        "feature_definition": {"type": "string", "minLength": 1},
+        "status": {
+          "enum": ["planned", "created", "verified", "failed", "cleaned_up"]
+        },
+        "creation_query": {"type": "string", "minLength": 1},
+        "verification_summary": {"type": "string", "minLength": 1},
+        "ablation_plan": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "failureDetails": {
+      "type": "object",
+      "required": [
+        "stage",
+        "error",
+        "diagnosis",
+        "next_action",
+        "hypothesis_status"
+      ],
+      "properties": {
+        "stage": {"type": "string", "minLength": 1},
+        "error": {"type": "string", "minLength": 1},
+        "diagnosis": {"type": "string", "minLength": 1},
+        "attempted_remedies": {"$ref": "#/$defs/stringArray"},
+        "next_action": {"type": "string", "minLength": 1},
+        "hypothesis_status": {
+          "enum": ["active", "refined", "blocked", "abandoned", "not_affected"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "graphLimitationDetails": {
+      "type": "object",
+      "required": [
+        "limitation",
+        "evidence",
+        "affected_hypotheses",
+        "workaround"
+      ],
+      "properties": {
+        "limitation": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string", "minLength": 1},
+        "affected_hypotheses": {"$ref": "#/$defs/stringArray"},
+        "workaround": {"type": "string", "minLength": 1},
+        "missing_capability": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "checkpointDetails": {
+      "type": "object",
+      "required": ["progress", "active_hypotheses", "next_actions"],
+      "properties": {
+        "progress": {"$ref": "#/$defs/stringArray"},
+        "active_hypotheses": {"$ref": "#/$defs/stringArray"},
+        "completed_hypotheses": {"$ref": "#/$defs/stringArray"},
+        "next_actions": {"$ref": "#/$defs/stringArray"},
+        "resource_summary": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "finalSummaryDetails": {
+      "type": "object",
+      "required": [
+        "families_explored",
+        "surviving_rule_ids",
+        "failed_families",
+        "pareto_summary",
+        "graph_gaps",
+        "next_round_priorities"
+      ],
+      "properties": {
+        "families_explored": {"$ref": "#/$defs/stringArray"},
+        "surviving_rule_ids": {"$ref": "#/$defs/stringArray"},
+        "failed_families": {"$ref": "#/$defs/stringArray"},
+        "pareto_summary": {"type": "string", "minLength": 1},
+        "graph_gaps": {"$ref": "#/$defs/stringArray"},
+        "next_round_priorities": {"$ref": "#/$defs/stringArray"}
+      },
+      "additionalProperties": true
+    }
+  }
+}

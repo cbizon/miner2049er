@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T17:07:50.466318+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R359",
+      "name": "Subcellular GOF regulatory suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A signed regulator of a GOF driver is more actionable when regulator and driver are active in the same compact cellular component.",
+      "body": "drug effect and SIGNOR regulation compose to suppress GOF driver; regulator and driver share compact ACTIVE_IN component",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Signed regulation and subcellular co-activity jointly localize a causal path to an explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, effect, regulation, active-component, and variant-qualified disease paths are TRAPI-expressible; sign composition, source, identity, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (regulator)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND component._miner_component_active_gene_degree <= 185\n  AND (\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 22,
+        "validation_hits": 0,
+        "training_hits": 7,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3181818181818182,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012681159420289856,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.524199542007409
+    },
+    {
+      "id": "TREAT-I09-R360",
+      "name": "Subcellular GOF regulatory worsening control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A sign composition that increases a colocalized GOF driver is the matched worsening control for R359.",
+      "body": "R359 with sign composition that increases the GOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The localized signed path reinforces the explicit GOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R359.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (regulator)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND component._miner_component_active_gene_degree <= 185\n  AND (\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3246944999555126
+    },
+    {
+      "id": "TREAT-I09-R361",
+      "name": "Subcellular LOF regulatory restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A signed regulator of a LOF driver is more actionable when regulator and driver are active in the same compact cellular component.",
+      "body": "drug effect and SIGNOR regulation compose to restore LOF driver; regulator and driver share compact ACTIVE_IN component",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Signed regulation and subcellular co-activity jointly localize a causal path to an explicit LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R359.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (regulator)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND component._miner_component_active_gene_degree <= 185\n  AND (\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 5,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.32923199998913333
+    },
+    {
+      "id": "TREAT-I09-R362",
+      "name": "Subcellular LOF regulatory worsening control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A sign composition that decreases a colocalized LOF driver is the matched worsening control for R361.",
+      "body": "R361 with sign composition that decreases the LOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The localized signed path further suppresses the explicit LOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R359.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (regulator)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND component._miner_component_active_gene_degree <= 185\n  AND (\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 14,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 14
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3499688750016503
+    }
+  ]
+}

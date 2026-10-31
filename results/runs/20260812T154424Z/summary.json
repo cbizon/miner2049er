@@ -1,0 +1,95 @@
+{
+  "created_at": "2026-08-12T15:44:24.890456+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R293",
+      "name": "Transporter-supported affected-tissue causal inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug is more likely to act in a disease tissue when it is a substrate of a transporter expressed there and independently inhibits a causal target expressed in the same affected anatomy.",
+      "body": "transporter has drug substrate and transporter activity; transporter and top-three inhibited causal target are Bgee-expressed in disease anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule adds a pharmacokinetic delivery branch to a causal target mechanism, but substrate edges do not distinguish uptake from efflux.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The substrate, transporter-activity, target, expression, and anatomy paths are TRAPI-expressible; ontology closure, rank, identity, provenance, and disease constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (transporter:Gene)-[:HAS_SUBSTRATE]->(subject:Drug)\nMATCH (transporter)-[:ENABLES]->(activity:MolecularActivity)\n      -[:SUBCLASS_OF*0..5]->(:MolecularActivity {id: 'GO:0005215'})\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (transporter)-[transport_expression:EXPRESSED_IN]->\n      (anatomy:AnatomicalEntity)\n      <-[target_expression:EXPRESSED_IN]-(target)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE transporter <> target\n  AND 'NCBITaxon:9606' IN coalesce(transporter.in_taxon, [])\n  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND 'infores:bgee' IN\n      coalesce(transport_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN\n      coalesce(target_expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 37,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 4,
+        "unresolved_or_blind_pairs": 33
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10810810810810811,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007230657989877079,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.1854364579776302
+    }
+  ]
+}

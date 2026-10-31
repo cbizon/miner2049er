@@ -1,0 +1,79 @@
+services:
+  neo4j:
+    image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+    container_name: miner2049er-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-translator-local}
+      NEO4J_server_memory_heap_initial__size: 2G
+      NEO4J_server_memory_heap_max__size: 2G
+      NEO4J_server_memory_pagecache_size: 3G
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ${NEO4J_DATA_DIR:-./data/neo4j/data}:/data
+      - ./logs/neo4j:/logs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --spider http://localhost:7474 || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  scorer:
+    build:
+      context: .
+      dockerfile: Dockerfile.benchmark
+    command:
+      [
+        "uvicorn",
+        "miner2049er.scorer_server:APP",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "6430",
+      ]
+    environment:
+      BENCHMARK_CONFIG: /app/config/benchmark.json
+      BENCHMARK_SEALED_MANIFEST: /sealed/sealed-manifest.json
+      SCORER_STATE_DB: /state/submissions-v2.sqlite3
+      SCORER_EVALUATIONS_DIR: /evaluations
+      SCORER_RULE_SET_ROOT: /rule-sets
+      SCORER_RULE_SET_EVALUATIONS_DIR: /rule-set-evaluations
+      SCORER_AUTHORIZED_RUNS_DIR: /sealed/authorized-runs
+      SCORER_RUNS_DIR: /runs
+      SCORER_FINAL_TOKEN: ${SCORER_FINAL_TOKEN:-}
+    ports:
+      - "127.0.0.1:6430:6430"
+    volumes:
+      - ${BENCHMARK_SEALED_DIR:-./data/sealed-not-configured}:/sealed:ro
+      - ./data/scorer-state:/state
+      - ./data/evaluations:/evaluations
+      - ./data/rule-set-evaluations:/rule-set-evaluations
+      - ./results/rule-sets:/rule-sets:ro
+      - ./runs:/runs:ro
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.benchmark
+    command:
+      [
+        "uvicorn",
+        "miner2049er.dashboard_server:APP",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "6431",
+      ]
+    ports:
+      - "127.0.0.1:6431:6431"
+    volumes:
+      - ./runs:/app/runs:ro
+      - ./data/evaluations:/app/data/evaluations:ro
+      - ./data/rule-set-evaluations:/app/data/rule-set-evaluations:ro
+      - ./results:/app/results:ro

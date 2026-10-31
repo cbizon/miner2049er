@@ -1,0 +1,227 @@
+{
+  "created_at": "2026-08-12T12:12:32.591187+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R169",
+      "name": "Phenotype-mimicry-gated anatomy dual-target module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R113",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An anatomy-localized dual-target mechanism is more credible when the drug is not known to reproduce an exact phenotype of the predicted disease.",
+      "body": "R113 excluding direct adverse disease edges and exact drug-side-effect/disease-phenotype overlap",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The positive rule supplies multi-target, pathway, and tissue convergence; the exclusion removes graph-native evidence that the drug reproduces the disease phenotype.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are separately TRAPI-expressible; cardinality, shared anatomy, provenance, degree, and absence constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nMATCH (gene1)-[expression1:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene2)-[expression2:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression1.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression2.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 27,
+        "validation_hits": 2,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 21
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2222222222222222,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0010861694424330196,
+        "validation_precision_lower_bound": 0.08695652173913043,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004093327875562832
+      },
+      "runtime_seconds": 10.89515024999855
+    },
+    {
+      "id": "TREAT-I09-R170",
+      "name": "Ontology-aware phenotype-mimicry-gated anatomy module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R169",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Side-effect negative evidence should include closely related phenotype terms rather than requiring exact HPO identity.",
+      "body": "R113 excluding direct adverse edges and side-effect/disease phenotypes sharing a specific ancestor within two ontology steps",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The exclusion catches ontology-near adverse phenotypes while restricting ancestors to non-hub terms, but phenotype similarity can also remove tolerable on-target effects.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Bounded phenotype paths are TRAPI-expressible; negative existential logic, shared ancestors, cardinality, provenance, and degree constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nMATCH (gene1)-[expression1:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene2)-[expression2:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression1.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression2.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(side_effect:PhenotypicFeature)\n    MATCH (object)-[:HAS_PHENOTYPE]->(disease_phenotype:PhenotypicFeature)\n    MATCH (side_effect)-[:SUBCLASS_OF*0..2]->(ancestor:PhenotypicFeature)\n          <-[:SUBCLASS_OF*0..2]-(disease_phenotype)\n    WHERE coalesce(ancestor._miner_phenotype_descendant_degree, 0) <= 500\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 27,
+        "validation_hits": 2,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 21
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2222222222222222,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0010861694424330196,
+        "validation_precision_lower_bound": 0.08695652173913043,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004093327875562832
+      },
+      "runtime_seconds": 8.99199770798441
+    },
+    {
+      "id": "TREAT-I09-R171",
+      "name": "Adverse-phenotype-gated direct GOF inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R160",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct correction of a gain-of-function disease mechanism is more credible when graph-native adverse evidence does not reproduce the disease.",
+      "body": "R160 excluding direct adverse disease edges and exact drug-side-effect/disease-phenotype overlap",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule preserves explicit drug and disease direction while using direct adverse and phenotype-mimicry evidence as vetoes.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are separately TRAPI-expressible; source, variant-form, ontology, and absence constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 405,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 396
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.022222222222222223,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.0015446931209666347,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.4187983330339193
+    },
+    {
+      "id": "TREAT-I09-R172",
+      "name": "Adverse-phenotype-gated direct LOF activation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R161",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct restoration of a loss-of-function disease mechanism is more credible when graph-native adverse evidence does not reproduce the disease.",
+      "body": "R161 excluding direct adverse disease edges and exact drug-side-effect/disease-phenotype overlap",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule preserves explicit restorative direction while using direct adverse and phenotype-mimicry evidence as vetoes.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are separately TRAPI-expressible; source, variant-form, ontology, and absence constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 66,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 64
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.030303030303030304,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003600230414746544,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7880475000129081
+    },
+    {
+      "id": "TREAT-I09-R173",
+      "name": "Phenotype-mimicry-gated dual-target peer transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R119",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-target indication transfer is more credible when the candidate drug is not known to reproduce an exact phenotype of the transferred disease.",
+      "body": "R119 excluding direct adverse disease edges and exact candidate-side-effect/disease-phenotype overlap",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The positive rule transfers through two shared directional targets; the gate rejects direct or phenotype-level adverse evidence for the candidate.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are separately TRAPI-expressible; treatment-source exclusion, two-target cardinality, ontology, and absence constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (peer)-[peer_effect1:AFFECTS]->(gene1)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1)\nMATCH (subject)-[subject_effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (peer)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (peer)-[peer_effect2:AFFECTS]->(gene2)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2)\nMATCH (subject)-[subject_effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE subject <> peer\n  AND gene1.id < gene2.id\n  AND peer_effect1.qualified_predicate = 'biolink:causes'\n  AND peer_effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect1.object_direction_qualifier = 'decreased'\n  AND subject_effect1.qualified_predicate = 'biolink:causes'\n  AND subject_effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect1.object_direction_qualifier = 'decreased'\n  AND peer_effect2.qualified_predicate = 'biolink:causes'\n  AND peer_effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND peer_effect2.object_direction_qualifier = 'decreased'\n  AND subject_effect2.qualified_predicate = 'biolink:causes'\n  AND subject_effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND subject_effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 14,
+        "validation_hits": 1,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.35714285714285715,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009068485200232154,
+        "validation_precision_lower_bound": 0.1,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020911752404851524
+      },
+      "runtime_seconds": 6.487295750004705
+    }
+  ]
+}

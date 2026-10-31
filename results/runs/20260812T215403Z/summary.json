@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T21:54:03.103659+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R486",
+      "name": "Signed interception without curated adverse manifestation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R485",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "R485 predictions are more credible when targeted drug-harm evidence does not reproduce a curated manifestation of the candidate disease.",
+      "body": "R485 excluding targeted harm to an HPO-annotated or explicit disease manifestation",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The signed downstream-interception mechanism is retained only when graph-native targeted adverse evidence does not converge on a curated disease manifestation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are TRAPI-expressible; source, rank, shared endpoint identity, and exclusion require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (partner)-[bridge:REGULATES]->(target)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[harm:CONTRIBUTES_TO|CAUSES]->(adverse)\n    WHERE 'infores:text-mining-provider-targeted' IN\n          coalesce(harm.primary_knowledge_sources, [])\n      AND (\n        EXISTS {\n          MATCH (object)-[phenotype:HAS_PHENOTYPE]->(adverse)\n          WHERE 'infores:hpo-annotations' IN\n                coalesce(phenotype.primary_knowledge_sources, [])\n        }\n        OR EXISTS {\n          MATCH (adverse)-[:MANIFESTATION_OF]->(object)\n        }\n      )\n  }\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6666666666666666,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.000726321905868681,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 38.88707016699482
+    },
+    {
+      "id": "TREAT-I09-R487",
+      "name": "Signed interception with curated adverse manifestation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R485",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "R485 pairs with targeted harm matching a curated disease manifestation form the counter-mechanism cell.",
+      "body": "R485 requiring targeted harm to an HPO-annotated or explicit disease manifestation",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Positive target-process evidence conflicts with graph-native evidence that the drug contributes to a curated manifestation of the candidate disease.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R486.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (partner)-[bridge:REGULATES]->(target)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND EXISTS {\n    MATCH (subject)-[harm:CONTRIBUTES_TO|CAUSES]->(adverse)\n    WHERE 'infores:text-mining-provider-targeted' IN\n          coalesce(harm.primary_knowledge_sources, [])\n      AND (\n        EXISTS {\n          MATCH (object)-[phenotype:HAS_PHENOTYPE]->(adverse)\n          WHERE 'infores:hpo-annotations' IN\n                coalesce(phenotype.primary_knowledge_sources, [])\n        }\n        OR EXISTS {\n          MATCH (adverse)-[:MANIFESTATION_OF]->(object)\n        }\n      )\n  }\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018165964249382356,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 31.532800458953716
+    }
+  ]
+}

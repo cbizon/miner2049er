@@ -1,0 +1,190 @@
+{
+  "created_at": "2026-08-11T12:11:14.360959+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I06-R049",
+      "name": "Adverse-filtered phenotype-anatomy mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R037",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The tissue mechanism is stronger when a disease phenotype localizes to the same anatomy in which Bgee expresses the inhibited causal gene.",
+      "body": "R037 plus disease -has_phenotype-> phenotype -located_in|occurs_in-> same target-expression anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Forms a nonlinear target-expression, disease-location, phenotype-location, and adverse-phenotype graph, but the localization branches are literature-derived and disease direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The nonlinear positive and adverse motifs are TRAPI-expressible; exact absence, provenance, anatomy specificity, NPMI, and degree constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nMATCH (object)-[:HAS_PHENOTYPE]->(:PhenotypicFeature)\n      -[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 11,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.36363636363636365,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007257947452460444,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 5.974907000025269
+    },
+    {
+      "id": "TREAT-I06-R050",
+      "name": "Disease-specific anatomy mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R037",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Reducing the maximum disease fanout of the shared target-expression anatomy from 200 to 50 should suppress ubiquitous tissue matches.",
+      "body": "R037 with shared anatomy disease-location degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Tightens the anatomical context of an inhibited causal target, but anatomy specificity cannot resolve disease gain-versus-loss direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are TRAPI-expressible; anatomy degree, exact absence, provenance, NPMI, and target degree require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 50\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 44,
+        "validation_hits": 1,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 34
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.22727272727272727,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0018058364634498697,
+        "validation_precision_lower_bound": 0.02857142857142857,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002007226013649137
+      },
+      "runtime_seconds": 1.683449333999306
+    },
+    {
+      "id": "TREAT-I06-R051",
+      "name": "Highly disease-specific anatomy mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R050",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An anatomy connected to at most 20 diseases should provide a still cleaner tissue context for causal-target inhibition.",
+      "body": "R037 with shared anatomy disease-location degree <=20",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses a highly disease-specific target-expression anatomy but still cannot infer whether inhibition reverses the causal disease state.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are TRAPI-expressible; anatomy degree, exact absence, provenance, NPMI, and target degree require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 20\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 30,
+        "validation_hits": 1,
+        "training_hits": 6,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 23
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.23333333333333334,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.00126664736537348,
+        "validation_precision_lower_bound": 0.041666666666666664,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020433183489987736
+      },
+      "runtime_seconds": 1.1306026250240393
+    },
+    {
+      "id": "TREAT-I06-R052",
+      "name": "Joint disease-and-expression-specific anatomy mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R050",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The shared anatomy should be more informative when it is linked to at most 50 diseases and expresses at most 6,000 human genes in Bgee.",
+      "body": "R037 with same shared anatomy disease degree <=50 and human Bgee gene-expression degree <=6000",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Constrains both disease and expression fanout of the anatomical bridge, but disease activity direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse motifs are TRAPI-expressible; two anatomy degrees, exact absence, provenance, NPMI, and target degree require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 50\n  AND anatomy._miner_human_gene_expression_degree <= 6000\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 24,
+        "validation_hits": 1,
+        "training_hits": 6,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2916666666666667,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012677484787018258,
+        "validation_precision_lower_bound": 0.05555555555555555,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002063557573256294
+      },
+      "runtime_seconds": 0.6043858329649083
+    }
+  ]
+}

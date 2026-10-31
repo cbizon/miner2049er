@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T20:45:41.197734+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R443",
+      "name": "Disease-caused process suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug may treat a disease by decreasing a biological process that the disease itself causes.",
+      "body": "SemMedDB disease causes process; CTD drug decreases the same process",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule directly composes a disease-to-process causal claim with an opposing signed drug effect, but the process is downstream of disease rather than proven etiologic.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The two positive edges and direction qualifier are TRAPI-expressible; source restrictions and disease ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (object:Disease)-[etiology:CAUSES]->(process:BiologicalProcess)\nMATCH (subject:Drug)-[effect:AFFECTS]->(process)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:ctd' IN\n      coalesce(effect.primary_knowledge_sources, [])\n  AND 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 56,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 53
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.05357142857142857,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005408133833285262,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9906359169981442
+    },
+    {
+      "id": "TREAT-I09-R444",
+      "name": "Disease-caused process activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R443",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a process caused by the disease is a matched worsening control for downstream process suppression.",
+      "body": "R443 with increased rather than decreased process effect",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same disease-process architecture is retained while the drug reinforces rather than suppresses the downstream process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R443.",
+      "trapi_template": null,
+      "cypher": "MATCH (object:Disease)-[etiology:CAUSES]->(process:BiologicalProcess)\nMATCH (subject:Drug)-[effect:AFFECTS]->(process)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:ctd' IN\n      coalesce(effect.primary_knowledge_sources, [])\n  AND 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 36,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 5,
+        "unresolved_or_blind_pairs": 35
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.027777777777777776,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018079259473531965,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9834431660128757
+    },
+    {
+      "id": "TREAT-I09-R445",
+      "name": "Disease-causing process suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug may treat a disease by decreasing a biological process that directly causes the disease.",
+      "body": "SemMedDB process causes disease; CTD drug decreases the same process",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule opposes a signed drug effect to an explicitly etiologic process-to-disease edge without requiring a gene intermediary.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The two positive edges and direction qualifier are TRAPI-expressible; source restrictions and disease ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (process:BiologicalProcess)-[etiology:CAUSES]->(object:Disease)\nMATCH (subject:Drug)-[effect:AFFECTS]->(process)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:ctd' IN\n      coalesce(effect.primary_knowledge_sources, [])\n  AND 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.19925920898094773
+    },
+    {
+      "id": "TREAT-I09-R446",
+      "name": "Disease-causing process activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R445",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a disease-causing process is a matched worsening control for etiologic process suppression.",
+      "body": "R445 with increased rather than decreased process effect",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The intervention reinforces a process explicitly asserted to cause the disease.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R445.",
+      "trapi_template": null,
+      "cypher": "MATCH (process:BiologicalProcess)-[etiology:CAUSES]->(object:Disease)\nMATCH (subject:Drug)-[effect:AFFECTS]->(process)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:ctd' IN\n      coalesce(effect.primary_knowledge_sources, [])\n  AND 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.19972099998267367
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "created_at": "2026-08-11T02:03:17.274228+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I05-R028",
+      "name": "Disease-relative literature rescue",
+      "iteration": 5,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "High-fanout causal genes can be rescued when their causal literature is disproportionately concentrated on the candidate disease and they rank among that disease's strongest genes.",
+      "body": "R017 plus causal fanout <=12 OR causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Replaces a hard pleiotropy exclusion with disease-relative literature and graph-evidence relevance, but still lacks gain-of-function versus loss-of-function direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological motif is TRAPI-expressible; NPMI, disease-relative rank, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 3\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 256,
+        "validation_hits": 3,
+        "training_hits": 24,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 229
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10546875,
+        "visible_target_recall": 0.0009813899389357371,
+        "visible_target_f0_5": 0.004730866274179984,
+        "validation_precision_lower_bound": 0.01293103448275862,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004574565416285453
+      },
+      "runtime_seconds": 0.44974741601618007
+    },
+    {
+      "id": "TREAT-I05-R029",
+      "name": "High-fanout literature rescue cohort",
+      "iteration": 5,
+      "parent_rule": "TREAT-I05-R028",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The incremental high-fanout genes admitted by disease-relative literature concentration should be enriched for treatment relationships.",
+      "body": "R017 plus causal fanout >12, causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Directly measures the rescued pleiotropic-gene cohort without treatment evidence, but therapeutic direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological motif is TRAPI-expressible; NPMI, disease-relative rank, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND evidence._miner_gene_causal_disease_degree > 12\n  AND evidence._miner_causal_publication_count >= 3\n  AND evidence._miner_causal_publication_npmi >= 0.5\n  AND evidence._miner_disease_rank <= 3\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 12,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08333333333333333,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018142235123367196,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.08442462503444403
+    },
+    {
+      "id": "TREAT-I05-R030",
+      "name": "Independent clinical disease-relative rescue",
+      "iteration": 5,
+      "parent_rule": "TREAT-I04-R026",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Disease-relative literature relevance can extend the independent clinical rule to strong pleiotropic targets without restoring general hub noise.",
+      "body": "R022 with independent clinical source plus causal fanout <=12 OR causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines disease-relative target evidence with independent clinical evidence, but remains treatment-oriented and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological and clinical motifs are TRAPI-expressible; NPMI, disease-relative rank, provenance, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 3\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n    )\n  )\n  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 43,
+        "validation_hits": 3,
+        "training_hits": 19,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 21
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5116279069767442,
+        "visible_target_recall": 0.000799651061355045,
+        "visible_target_f0_5": 0.0039734142464961705,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006129955046996322
+      },
+      "runtime_seconds": 0.46501145901856944
+    },
+    {
+      "id": "TREAT-I05-R031",
+      "name": "Multi-evidence disease-relative rescue",
+      "iteration": 5,
+      "parent_rule": "TREAT-I05-R028",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A stricter rescue requiring concentrated literature plus relation diversity or a non-SemMed source may improve precision for pleiotropic genes.",
+      "body": "R017 plus causal fanout <=12 OR NPMI rescue with publications >=5 and either non-SemMed source support or >=4 direct relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds provenance or relation-family corroboration to disease-relative literature relevance, but still lacks therapeutic direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological motif is TRAPI-expressible; NPMI, evidence diversity, disease-relative rank, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 250,
+        "validation_hits": 3,
+        "training_hits": 24,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 223
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.108,
+        "visible_target_recall": 0.0009813899389357371,
+        "visible_target_f0_5": 0.004734848484848485,
+        "validation_precision_lower_bound": 0.01327433628318584,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004608294930875576
+      },
+      "runtime_seconds": 0.23822825000388548
+    }
+  ]
+}

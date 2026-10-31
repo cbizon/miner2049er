@@ -1,0 +1,95 @@
+{
+  "created_at": "2026-08-12T15:11:10.226235+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R280",
+      "name": "Cross-species and molecular-activity GOF consensus",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R275",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug is a high-mechanism treatment candidate when it suppresses two distinct GOF disease genes through independent exact mouse-phenotype and molecular-activity branches.",
+      "body": "drug decreases one GOF gene with exact mouse phenotype support and a distinct GOF gene enabling a compact decreased molecular activity",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two independent directional branches converge on the disease through distinct genes, exact cross-species phenotype support, and a compact molecular function.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive branches are TRAPI-expressible; repeated drug and disease identity, gene inequality, negative directional evidence, provenance, taxon, variant-form, degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (model_driver:Gene)\nMATCH (subject)-[gene_effect:AFFECTS]->(model_driver)\nMATCH (model_driver)-[model_association:ASSOCIATED_WITH]->\n      (object:Disease)\nMATCH (model_driver)-[:ORTHOLOGOUS_TO]-(mouse_gene:Gene)\n      -[model_evidence:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nMATCH (subject)-[activity_effect:AFFECTS]->\n      (activity:MolecularActivity)<-[:ENABLES]-(activity_driver:Gene)\nMATCH (activity_driver)-[activity_association:ASSOCIATED_WITH]->(object)\nWHERE model_driver <> activity_driver\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND gene_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.object_direction_qualifier = 'decreased'\n  AND activity_effect.qualified_predicate = 'biolink:causes'\n  AND activity_effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(model_association.primary_knowledge_sources, [])\n  AND model_association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND 'infores:gene2phenotype' IN\n      coalesce(activity_association.primary_knowledge_sources, [])\n  AND activity_association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND 'NCBITaxon:9606' IN coalesce(model_driver.in_taxon, [])\n  AND 'NCBITaxon:10090' IN coalesce(mouse_gene.in_taxon, [])\n  AND 'infores:mgi' IN\n      coalesce(model_evidence.primary_knowledge_sources, [])\n  AND 'infores:ctd' IN\n      coalesce(activity_effect.primary_knowledge_sources, [])\n  AND activity._miner_gene_enable_degree <= 58\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[opposite:AFFECTS]->(model_driver)\n    WHERE opposite.qualified_predicate = 'biolink:causes'\n      AND opposite.object_aspect_qualifier = 'activity_or_abundance'\n      AND opposite.object_direction_qualifier = 'increased'\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.6815105419955216
+    }
+  ]
+}

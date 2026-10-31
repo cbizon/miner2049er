@@ -1,0 +1,124 @@
+{
+  "created_at": "2026-08-10T12:34:42.273696+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I03-R017",
+      "name": "Specific drug binding and inhibition without adverse evidence",
+      "iteration": 3,
+      "parent_rule": "TREAT-I02-R015",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when the direct-binding and inhibition rule is restricted to drugs, specific MONDO diseases, and pairs without explicit adverse relations.",
+      "body": "drug binds and decreases causal gene; qualified gene degree <=50; MONDO disease with 1-500 descendants; no has_side_effect, contraindicated_in, exacerbates_condition, or causes edge from drug to disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Retains the same target-level mechanism while excluding broad disease hubs and graph evidence that the chemical worsens rather than treats the condition.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse graph patterns are TRAPI-expressible; degree and absence constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 350,
+        "validation_hits": 3,
+        "training_hits": 25,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 322
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08,
+        "visible_target_recall": 0.0010177377144518756,
+        "visible_target_f0_5": 0.0048422800221361376,
+        "validation_precision_lower_bound": 0.009230769230769232,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004108463434675432
+      },
+      "runtime_seconds": 0.29701958398800343
+    },
+    {
+      "id": "TREAT-I03-R018",
+      "name": "Curated-effect specific drug mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Requiring a curated SIGNOR perturbation edge further enriches the specific drug binding-and-inhibition rule.",
+      "body": "R017 plus affects primary source infores:signor",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Uses a curated directional perturbation source in addition to direct binding, disease causality, specificity, and adverse-edge exclusion.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive, adverse, and provenance constraints can be represented in TRAPI only partly; degree and absence handling are easier in Cypher.",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 18
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.14285714285714285,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005435570372517756,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.18671808403450996
+    }
+  ]
+}

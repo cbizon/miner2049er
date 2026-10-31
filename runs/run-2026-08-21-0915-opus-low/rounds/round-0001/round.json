@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915-opus-low",
+  "round_id": "round-0001",
+  "round_number": 1,
+  "parent_round_id": null,
+  "status": "completed",
+  "started_at": "2026-08-20T23:57:15.597788+00:00",
+  "deadline": "2026-08-21T09:15:00-04:00",
+  "completed_at": "2026-08-21T13:17:31.124214+00:00",
+  "instruction_path": "rounds/round-0001/instructions.md",
+  "instruction_sha256": "f749554132c3996f9cdbf49a784e06eb427d9e3f83ead5edd685b5465eee9dfd",
+  "agent_prompt_path": "rounds/round-0001/agent-prompt.md",
+  "agent_prompt_sha256": "6a51f5bdb92689945ae44bd52672d09c7e44d3541aaa01e3b36c755284a0d7e7",
+  "starting_artifacts": {
+    "neo4j_artifacts": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rules": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictions": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "research_log": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evaluations": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "ending_artifacts": {
+    "neo4j_artifacts": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rules": {
+      "records": 1,
+      "bytes": 2399,
+      "sha256": "6861ba5019f2e0d7c009765138c077293cee4e66cac76f2527b94f4023ceedea"
+    },
+    "predictions": {
+      "records": 312187,
+      "bytes": 57000969,
+      "sha256": "f84e7a09d025e6b239a18d01874c9f786d5ab0d844b60af8ea2ceacca0dfae20"
+    },
+    "research_log": {
+      "records": 4,
+      "bytes": 3758,
+      "sha256": "e8ed08d366fd3314fb6b8df492caf6168ba0eaf2368984372814b7f0318c92cc"
+    },
+    "evaluations": {
+      "records": 1,
+      "bytes": 554,
+      "sha256": "3569a362c3e1ce64fada6b2a82e1df042d08f7d464a143399b24f6e953b43935"
+    }
+  }
+}

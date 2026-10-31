@@ -1,0 +1,71 @@
+{
+  "message": {
+    "query_graph": {
+      "nodes": {
+        "subject": {
+          "ids": ["CHEBI:174358"],
+          "categories": ["biolink:Drug"]
+        },
+        "gene": {
+          "categories": ["biolink:Gene"]
+        },
+        "object": {
+          "ids": ["MONDO:0005027"],
+          "categories": ["biolink:Disease"]
+        },
+        "anatomy": {
+          "categories": ["biolink:AnatomicalEntity"]
+        }
+      },
+      "edges": {
+        "binding": {
+          "subject": "subject",
+          "object": "gene",
+          "predicates": ["biolink:directly_physically_interacts_with"]
+        },
+        "effect": {
+          "subject": "subject",
+          "object": "gene",
+          "predicates": ["biolink:affects"],
+          "qualifier_constraints": [
+            {
+              "qualifier_set": [
+                {
+                  "qualifier_type_id": "biolink:qualified_predicate",
+                  "qualifier_value": "biolink:causes"
+                },
+                {
+                  "qualifier_type_id": "biolink:object_aspect_qualifier",
+                  "qualifier_value": "activity_or_abundance"
+                },
+                {
+                  "qualifier_type_id": "biolink:object_direction_qualifier",
+                  "qualifier_value": "decreased"
+                }
+              ]
+            }
+          ]
+        },
+        "causal": {
+          "subject": "gene",
+          "object": "object",
+          "predicates": ["biolink:causes"]
+        },
+        "expression": {
+          "subject": "gene",
+          "object": "anatomy",
+          "predicates": ["biolink:expressed_in"]
+        },
+        "location": {
+          "subject": "object",
+          "object": "anatomy",
+          "predicates": ["biolink:located_in", "biolink:occurs_in"]
+        }
+      }
+    }
+  },
+  "parameters": {
+    "subclass": true,
+    "dehydrated": false
+  }
+}

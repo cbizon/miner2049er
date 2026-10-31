@@ -1,0 +1,208 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-metabolite-genetic-decreased-full-closure",
+  "family_id": "active-metabolite-target-intervention",
+  "name": "Metabolite Decreased Target With Genetic Disease Evidence (Full Descendant Control)",
+  "status": "baseline",
+  "plain_language_rule": "Predict treatment when The candidate drug forms the molecular metabolite The pinned descendant closure is biolink:has_metabolite. At least one primary source must be infores:chembl. No predicate descendants are excluded in this control.; Metabolite causally affects gene in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; The gene has independent genetic association evidence for the same disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp. No predicate descendants are excluded in this control. The candidate drug and its metabolite must be different canonical nodes.",
+  "hypothesis": "A drug may act through a formed metabolite whose curated molecular pharmacology engages a disease-implicated target.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      },
+      {
+        "id": "metabolite",
+        "role": "Metabolite formed from the candidate drug",
+        "categories": [
+          "biolink:ChemicalEntity"
+        ],
+        "explanation": "Metabolite formed from the candidate drug."
+      }
+    ],
+    "edges": [
+      {
+        "id": "metabolism",
+        "subject": "chemical",
+        "object": "metabolite",
+        "predicates": [
+          "biolink:has_metabolite"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug forms the molecular metabolite The pinned descendant closure is biolink:has_metabolite. At least one primary source must be infores:chembl. No predicate descendants are excluded in this control.",
+        "source_constraints": [
+          "infores:chembl"
+        ]
+      },
+      {
+        "id": "target",
+        "subject": "metabolite",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Metabolite causally affects gene in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": "decreased",
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "genetic",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:gene_associated_with_condition"
+        ],
+        "direction": "forward",
+        "explanation": "The gene has independent genetic association evidence for the same disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp. No predicate descendants are excluded in this control.",
+        "source_constraints": [
+          "infores:geneticskp"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "distinct-molecules",
+        "kind": "other",
+        "expression": "The candidate drug and its metabolite must be different canonical nodes.",
+        "explanation": "The candidate drug and its metabolite must be different canonical nodes."
+      }
+    ]
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "A drug may act through a formed metabolite whose curated molecular pharmacology engages a disease-implicated target. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[metabolism:{{relationship_types:metabolism}}]->(metabolite:ChemicalEntity) WHERE metabolism.predicate IN {{predicates:metabolism}} AND any(source IN [\"infores:chembl\"] WHERE source IN coalesce(metabolism.primary_knowledge_sources,[])) MATCH (metabolite:ChemicalEntity)-[target:{{relationship_types:target}}]->(gene:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND target.object_direction_qualifier = \"decreased\" AND target.object_aspect_qualifier IN [\"activity\",\"activity_or_abundance\"] AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(target.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[genetic:{{relationship_types:genetic}}]->(disease:Disease) WHERE genetic.predicate IN {{predicates:genetic}} AND any(source IN [\"infores:geneticskp\"] WHERE source IN coalesce(genetic.primary_knowledge_sources,[])) AND (chemical<>metabolite) RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "metabolite": {
+                "categories": [
+                  "biolink:ChemicalEntity"
+                ]
+              }
+            },
+            "edges": {
+              "metabolism": {
+                "subject": "chemical",
+                "object": "metabolite",
+                "predicates": [
+                  "biolink:has_metabolite"
+                ]
+              },
+              "target": {
+                "subject": "metabolite",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "genetic": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:gene_associated_with_condition"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: metabolism: enforce primary-source membership in infores:chembl; target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; genetic: enforce primary-source membership in infores:geneticskp; The candidate drug and its metabolite must be different canonical nodes."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "A listed metabolite need not reach an effective concentration or have suitable exposure. Genetic or causal disease evidence does not establish the corrective pharmacologic sign.",
+    "The full affects closure includes ameliorates_condition and is classified as treatment-using even if no such edge satisfies the other constraints in this graph."
+  ],
+  "parent_rule_id": "r4-metabolite-genetic-decreased"
+}

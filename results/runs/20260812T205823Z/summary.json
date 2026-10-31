@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T20:58:23.338972+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R449",
+      "name": "Anatomy-produced mediator antagonism",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug may treat a disease by inhibiting a top-three disease target activated by an etiologic mediator that is produced in a disease anatomy.",
+      "body": "disease anatomy produces causal mediator; mediator increases top-three target; drug binds and decreases target",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes anatomy, mediator production, mediator causation, genetic target relevance, and opposing signed pharmacology in one nonlinear mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "All positive edges and direction qualifiers are TRAPI-expressible; repeated mediator, target, anatomy, and disease identities plus source, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (mediator:ChemicalEntity)\n      -[mediator_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (mediator)-[mediator_effect:AFFECTS]->(target)\nWHERE mediator_effect.qualified_predicate = 'biolink:causes'\n  AND mediator_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND mediator_effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(mediator_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(mediator_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT mediator, target\nMATCH (mediator)-[etiology:CAUSES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH DISTINCT mediator, target, object\n\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE gene_evidence._miner_disease_rank <= 3\n\n\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->\n      (anatomy:AnatomicalEntity)-[production:PRODUCES]->(mediator)\nWHERE 'infores:semmeddb' IN\n      coalesce(production.primary_knowledge_sources, [])\n\nMATCH (subject:Drug)-[drug_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[drug_effect:AFFECTS]->(target)\nWHERE subject <> mediator\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND drug_effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(drug_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(drug_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 1.0,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005449789274814707,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 6.3251621669624
+    },
+    {
+      "id": "TREAT-I09-R450",
+      "name": "Anatomy-produced inhibitory mediator restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug may restore a top-three disease target suppressed by an etiologic mediator produced in a disease anatomy.",
+      "body": "disease anatomy produces causal mediator; mediator decreases top-three target; drug binds and increases target",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule uses the same anatomy and mediator chain as R449 with the opposite restorative polarity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R449.",
+      "trapi_template": null,
+      "cypher": "MATCH (mediator:ChemicalEntity)\n      -[mediator_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (mediator)-[mediator_effect:AFFECTS]->(target)\nWHERE mediator_effect.qualified_predicate = 'biolink:causes'\n  AND mediator_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND mediator_effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(mediator_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(mediator_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT mediator, target\nMATCH (mediator)-[etiology:CAUSES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH DISTINCT mediator, target, object\n\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE gene_evidence._miner_disease_rank <= 3\n\n\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->\n      (anatomy:AnatomicalEntity)-[production:PRODUCES]->(mediator)\nWHERE 'infores:semmeddb' IN\n      coalesce(production.primary_knowledge_sources, [])\n\nMATCH (subject:Drug)-[drug_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[drug_effect:AFFECTS]->(target)\nWHERE subject <> mediator\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND drug_effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(drug_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(drug_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 6.370544499950483
+    },
+    {
+      "id": "TREAT-I09-R451",
+      "name": "Anatomy-produced activating mediator reinforcement control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R449",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a top-three target already activated by an etiologic anatomy-produced mediator is a matched reinforcement control.",
+      "body": "R449 with increased rather than decreased drug action",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The intervention reinforces the mediator-target direction while retaining the full nonlinear context.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R449.",
+      "trapi_template": null,
+      "cypher": "MATCH (mediator:ChemicalEntity)\n      -[mediator_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (mediator)-[mediator_effect:AFFECTS]->(target)\nWHERE mediator_effect.qualified_predicate = 'biolink:causes'\n  AND mediator_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND mediator_effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(mediator_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(mediator_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT mediator, target\nMATCH (mediator)-[etiology:CAUSES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH DISTINCT mediator, target, object\n\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE gene_evidence._miner_disease_rank <= 3\n\n\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->\n      (anatomy:AnatomicalEntity)-[production:PRODUCES]->(mediator)\nWHERE 'infores:semmeddb' IN\n      coalesce(production.primary_knowledge_sources, [])\n\nMATCH (subject:Drug)-[drug_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[drug_effect:AFFECTS]->(target)\nWHERE subject <> mediator\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND drug_effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(drug_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(drug_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 6.351901000016369
+    },
+    {
+      "id": "TREAT-I09-R452",
+      "name": "Anatomy-produced inhibitory mediator reinforcement control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R450",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing a top-three target already suppressed by an etiologic anatomy-produced mediator is a matched reinforcement control.",
+      "body": "R450 with decreased rather than increased drug action",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The intervention reinforces the mediator-target direction while retaining the full nonlinear context.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R449.",
+      "trapi_template": null,
+      "cypher": "MATCH (mediator:ChemicalEntity)\n      -[mediator_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (mediator)-[mediator_effect:AFFECTS]->(target)\nWHERE mediator_effect.qualified_predicate = 'biolink:causes'\n  AND mediator_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND mediator_effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(mediator_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(mediator_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT mediator, target\nMATCH (mediator)-[etiology:CAUSES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(etiology.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH DISTINCT mediator, target, object\n\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE gene_evidence._miner_disease_rank <= 3\n\n\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->\n      (anatomy:AnatomicalEntity)-[production:PRODUCES]->(mediator)\nWHERE 'infores:semmeddb' IN\n      coalesce(production.primary_knowledge_sources, [])\n\nMATCH (subject:Drug)-[drug_binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[drug_effect:AFFECTS]->(target)\nWHERE subject <> mediator\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND drug_effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(drug_binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(drug_effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 6.363097833003849
+    }
+  ]
+}

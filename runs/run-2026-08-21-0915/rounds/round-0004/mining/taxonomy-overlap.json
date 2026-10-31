@@ -1,0 +1,33 @@
+[
+  {
+    "purpose": "Measure explicit taxon identity agreement on every molecular product of a disease-causing organism.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(:Disease) WHERE cause.predicate IN $cause_predicates WITH DISTINCT organism MATCH (organism)-[product:PRODUCES]->(gene:GeneOrGeneProduct) WHERE product.predicate IN $product_predicates WITH DISTINCT organism,gene WITH organism,gene,coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END AS taxa RETURN count(*) AS organism_gene_pairs,count(DISTINCT gene) AS genes,sum(CASE WHEN size(taxa)>0 THEN 1 ELSE 0 END) AS taxon_populated_pairs,sum(CASE WHEN any(taxon IN taxa WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[])) THEN 1 ELSE 0 END) AS identity_agreeing_pairs,sum(CASE WHEN size(taxa)>0 AND none(taxon IN taxa WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[])) THEN 1 ELSE 0 END) AS identity_disagreeing_pairs",
+    "parameters": {"cause_predicates": ["biolink:causes"], "product_predicates": ["biolink:produces"]},
+    "timeout_seconds": 60,
+    "maximum_rows": 10,
+    "next_action": "Treat a different annotated taxon as evidence that production is not necessarily genomic organism membership, not as a known-negative treatment label."
+  },
+  {
+    "purpose": "Inspect bounded agreeing and disagreeing organism-product taxonomy examples.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(:Disease) WHERE cause.predicate IN $cause_predicates WITH DISTINCT organism MATCH (organism)-[product:PRODUCES]->(gene:GeneOrGeneProduct) WHERE product.predicate IN $product_predicates WITH DISTINCT organism,gene,product.primary_knowledge_sources AS product_sources WITH organism,gene,product_sources,coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END AS taxa WHERE size(taxa)>0 RETURN organism.id AS organism_id,organism.name AS organism_name,gene.id AS target_id,gene.name AS target_name,taxa,product_sources,any(taxon IN taxa WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[])) AS identity_agrees ORDER BY identity_agrees DESC,organism_id,target_id LIMIT 12",
+    "parameters": {"cause_predicates": ["biolink:causes"], "product_predicates": ["biolink:produces"]},
+    "timeout_seconds": 60,
+    "maximum_rows": 12,
+    "next_action": "Use these visible examples to explain the biological ambiguity of the production edge without assigning any held-out treatment outcome."
+  },
+  {
+    "purpose": "Profile curated causal molecular target taxonomies that exactly identify a disease-causing organism.",
+    "query": "MATCH (:Drug)-[access:MINER_R0004_CURATED_TARGET]->(gene:GeneOrGeneProduct) WHERE access.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT gene UNWIND coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END AS taxon WITH taxon,collect(DISTINCT gene) AS genes MATCH (organism:OrganismTaxon) WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[]) MATCH (organism)-[cause:CAUSES]->(disease:Disease) WHERE cause.predicate IN $cause_predicates UNWIND genes AS gene RETURN organism.id AS organism_id,organism.name AS organism_name,count(DISTINCT gene) AS molecular_targets,count(DISTINCT disease) AS diseases,collect(DISTINCT cause.primary_knowledge_sources) AS cause_sources ORDER BY molecular_targets DESC,organism_id",
+    "parameters": {"cause_predicates": ["biolink:causes"]},
+    "timeout_seconds": 90,
+    "maximum_rows": 100,
+    "next_action": "The compact access path only profiles its documented target domain. Any candidate must rematch original pharmacologic evidence and retain organism identity as an explicit property constraint."
+  },
+  {
+    "purpose": "Check disagreement between the two raw taxonomy fields and identify non-NCBITaxon representations.",
+    "query": "MATCH (gene:GeneOrGeneProduct) WHERE gene.taxon IS NOT NULL OR gene.in_taxon IS NOT NULL WITH gene,coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END AS taxa RETURN count(*) AS annotated_genes,sum(CASE WHEN gene.taxon IS NOT NULL AND size(coalesce(gene.in_taxon,[]))>0 AND NOT gene.taxon IN gene.in_taxon THEN 1 ELSE 0 END) AS disagreeing_fields,sum(CASE WHEN any(taxon IN taxa WHERE NOT taxon STARTS WITH 'NCBITaxon:') THEN 1 ELSE 0 END) AS genes_with_other_identifier_format,max(size(taxa)) AS maximum_unduplicated_input_list_size",
+    "timeout_seconds": 60,
+    "maximum_rows": 10,
+    "next_action": "Use exact supplied strings with no inferred prefix conversions; retain any conflicting annotation evidence as a limitation."
+  }
+]

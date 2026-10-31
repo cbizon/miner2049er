@@ -1,0 +1,126 @@
+{
+  "created_at": "2026-08-11T01:52:45.897272+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I03-R019",
+      "name": "Low-fanout causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "Restricting the causal target to genes linked to at most 12 diseases removes literature-derived disease hubs while retaining specific causal mechanisms.",
+      "body": "R017 plus causal gene disease degree <=12",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains direct target engagement and directional perturbation with a specific causal gene-disease link, but cannot distinguish therapeutic inhibition from disease-producing loss of function.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse patterns are TRAPI-expressible; causal-gene degree and absence constraints require Cypher or post-processing.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 244,
+        "validation_hits": 3,
+        "training_hits": 23,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 218
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10655737704918032,
+        "visible_target_recall": 0.0009450421634195987,
+        "visible_target_f0_5": 0.004563324908733502,
+        "validation_precision_lower_bound": 0.013574660633484163,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004636785162287482
+      },
+      "runtime_seconds": 0.12382366601377726
+    },
+    {
+      "id": "TREAT-I04-R026",
+      "name": "Independent clinical low-fanout mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R022",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism plus an independently sourced clinical-trial assertion should retain validation hits while excluding disease-gene hubs and target-source leakage.",
+      "body": "R022 plus causal gene disease degree <=12 and clinical-trial source infores:multiomics-clinicaltrials",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines specific target-level evidence with independent translational evidence, but still uses treatment-oriented evidence and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12\n  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 37,
+        "validation_hits": 3,
+        "training_hits": 18,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 16
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5675675675675675,
+        "visible_target_recall": 0.0007633032858389067,
+        "visible_target_f0_5": 0.0037960954446854666,
+        "validation_precision_lower_bound": 0.15789473684210525,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006180469715698395
+      },
+      "runtime_seconds": 0.04983904102118686
+    }
+  ]
+}

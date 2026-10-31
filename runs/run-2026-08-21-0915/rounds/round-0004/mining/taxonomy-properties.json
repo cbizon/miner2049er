@@ -1,0 +1,31 @@
+[
+  {
+    "purpose": "Determine the exact stored value types of taxon and in_taxon molecular properties.",
+    "query": "MATCH (gene:GeneOrGeneProduct) WHERE gene.taxon IS NOT NULL OR gene.in_taxon IS NOT NULL RETURN valueType(gene.taxon) AS taxon_type,valueType(gene.in_taxon) AS in_taxon_type,count(*) AS genes ORDER BY genes DESC",
+    "timeout_seconds": 60,
+    "maximum_rows": 100,
+    "next_action": "Normalize only observed explicit identifier representations; never infer organisms from names."
+  },
+  {
+    "purpose": "Inspect bounded raw molecular taxonomy examples and their original node JSON.",
+    "query": "MATCH (gene:GeneOrGeneProduct) WHERE gene.taxon IS NOT NULL OR gene.in_taxon IS NOT NULL RETURN gene.id AS gene_id,gene.name AS name,gene.taxon AS taxon,gene.in_taxon AS in_taxon,gene.in_taxon_label AS taxon_label,left(gene.raw_json,5000) AS raw_node_json LIMIT 8",
+    "timeout_seconds": 60,
+    "maximum_rows": 8,
+    "next_action": "Use the original attribute structure to distinguish identifier fields from display labels and inspect whether provenance is actually present."
+  },
+  {
+    "purpose": "Inspect bounded molecular taxonomy examples within the already documented curated causal target domain.",
+    "query": "MATCH (:Drug)-[access:MINER_R0004_CURATED_TARGET]->(gene:GeneOrGeneProduct) WHERE access.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT gene WHERE gene.taxon IS NOT NULL OR gene.in_taxon IS NOT NULL RETURN gene.id AS gene_id,gene.name AS name,gene.taxon AS taxon,gene.in_taxon AS in_taxon,gene.in_taxon_label AS taxon_label,left(gene.raw_json,5000) AS raw_node_json ORDER BY gene_id LIMIT 8",
+    "timeout_seconds": 60,
+    "maximum_rows": 8,
+    "next_action": "The artifact is only a documented sampling domain; any eventual rule must rematch all original target predicates, qualifiers, and sources."
+  },
+  {
+    "purpose": "Inspect explicit aliases on disease-causing organism nodes, without constructing external taxonomic mappings.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(:Disease) WHERE cause.predicate IN $predicates AND (organism.id STARTS WITH 'NCBITaxon:' OR any(alias IN coalesce(organism.equivalent_identifiers,[]) WHERE alias STARTS WITH 'NCBITaxon:')) WITH DISTINCT organism RETURN organism.id AS organism_id,organism.name AS name,organism.equivalent_identifiers AS aliases,left(organism.raw_json,3000) AS raw_node_json ORDER BY organism_id LIMIT 8",
+    "parameters": {"predicates": ["biolink:causes"]},
+    "timeout_seconds": 60,
+    "maximum_rows": 8,
+    "next_action": "If taxonomy identifiers match molecular annotations, test exact stored canonical or equivalent identifier membership and deduplicate support by organism node."
+  }
+]

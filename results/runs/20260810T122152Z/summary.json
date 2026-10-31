@@ -1,0 +1,152 @@
+{
+  "created_at": "2026-08-10T12:21:52.126433+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I02-R011",
+      "name": "Clinical-trial evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical tested in clinical trials for a disease is enriched for exact treats assertions.",
+      "body": "chemical -in_clinical_trials_for-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is direct treatment-development evidence rather than an explanatory biological mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 310701,
+        "validation_hits": 208,
+        "training_hits": 11972,
+        "contraindicated_pairs": 852,
+        "unresolved_or_blind_pairs": 298521
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.039201676209603444,
+        "validation_precision_lower_bound": 0.0006962832533835015,
+        "validation_recall": 0.08847299021692896,
+        "validation_f0_5": 0.0008686450056670734
+      },
+      "runtime_seconds": 5.096026917046402,
+      "pareto_front": true
+    },
+    {
+      "id": "TREAT-I02-R012",
+      "name": "Studied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical studied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -studied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The rule restates treatment study evidence and does not explain efficacy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 1308,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 1291
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012996941896024464,
+        "validation_precision_lower_bound": 0.0007739938080495357,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0006649820454847719
+      },
+      "runtime_seconds": 0.12849516700953245,
+      "pareto_front": false
+    },
+    {
+      "id": "TREAT-I02-R013",
+      "name": "Applied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical applied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -applied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is treatment-use evidence rather than a mechanistic explanation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 55583,
+        "validation_hits": 65,
+        "training_hits": 6499,
+        "contraindicated_pairs": 1275,
+        "unresolved_or_blind_pairs": 49019
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11809366173110483,
+        "validation_precision_lower_bound": 0.0013242604514709477,
+        "validation_recall": 0.027647809442790303,
+        "validation_f0_5": 0.001635738624067
+      },
+      "runtime_seconds": 1.0826264590141363,
+      "pareto_front": true
+    }
+  ]
+}

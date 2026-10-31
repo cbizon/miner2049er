@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T02:24:11.504453+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R144",
+      "name": "Comorbidity-constrained shared-target indication transfer",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treated indication can transfer to a clinically coexisting disease when the drug inhibits a causal gene shared by both diseases.",
+      "body": "training-treated anchor coexists with candidate; drug inhibits causal gene shared by anchor and candidate",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The rule combines a shared molecular mechanism with clinical co-occurrence, but coexistence is SemMedDB-derived and does not imply shared therapeutic direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion, shared-target identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (anchor)-[:COEXISTS_WITH]-(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object <> anchor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 261,
+        "validation_hits": 1,
+        "training_hits": 65,
+        "contraindicated_pairs": 9,
+        "unresolved_or_blind_pairs": 195
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.25287356321839083,
+        "visible_target_recall": 0.002398953184065135,
+        "visible_target_f0_5": 0.011556240369799691,
+        "validation_precision_lower_bound": 0.00510204081632653,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.001594896331738437
+      },
+      "runtime_seconds": 2.2029315420077182
+    },
+    {
+      "id": "TREAT-I09-R145",
+      "name": "Dual-target comorbidity-constrained indication transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R144",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Comorbidity-constrained transfer is more credible when the drug inhibits at least two causal genes shared by the treated anchor and candidate disease.",
+      "body": "R144 with at least two distinct shared inhibited causal genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The two-target mechanism is stronger than coexistence alone, but observed coverage is dominated by broad cancer-to-breast-cancer transfer.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; two-target cardinality, source exclusion, identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (anchor)-[:COEXISTS_WITH]-(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object <> anchor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, count(DISTINCT gene) AS gene_count\nWHERE gene_count >= 2\nRETURN subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 10,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 8
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036295005807200924,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002094679514034353
+      },
+      "runtime_seconds": 2.136960292002186
+    }
+  ]
+}

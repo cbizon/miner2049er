@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-protein-gene-identity",
+  "family_id": "protein-gene-identity-genetic-bridge",
+  "name": "Protein To Gene Identity Bridge",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The drug directly physically engages the protein The pinned descendant closure is biolink:binds, biolink:directly_physically_interacts_with.; The protein is a product of the gene The pinned descendant closure is biolink:gene_product_of.; The gene is genetically associated with disease The pinned descendant closure is biolink:gene_associated_with_condition.",
+  "hypothesis": "An explicit protein-to-gene identity relation may connect pharmacologic protein targets to gene disease evidence.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      },
+      {
+        "id": "protein",
+        "role": "Protein physically engaged by the drug",
+        "categories": [
+          "biolink:Protein"
+        ],
+        "explanation": "Protein physically engaged by the drug."
+      }
+    ],
+    "edges": [
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "protein",
+        "predicates": [
+          "biolink:directly_physically_interacts_with"
+        ],
+        "direction": "forward",
+        "explanation": "The drug directly physically engages the protein The pinned descendant closure is biolink:binds, biolink:directly_physically_interacts_with."
+      },
+      {
+        "id": "identity",
+        "subject": "protein",
+        "object": "gene",
+        "predicates": [
+          "biolink:gene_product_of"
+        ],
+        "direction": "forward",
+        "explanation": "The protein is a product of the gene The pinned descendant closure is biolink:gene_product_of."
+      },
+      {
+        "id": "association",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:gene_associated_with_condition"
+        ],
+        "direction": "forward",
+        "explanation": "The gene is genetically associated with disease The pinned descendant closure is biolink:gene_associated_with_condition."
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "An explicit protein-to-gene identity relation may connect pharmacologic protein targets to gene disease evidence. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(protein:Protein) WHERE target.predicate IN {{predicates:target}} MATCH (protein:Protein)-[identity:{{relationship_types:identity}}]->(gene:GeneOrGeneProduct) WHERE identity.predicate IN {{predicates:identity}} MATCH (gene:GeneOrGeneProduct)-[association:{{relationship_types:association}}]->(disease:Disease) WHERE association.predicate IN {{predicates:association}} RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "full",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "protein": {
+                "categories": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "edges": {
+              "target": {
+                "subject": "chemical",
+                "object": "protein",
+                "predicates": [
+                  "biolink:directly_physically_interacts_with"
+                ]
+              },
+              "identity": {
+                "subject": "protein",
+                "object": "gene",
+                "predicates": [
+                  "biolink:gene_product_of"
+                ]
+              },
+              "association": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:gene_associated_with_condition"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": ""
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation."
+  ]
+}

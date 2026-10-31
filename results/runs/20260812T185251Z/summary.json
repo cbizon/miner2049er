@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T18:52:51.321831+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R400",
+      "name": "GOF correction through a signed active metabolite",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A parent drug can correct a GOF disease mechanism when its distinct ChEMBL metabolite directly binds and decreases the causal gene's activity.",
+      "body": "Parent has metabolite; metabolite directly binds and decreases a Gene2Phenotype GOF driver using non-TTD/non-DRH evidence",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes explicit metabolism, direct target binding, pharmacologic direction, and disease-variant direction without using holdout feature sources.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive four-edge path is TRAPI-expressible; source exclusion, distinct parent/metabolite identity, exact aspect, and disease ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (metabolite)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE subject <> metabolite\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 6
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.11101991700707003
+    },
+    {
+      "id": "TREAT-I09-R401",
+      "name": "GOF worsening through a signed active metabolite control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a GOF disease driver's activity through an active metabolite is a matched worsening control for R400.",
+      "body": "R400 graph architecture with metabolite-induced activity increase",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The metabolite's signed pharmacology reinforces rather than corrects the GOF disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R400.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (metabolite)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE subject <> metabolite\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.030953083012718707
+    },
+    {
+      "id": "TREAT-I09-R402",
+      "name": "LOF correction through a signed active metabolite",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A parent drug can correct a LOF disease mechanism when its distinct active metabolite directly increases the causal gene's activity.",
+      "body": "Parent has metabolite; metabolite directly binds and increases a Gene2Phenotype LOF driver using non-TTD/non-DRH evidence",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes explicit metabolism, direct target binding, pharmacologic direction, and disease-variant direction without using holdout feature sources.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R400.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (metabolite)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE subject <> metabolite\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.030546291964128613
+    },
+    {
+      "id": "TREAT-I09-R403",
+      "name": "LOF worsening through a signed active metabolite control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing a LOF disease driver's activity through an active metabolite is a matched worsening control for R402.",
+      "body": "R402 graph architecture with metabolite-induced activity decrease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The metabolite's signed pharmacology reinforces rather than corrects the LOF disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R400.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (metabolite)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE subject <> metabolite\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.03204970801016316
+    }
+  ]
+}

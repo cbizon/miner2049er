@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T15:30:05.840997+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R285",
+      "name": "Two-driver physical connector inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can control a disease module by inhibiting a non-causal connector protein that directly interacts with at least two top-ranked causal disease genes.",
+      "body": "drug binds and decreases connector; connector directly interacts with at least two distinct top-three causal disease genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The nonlinear star motif targets a shared physical control point outside the disease causal-gene set, but the mechanism is vulnerable to interaction hubs.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, effect, interaction, and causal-gene paths are TRAPI-expressible; two-driver cardinality, rank, identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object, collect(DISTINCT driver) AS drivers\nWHERE size(drivers) >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 171,
+        "validation_hits": 1,
+        "training_hits": 4,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 166
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.029239766081871343,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.000886650588735991,
+        "validation_precision_lower_bound": 0.005988023952095809,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0016561775422325273
+      },
+      "runtime_seconds": 5.366319666965865
+    },
+    {
+      "id": "TREAT-I09-R286",
+      "name": "Two-driver physical connector activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the same physical connector provides a directional control for R285.",
+      "body": "R285 structure with increased connector activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Without disease-module direction, activation is a control rather than a predicted correction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R285.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object, collect(DISTINCT driver) AS drivers\nWHERE size(drivers) >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 35,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 34
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.02857142857142857,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018081874728771878,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 5.240326958009973
+    },
+    {
+      "id": "TREAT-I09-R287",
+      "name": "Compact two-driver physical connector inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R285",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The two-driver connector mechanism is more specific when the connector has no more than the graph p90 of ten direct gene interaction partners.",
+      "body": "R285 plus connector direct-gene interaction degree at most 10",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The degree constraint removes promiscuous interaction hubs while retaining a nonlinear physical module.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same path expressibility as R285; connector-degree and cardinality constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND COUNT {\n    (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(:Gene)\n  } <= 10\n\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object, collect(DISTINCT driver) AS drivers\nWHERE size(drivers) >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 5.450109958008397
+    }
+  ]
+}

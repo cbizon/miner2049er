@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/run.schema.json",
+  "title": "Rule-mining run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "benchmark_id",
+    "split_id",
+    "graph_version",
+    "biolink_version",
+    "predicate_expansion",
+    "target_predicates",
+    "prompt_path",
+    "started_at",
+    "current_round_id",
+    "round_count",
+    "status",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "benchmark_id": {"type": "string", "minLength": 1},
+    "split_id": {"type": "string", "minLength": 1},
+    "graph_version": {"type": "string", "minLength": 1},
+    "biolink_version": {"type": "string", "minLength": 1},
+    "predicate_expansion": {"const": "descendants"},
+    "target_predicates": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^biolink:"}
+    },
+    "prompt_path": {"type": "string", "minLength": 1},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"},
+    "current_round_id": {
+      "type": ["string", "null"],
+      "pattern": "^round-[0-9]{4}$"
+    },
+    "round_count": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["running", "round_complete", "completed"]},
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_prompt",
+        "rounds",
+        "neo4j_artifacts",
+        "rules",
+        "predictions",
+        "research_log",
+        "evaluations"
+      ],
+      "properties": {
+        "base_prompt": {"type": "string"},
+        "rounds": {"type": "string"},
+        "neo4j_artifacts": {"type": "string"},
+        "rules": {"type": "string"},
+        "predictions": {"type": "string"},
+        "research_log": {"type": "string"},
+        "evaluations": {"type": "string"}
+      }
+    }
+  }
+}

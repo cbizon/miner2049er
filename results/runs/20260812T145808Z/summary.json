@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T14:58:08.118531+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R271",
+      "name": "Mouse-phenotype-supported GOF suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct inhibition of a gain-of-function disease gene is more credible when its mouse ortholog reproduces an exact phenotype of the human disease.",
+      "body": "drug binds and decreases Gene2Phenotype GOF gene whose mouse ortholog shares an exact disease phenotype",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Drug direction opposes explicit disease variant direction, while orthology and exact model phenotype independently support the gene-disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph and direction qualifiers are TRAPI-expressible; source, taxon, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (human_gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(human_gene)\nMATCH (human_gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (human_gene)-[:ORTHOLOGOUS_TO]-(mouse_gene:Gene)\n      -[model_evidence:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND 'NCBITaxon:9606' IN coalesce(human_gene.in_taxon, [])\n  AND 'NCBITaxon:10090' IN coalesce(mouse_gene.in_taxon, [])\n  AND 'infores:mgi' IN\n      coalesce(model_evidence.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 17,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6076994580216706
+    },
+    {
+      "id": "TREAT-I09-R272",
+      "name": "Mouse-phenotype-supported LOF restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activation of a loss-of-function disease gene is more credible when its mouse ortholog reproduces an exact phenotype of the human disease.",
+      "body": "drug binds and increases Gene2Phenotype LOF gene whose mouse ortholog shares an exact disease phenotype",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Drug direction opposes explicit disease variant direction, while orthology and exact model phenotype independently support the gene-disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph and direction qualifiers are TRAPI-expressible; source, taxon, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (human_gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(human_gene)\nMATCH (human_gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (human_gene)-[:ORTHOLOGOUS_TO]-(mouse_gene:Gene)\n      -[model_evidence:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND 'NCBITaxon:9606' IN coalesce(human_gene.in_taxon, [])\n  AND 'NCBITaxon:10090' IN coalesce(mouse_gene.in_taxon, [])\n  AND 'infores:mgi' IN\n      coalesce(model_evidence.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.39318050001747906
+    },
+    {
+      "id": "TREAT-I09-R273",
+      "name": "Mouse-phenotype-supported GOF increase control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activation of a gain-of-function disease gene is a matched model-supported worsening control.",
+      "body": "drug binds and increases Gene2Phenotype GOF gene whose mouse ortholog shares an exact disease phenotype",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Model phenotype supports the gene-disease link, but drug direction aligns with the gain-of-function disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph and direction qualifiers are TRAPI-expressible; source, taxon, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (human_gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(human_gene)\nMATCH (human_gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (human_gene)-[:ORTHOLOGOUS_TO]-(mouse_gene:Gene)\n      -[model_evidence:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND 'NCBITaxon:9606' IN coalesce(human_gene.in_taxon, [])\n  AND 'NCBITaxon:10090' IN coalesce(mouse_gene.in_taxon, [])\n  AND 'infores:mgi' IN\n      coalesce(model_evidence.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 4,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.37710979097755626
+    },
+    {
+      "id": "TREAT-I09-R274",
+      "name": "Mouse-phenotype-supported LOF decrease control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct inhibition of a loss-of-function disease gene is a matched model-supported worsening control.",
+      "body": "drug binds and decreases Gene2Phenotype LOF gene whose mouse ortholog shares an exact disease phenotype",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Model phenotype supports the gene-disease link, but drug direction aligns with the loss-of-function disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph and direction qualifiers are TRAPI-expressible; source, taxon, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (human_gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(human_gene)\nMATCH (human_gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (human_gene)-[:ORTHOLOGOUS_TO]-(mouse_gene:Gene)\n      -[model_evidence:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND 'NCBITaxon:9606' IN coalesce(human_gene.in_taxon, [])\n  AND 'NCBITaxon:10090' IN coalesce(mouse_gene.in_taxon, [])\n  AND 'infores:mgi' IN\n      coalesce(model_evidence.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.473624459002167
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/neo4j-artifact.schema.json",
+  "title": "Agent-created Neo4j artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "round_id",
+    "artifact_id",
+    "name",
+    "artifact_kind",
+    "description",
+    "target",
+    "semantics",
+    "execution",
+    "observed",
+    "dependencies",
+    "supersedes_artifact_id",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "name": {"type": "string", "minLength": 1},
+    "artifact_kind": {
+      "enum": [
+        "node_property",
+        "relationship_property",
+        "node_label",
+        "derived_node",
+        "derived_relationship",
+        "index",
+        "constraint"
+      ]
+    },
+    "description": {"type": "string", "minLength": 20},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_labels",
+        "relationship_types",
+        "property_name",
+        "value_type",
+        "unit",
+        "scope"
+      ],
+      "properties": {
+        "node_labels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "relationship_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "property_name": {"type": ["string", "null"], "minLength": 1},
+        "value_type": {
+          "enum": [
+            "integer",
+            "number",
+            "boolean",
+            "string",
+            "list",
+            "map",
+            "not_applicable"
+          ]
+        },
+        "unit": {"type": ["string", "null"], "minLength": 1},
+        "scope": {"type": "string", "minLength": 10}
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "inputs",
+        "formula",
+        "aggregation",
+        "deduplication",
+        "missing_value_policy",
+        "interpretation"
+      ],
+      "properties": {
+        "definition": {"type": "string", "minLength": 20},
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "formula": {"type": ["string", "null"]},
+        "aggregation": {"type": "string", "minLength": 1},
+        "deduplication": {"type": "string", "minLength": 1},
+        "missing_value_policy": {"type": "string", "minLength": 1},
+        "interpretation": {"type": "string", "minLength": 20}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["create_cypher", "verification_cypher", "cleanup_cypher"],
+      "properties": {
+        "create_cypher": {"type": "string", "minLength": 20},
+        "verification_cypher": {"type": "string", "minLength": 20},
+        "cleanup_cypher": {"type": "string", "minLength": 10}
+      }
+    },
+    "observed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measured_at",
+        "nodes_created",
+        "relationships_created",
+        "nodes_updated",
+        "relationships_updated",
+        "values_populated",
+        "values_missing",
+        "distinct_values",
+        "minimum",
+        "maximum",
+        "mean",
+        "quantiles"
+      ],
+      "properties": {
+        "measured_at": {"type": "string", "format": "date-time"},
+        "nodes_created": {"type": "integer", "minimum": 0},
+        "relationships_created": {"type": "integer", "minimum": 0},
+        "nodes_updated": {"type": "integer", "minimum": 0},
+        "relationships_updated": {"type": "integer", "minimum": 0},
+        "values_populated": {"type": "integer", "minimum": 0},
+        "values_missing": {"type": "integer", "minimum": 0},
+        "distinct_values": {"type": ["integer", "null"], "minimum": 0},
+        "minimum": {"type": ["number", "null"]},
+        "maximum": {"type": ["number", "null"]},
+        "mean": {"type": ["number", "null"]},
+        "quantiles": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Za-z0-9._-]+$"},
+          "additionalProperties": {"type": ["number", "null"]}
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+      }
+    },
+    "supersedes_artifact_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

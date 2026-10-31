@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T21:48:16.433628+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R483",
+      "name": "Signed target-to-process regulatory correction",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R472",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target that positively regulates a member of the disrupted disease process should connect R472's two arms with causal direction.",
+      "body": "R472 plus SIGNOR target-causes-upregulation-of-process-member bridge",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Target inhibition is directionally aligned with suppression of a downstream process member, linking target pharmacology to the independently implicated process.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; source exclusions, rank, and the negative-evidence veto require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (target)-[bridge:REGULATES]->(partner)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.42857142857142855,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005446623093681918,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.2937828750000335
+    },
+    {
+      "id": "TREAT-I09-R484",
+      "name": "Signed regulatory target activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R483",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a target that positively regulates the process member is the matched direction control for R483.",
+      "body": "R483 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same positive regulatory bridge is retained but target activation should reinforce rather than suppress the process member.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R483.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (target)-[bridge:REGULATES]->(partner)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.851683166984003
+    },
+    {
+      "id": "TREAT-I09-R485",
+      "name": "Reverse signed regulatory topology control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R483",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A process member that positively regulates the inhibited target does not establish that target inhibition suppresses the process and is a topology control.",
+      "body": "R472 plus process-member-causes-upregulation-of-target bridge",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The edge has sign but points from the process member to the target, so inhibiting the target does not imply upstream process correction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R483.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (partner)-[bridge:REGULATES]->(target)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5555555555555556,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009075068970524175,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.113274833012838
+    }
+  ]
+}

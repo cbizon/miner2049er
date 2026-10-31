@@ -1,0 +1,92 @@
+{
+  "created_at": "2026-08-10T12:15:04.248271+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I02-R007",
+      "name": "Multi-gene inhibition within a disease-supported process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R003",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A selective chemical may treat a disease when it decreases multiple disease-associated genes participating in the same bounded-size biological process.",
+      "body": "disease has 3-20 associated genes in a process; chemical decreases activity_or_abundance of >=2 of those genes; chemical qualified gene degree <=100",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Requires directional perturbation of multiple disease genes in a coherent process and explicitly suppresses chemical and process hubs.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 50623,
+        "validation_hits": 23,
+        "training_hits": 435,
+        "contraindicated_pairs": 466,
+        "unresolved_or_blind_pairs": 50165
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.009047271003298895,
+        "validation_precision_lower_bound": 0.0004582768789352036,
+        "validation_recall": 0.009783071033602722,
+        "validation_f0_5": 0.000566215171612433
+      },
+      "runtime_seconds": 14.510365625028498,
+      "pareto_front": true
+    }
+  ]
+}

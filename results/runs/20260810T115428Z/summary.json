@@ -1,0 +1,91 @@
+{
+  "created_at": "2026-08-10T11:54:28.454056+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I01-R001",
+      "name": "Affected disease-associated gene baseline",
+      "iteration": 1,
+      "parent_rule": null,
+      "status": "completed",
+      "hypothesis": "A chemical that affects a gene associated with a disease may treat that disease.",
+      "body": "chemical -affects-> gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Connects a chemical to a disease-linked gene, but does not require a therapeutically corrective direction or corroborating mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A two-edge TRAPI query can express the graph pattern; edge-property refinements would require constraints.",
+      "counts": {
+        "candidate_pairs": 799762,
+        "validation_hits": 181,
+        "training_hits": 1799,
+        "contraindicated_pairs": 1823,
+        "unresolved_or_blind_pairs": 797782
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0024757365316181563,
+        "validation_precision_lower_bound": 0.00022682755967381947,
+        "validation_recall": 0.07698851552530837,
+        "validation_f0_5": 0.0002833257623263143
+      },
+      "runtime_seconds": 26.155298999976367,
+      "pareto_front": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915",
+  "round_id": "round-0001",
+  "model": "gpt-5.6-sol",
+  "model_provider": "azure",
+  "reasoning_effort": "xhigh"
+}

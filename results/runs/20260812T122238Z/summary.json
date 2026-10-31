@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T12:22:38.716204+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R181",
+      "name": "Anatomy-supported GOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R178",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "GOF mechanism transfer to a broader disease is more credible when the gene is expressed in anatomy affected by the broader disease.",
+      "body": "R178 plus Bgee expression of directional gene in candidate parent anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Affected anatomy independently supports relevance to the broader disease, but ontology transfer can still overgeneralize.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; Bgee provenance, shared anatomy, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 442,
+        "validation_hits": 2,
+        "training_hits": 9,
+        "contraindicated_pairs": 12,
+        "unresolved_or_blind_pairs": 431
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.024886877828054297,
+        "visible_target_recall": 0.0003998255306775225,
+        "visible_target_f0_5": 0.001878415300546448,
+        "validation_precision_lower_bound": 0.004618937644341801,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.002449179524859172
+      },
+      "runtime_seconds": 0.5074724999722093
+    },
+    {
+      "id": "TREAT-I09-R182",
+      "name": "Gene-corroborated GOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R178",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "GOF mechanism transfer to a broader disease is more credible when the same gene has independent top-ranked disease evidence for that parent.",
+      "body": "R178 plus independent top-three gene-disease evidence to candidate parent",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The broader disease is supported by an independent gene-disease evidence synthesis while explicit GOF direction comes from the specific child.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; evidence rank, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 98,
+        "validation_hits": 1,
+        "training_hits": 6,
+        "contraindicated_pairs": 10,
+        "unresolved_or_blind_pairs": 91
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.07142857142857142,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012543004587155962,
+        "validation_precision_lower_bound": 0.010869565217391304,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0018389113644722323
+      },
+      "runtime_seconds": 0.19244154100306332
+    },
+    {
+      "id": "TREAT-I09-R183",
+      "name": "Gene- and anatomy-corroborated GOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R182",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "GOF mechanism transfer is strongest when the parent has independent same-gene evidence and affected-anatomy expression.",
+      "body": "R182 plus Bgee expression of directional gene in candidate parent anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit direction, independent parent-level gene evidence, and affected anatomy jointly support the broader indication.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; rank, Bgee provenance, shared anatomy, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 64,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 10,
+        "unresolved_or_blind_pairs": 61
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.046875,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.00054019014693172,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3710135419969447
+    },
+    {
+      "id": "TREAT-I09-R184",
+      "name": "Anatomy-supported LOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R179",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "LOF mechanism transfer to a broader disease is more credible when the gene is expressed in anatomy affected by the broader disease.",
+      "body": "R179 plus Bgee expression of directional gene in candidate parent anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Affected anatomy independently supports relevance to the broader disease, but ontology transfer can still overgeneralize.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; Bgee provenance, shared anatomy, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 105,
+        "validation_hits": 0,
+        "training_hits": 10,
+        "contraindicated_pairs": 5,
+        "unresolved_or_blind_pairs": 95
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.09523809523809523,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0017900615781182873,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.33866254100576043
+    },
+    {
+      "id": "TREAT-I09-R185",
+      "name": "Gene-corroborated LOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R179",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "LOF mechanism transfer to a broader disease is more credible when the same gene has independent top-ranked disease evidence for that parent.",
+      "body": "R179 plus independent top-three gene-disease evidence to candidate parent",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The broader disease is supported by an independent gene-disease evidence synthesis while explicit LOF direction comes from the specific child.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; evidence rank, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.08625683299032971
+    },
+    {
+      "id": "TREAT-I09-R186",
+      "name": "Gene- and anatomy-corroborated LOF parent transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R185",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "LOF mechanism transfer is strongest when the parent has independent same-gene evidence and affected-anatomy expression.",
+      "body": "R185 plus Bgee expression of directional gene in candidate parent anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit direction, independent parent-level gene evidence, and affected anatomy jointly support the broader indication.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive paths are TRAPI-expressible; rank, Bgee provenance, shared anatomy, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND evidence._miner_disease_rank <= 3\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.09128095803316683
+    }
+  ]
+}

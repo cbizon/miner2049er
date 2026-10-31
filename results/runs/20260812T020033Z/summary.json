@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T02:00:33.191376+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R135",
+      "name": "Side-effect profile indication transfer",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can inherit an indication from a treated peer when uncommon side effects form a substantial fraction of both drugs' bounded adverse-event profiles.",
+      "body": "training-treated peer and candidate share at least 3 p90-specific side effects covering at least half of the smaller p90-bounded profile",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Side-effect similarity can fingerprint shared pharmacology, but it is indirect and may reflect reporting or class effects rather than the therapeutic mechanism.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The treatment and side-effect paths are TRAPI-expressible; profile cardinality, overlap fraction, source exclusion, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\n  AND peer._miner_side_effect_profile_degree >= 3\n  AND peer._miner_side_effect_profile_degree <= 111\nMATCH (peer)-[:HAS_SIDE_EFFECT]->(phenotype:PhenotypicFeature)\n      <-[:HAS_SIDE_EFFECT]-(subject:Drug)\nWHERE subject <> peer\n  AND subject._miner_side_effect_profile_degree >= 3\n  AND subject._miner_side_effect_profile_degree <= 111\n  AND phenotype._miner_side_effect_drug_degree <= 96\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, peer, object, count(DISTINCT phenotype) AS shared_count,\n     CASE\n       WHEN subject._miner_side_effect_profile_degree <\n            peer._miner_side_effect_profile_degree\n       THEN subject._miner_side_effect_profile_degree\n       ELSE peer._miner_side_effect_profile_degree\n     END AS smaller_profile\nWHERE shared_count >= 3\n  AND 2 * shared_count >= smaller_profile\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 722,
+        "validation_hits": 4,
+        "training_hits": 76,
+        "contraindicated_pairs": 6,
+        "unresolved_or_blind_pairs": 642
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11080332409972299,
+        "visible_target_recall": 0.002907822041291073,
+        "visible_target_f0_5": 0.013157894736842106,
+        "validation_precision_lower_bound": 0.006191950464396285,
+        "validation_recall": 0.0017014036580178648,
+        "validation_f0_5": 0.004052684903748734
+      },
+      "runtime_seconds": 8.845868250005879
+    },
+    {
+      "id": "TREAT-I09-R136",
+      "name": "Side-effect profile transfer without disease mimicry",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R135",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Side-effect-profile indication transfer is more credible when the candidate drug does not reproduce an exact phenotype of the disease.",
+      "body": "R135 excluding exact overlap between candidate side effects and disease phenotypes",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The gate removes an explicit adverse counter-mechanism but retains the indirect side-effect-similarity premise.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and negative graph motifs are TRAPI-expressible separately; profile overlap, exact absence, source exclusion, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\n  AND peer._miner_side_effect_profile_degree >= 3\n  AND peer._miner_side_effect_profile_degree <= 111\nMATCH (peer)-[:HAS_SIDE_EFFECT]->(phenotype:PhenotypicFeature)\n      <-[:HAS_SIDE_EFFECT]-(subject:Drug)\nWHERE subject <> peer\n  AND subject._miner_side_effect_profile_degree >= 3\n  AND subject._miner_side_effect_profile_degree <= 111\n  AND phenotype._miner_side_effect_drug_degree <= 96\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\nWITH subject, peer, object, count(DISTINCT phenotype) AS shared_count,\n     CASE\n       WHEN subject._miner_side_effect_profile_degree <\n            peer._miner_side_effect_profile_degree\n       THEN subject._miner_side_effect_profile_degree\n       ELSE peer._miner_side_effect_profile_degree\n     END AS smaller_profile\nWHERE shared_count >= 3\n  AND 2 * shared_count >= smaller_profile\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 689,
+        "validation_hits": 4,
+        "training_hits": 65,
+        "contraindicated_pairs": 6,
+        "unresolved_or_blind_pairs": 620
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10014513788098693,
+        "visible_target_recall": 0.0025079965106135503,
+        "visible_target_f0_5": 0.011398176291793313,
+        "validation_precision_lower_bound": 0.00641025641025641,
+        "validation_recall": 0.0017014036580178648,
+        "validation_f0_5": 0.004126263668248401
+      },
+      "runtime_seconds": 20.451738375006244
+    },
+    {
+      "id": "TREAT-I09-R137",
+      "name": "Chemical-class and side-effect profile transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R135",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Side-effect-profile transfer is more credible when candidate and treated peer also share a relatively specific chemical class.",
+      "body": "R135 plus immediate chemical class containing at most 30 drugs",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines a pharmacological phenotype fingerprint with chemical ontology similarity, although neither establishes disease-corrective direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; profile overlap, shared-class identity, source exclusion, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (peer:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(object:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\n  AND peer._miner_side_effect_profile_degree >= 3\n  AND peer._miner_side_effect_profile_degree <= 111\nMATCH (peer)-[:HAS_SIDE_EFFECT]->(phenotype:PhenotypicFeature)\n      <-[:HAS_SIDE_EFFECT]-(subject:Drug)\nWHERE subject <> peer\n  AND subject._miner_side_effect_profile_degree >= 3\n  AND subject._miner_side_effect_profile_degree <= 111\n  AND phenotype._miner_side_effect_drug_degree <= 96\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, peer, object, count(DISTINCT phenotype) AS shared_count,\n     CASE\n       WHEN subject._miner_side_effect_profile_degree <\n            peer._miner_side_effect_profile_degree\n       THEN subject._miner_side_effect_profile_degree\n       ELSE peer._miner_side_effect_profile_degree\n     END AS smaller_profile\nWHERE shared_count >= 3\n  AND 2 * shared_count >= smaller_profile\nMATCH (subject)-[:SUBCLASS_OF]->(chemical_class)<-[:SUBCLASS_OF]-(peer)\nWHERE chemical_class._miner_drug_member_degree <= 30\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 69,
+        "validation_hits": 1,
+        "training_hits": 36,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 32
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5362318840579711,
+        "visible_target_recall": 0.0013448676940971212,
+        "visible_target_f0_5": 0.0066575500215920545,
+        "validation_precision_lower_bound": 0.030303030303030304,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002013693113169553
+      },
+      "runtime_seconds": 8.654218374984339
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/rule-candidate.schema.json",
+  "title": "Treats rule candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "rule_id",
+    "family_id",
+    "name",
+    "status",
+    "plain_language_rule",
+    "hypothesis",
+    "graph_pattern",
+    "mechanism",
+    "execution"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "rule_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]+$"},
+    "family_id": {"type": "string", "minLength": 1},
+    "parent_rule_id": {"type": ["string", "null"]},
+    "name": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["candidate", "retained", "rejected", "failed", "baseline"]
+    },
+    "plain_language_rule": {"type": "string", "minLength": 20},
+    "hypothesis": {"type": "string", "minLength": 10},
+    "variant_parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean", "null"]
+      }
+    },
+    "graph_pattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges", "constraints"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role", "categories", "explanation"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "role": {"type": "string", "minLength": 1},
+              "categories": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "pattern": "^biolink:"}
+              },
+              "explanation": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "subject",
+              "object",
+              "predicates",
+              "direction",
+              "explanation"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$"
+              },
+              "subject": {"type": "string", "minLength": 1},
+              "object": {"type": "string", "minLength": 1},
+              "predicates": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^biolink:"}
+              },
+              "excluded_predicates": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "pattern": "^biolink:"}
+              },
+              "exclusion_rationale": {
+                "type": ["string", "null"],
+                "minLength": 10
+              },
+              "direction": {"enum": ["forward", "reverse", "either"]},
+              "qualifiers": {"type": "object"},
+              "source_constraints": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "explanation": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "kind", "expression", "explanation"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "kind": {
+                "enum": [
+                  "property",
+                  "degree",
+                  "source",
+                  "ontology",
+                  "negative_evidence",
+                  "cardinality",
+                  "other"
+                ]
+              },
+              "expression": {"type": "string", "minLength": 1},
+              "explanation": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "derived_features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "definition",
+          "inputs",
+          "construction",
+          "interpretation",
+          "neo4j_artifact_id"
+        ],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "definition": {"type": "string", "minLength": 1},
+          "inputs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string"}
+          },
+          "construction": {"type": "string", "minLength": 1},
+          "formula": {"type": ["string", "null"]},
+          "interpretation": {"type": "string", "minLength": 1},
+          "neo4j_artifact_id": {
+            "type": ["string", "null"],
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          }
+        }
+      }
+    },
+    "mechanism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "rationale"],
+      "properties": {
+        "score": {"enum": ["low", "medium", "high"]},
+        "rationale": {"type": "string", "minLength": 10}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cypher_template", "trapi"],
+      "properties": {
+        "cypher_template": {"type": "string", "minLength": 20},
+        "trapi": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expressibility", "limitations"],
+          "properties": {
+            "expressibility": {"enum": ["full", "partial", "none"]},
+            "query": {"type": ["object", "null"]},
+            "limitations": {"type": "string"}
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

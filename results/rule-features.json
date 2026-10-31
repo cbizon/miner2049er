@@ -1,0 +1,224 @@
+{
+  "created_at": "2026-08-24T13:54:05.474825+00:00",
+  "features": [
+    {
+      "name": "chemical_affects_activity_or_abundance_decreased_degree",
+      "entities_updated": 7070,
+      "min_degree": 1,
+      "max_degree": 2192,
+      "runtime_seconds": 81.4617626659965
+    },
+    {
+      "name": "disease_phenotype_degree",
+      "entities_updated": 10070,
+      "min_degree": 1,
+      "max_degree": 157,
+      "runtime_seconds": 0.8965856659997371
+    },
+    {
+      "name": "phenotype_descendant_degree",
+      "entities_updated": 9604,
+      "min_degree": 1,
+      "max_degree": 20479,
+      "runtime_seconds": 0.5826117919932585
+    },
+    {
+      "name": "phenotype_disease_member_degree",
+      "entities_updated": 9473,
+      "min_degree": 1,
+      "max_degree": 2237,
+      "runtime_seconds": 0.4049669590021949
+    },
+    {
+      "name": "phenotype_side_effect_drug_degree",
+      "entities_updated": 1350,
+      "min_degree": 1,
+      "max_degree": 868,
+      "runtime_seconds": 0.15954162499838276
+    },
+    {
+      "name": "drug_side_effect_profile_degree",
+      "entities_updated": 1012,
+      "min_degree": 1,
+      "max_degree": 363,
+      "runtime_seconds": 0.10489550000056624
+    },
+    {
+      "name": "disease_gene_degree",
+      "entities_updated": 79,
+      "min_degree": 1,
+      "max_degree": 6304,
+      "runtime_seconds": 0.5556963749986608
+    },
+    {
+      "name": "chemical_class_drug_member_degree",
+      "entities_updated": 1972,
+      "min_degree": 1,
+      "max_degree": 1998,
+      "runtime_seconds": 0.17050591599399922
+    },
+    {
+      "name": "process_gene_member_degree",
+      "entities_updated": 11791,
+      "min_degree": 1,
+      "max_degree": 7332,
+      "runtime_seconds": 1.8396913329997915
+    },
+    {
+      "name": "molecular_activity_gene_enable_degree",
+      "entities_updated": 4951,
+      "min_degree": 1,
+      "max_degree": 21109,
+      "runtime_seconds": 0.42801729200436966
+    },
+    {
+      "name": "cellular_component_gene_member_degree",
+      "entities_updated": 1118,
+      "min_degree": 1,
+      "max_degree": 2607,
+      "runtime_seconds": 0.10904624999966472
+    },
+    {
+      "name": "cellular_component_active_gene_degree",
+      "entities_updated": 550,
+      "min_degree": 1,
+      "max_degree": 10752,
+      "runtime_seconds": 0.12872095799684757
+    },
+    {
+      "name": "gene_family_member_degree",
+      "entities_updated": 7439,
+      "min_degree": 1,
+      "max_degree": 531,
+      "runtime_seconds": 0.1791516250013956
+    },
+    {
+      "name": "process_disease_genetic_association_degree",
+      "entities_updated": 10142,
+      "min_degree": 1,
+      "max_degree": 32,
+      "runtime_seconds": 0.5463627079952857
+    },
+    {
+      "name": "process_phenotype_genetic_association_degree",
+      "entities_updated": 10230,
+      "min_degree": 1,
+      "max_degree": 63,
+      "runtime_seconds": 1.0633216249989346
+    },
+    {
+      "name": "anatomy_disease_location_degree",
+      "entities_updated": 3752,
+      "min_degree": 1,
+      "max_degree": 1397,
+      "runtime_seconds": 0.6718776670022635
+    },
+    {
+      "name": "anatomy_human_gene_expression_degree",
+      "entities_updated": 329,
+      "min_degree": 1,
+      "max_degree": 9414,
+      "runtime_seconds": 65.58645541699661
+    },
+    {
+      "name": "cell_human_gene_expression_degree",
+      "entities_updated": 41,
+      "min_degree": 3,
+      "max_degree": 19712,
+      "runtime_seconds": 3.1601679580053315
+    },
+    {
+      "name": "anatomy_phenotype_location_degree",
+      "entities_updated": 3204,
+      "min_degree": 1,
+      "max_degree": 484,
+      "runtime_seconds": 1.1187124170028255
+    },
+    {
+      "name": "disease_descendant_degree",
+      "entities_updated": 12595,
+      "min_degree": 1,
+      "max_degree": 37824,
+      "runtime_seconds": 1.6209087500028545
+    },
+    {
+      "name": "disease_superclass_degree",
+      "entities_updated": 39228,
+      "min_degree": 1,
+      "max_degree": 160,
+      "runtime_seconds": 1.3937418749992503
+    },
+    {
+      "name": "disease_process_support",
+      "relationships_updated": 120675,
+      "min_gene_count": 1,
+      "max_gene_count": 534,
+      "runtime_seconds": 3.9076577090017963
+    },
+    {
+      "name": "gene_disease_evidence",
+      "relationships_updated": 2389,
+      "min_publications": 1,
+      "max_publications": 885,
+      "runtime_seconds": 5.459846124998876
+    },
+    {
+      "name": "gene_disease_evidence_gene_marginals",
+      "relationships_updated": 2389,
+      "min_disease_degree": 1,
+      "max_disease_degree": 428,
+      "runtime_seconds": 0.0961105829992448
+    },
+    {
+      "name": "gene_disease_evidence_disease_marginals",
+      "relationships_updated": 2389,
+      "min_gene_degree": 1,
+      "max_gene_degree": 144,
+      "runtime_seconds": 0.07282133300032001
+    },
+    {
+      "name": "gene_disease_evidence_scores",
+      "relationships_updated": 2389,
+      "publication_total": 19390,
+      "disease_count": 855,
+      "min_npmi": -0.3277919479553671,
+      "max_npmi": 1.0,
+      "min_relevance_score": -0.050839770643222676,
+      "max_relevance_score": 3.0373851207326403,
+      "runtime_seconds": 0.14911558399762725
+    },
+    {
+      "name": "gene_disease_anatomy_context",
+      "relationships_updated": 2389,
+      "min_bgee_anatomy_count": 0,
+      "max_bgee_anatomy_count": 134,
+      "max_phenotype_supported_anatomy_count": 17,
+      "runtime_seconds": 86.43663162500161
+    },
+    {
+      "name": "gene_disease_process_context",
+      "relationships_updated": 2389,
+      "max_direct_process_count": 58,
+      "max_phenotype_process_count": 3,
+      "max_shared_process_causal_gene_count": 86,
+      "runtime_seconds": 4.291313583002193
+    },
+    {
+      "name": "gene_disease_evidence_ranks",
+      "relationships_updated": 2389,
+      "min_rank": 1,
+      "max_rank": 144,
+      "runtime_seconds": 0.15543108300335007
+    }
+  ],
+  "clear": {
+    "relationships": {
+      "deleted_relationships": 0,
+      "runtime_seconds": 0.25159308400179725
+    },
+    "properties": {
+      "entities_cleared": 0,
+      "runtime_seconds": 6.641050791004091
+    }
+  }
+}

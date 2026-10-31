@@ -1,0 +1,227 @@
+{
+  "created_at": "2026-08-12T05:42:00.788460+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R155",
+      "name": "Compact active-component causal module",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can treat a disease when it directly inhibits one causal gene that is active in the same compact cellular component as a second causal disease gene.",
+      "body": "drug binds and decreases causal gene; second causal gene shares p90-compact GO active-in component",
+      "mechanism_score": "high",
+      "mechanism_rationale": "ACTIVE_IN localizes the molecular activities of two causal genes to a discrete component, which is stronger functional context than generic component membership, although disease activity direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, causal-gene, and active-in paths are TRAPI-expressible; distinct-gene identity, component degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (target)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(driver:Gene)\nMATCH (driver)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND component._miner_component_active_gene_degree <= 185\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 49,
+        "validation_hits": 2,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 46
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.061224489795918366,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005413598960589001,
+        "validation_precision_lower_bound": 0.041666666666666664,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.003932363350373574
+      },
+      "runtime_seconds": 3.5142666249885224
+    },
+    {
+      "id": "TREAT-I09-R156",
+      "name": "Dual-inhibition active-component causal module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R155",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An active-component mechanism is most credible when the drug directly binds and decreases both causal genes active in the same compact component.",
+      "body": "drug binds and decreases two causal genes sharing p90-compact GO active-in component",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two directional target arms converge on causal activities localized to one discrete component, but the graph still does not state whether either disease driver is overactive or deficient.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The repeated target and active-in paths are TRAPI-expressible; two-target cardinality, component degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene1)-[:ACTIVE_IN]->(component:CellularComponent)\n      <-[:ACTIVE_IN]-(gene2:Gene)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND component._miner_component_active_gene_degree <= 185\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 17,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11764705882352941,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036258158085569254,
+        "validation_precision_lower_bound": 0.0625,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002070393374741201
+      },
+      "runtime_seconds": 0.3668770419899374
+    },
+    {
+      "id": "TREAT-I09-R157",
+      "name": "Direct GO-CAM causal propagation",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibiting a target that is manually asserted directly causally upstream of a top-ranked disease driver can propagate a therapeutic effect.",
+      "body": "drug decreases bound target; GO-CAM target causes top-three causal disease driver",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule uses a manually curated, publication-backed GO-CAM causal edge, but RO:0002630 does not preserve positive versus negative influence and disease-driver direction is also absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The direct causal path is TRAPI-expressible; GO-CAM provenance, driver rank, identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[step:CAUSES]->(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:go-cam' IN coalesce(step.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 215,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 214
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.004651162790697674,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00017623008600028197,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.5093416660092771
+    },
+    {
+      "id": "TREAT-I09-R158",
+      "name": "Two-step GO-CAM causal propagation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R157",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A two-step manually curated GO-CAM causal chain can connect an inhibited target to a top-ranked disease driver beyond local two-hop motifs.",
+      "body": "drug decreases bound target; two GO-CAM causes edges reach top-three causal disease driver",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The five-edge body uses two independent publication-backed causal assertions, but sign loss at either RO:0002630 edge can invert the therapeutic interpretation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The two-step causal path is TRAPI-expressible; source provenance, node distinctness, driver rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[step1:CAUSES]->(middle:Gene)\n      -[step2:CAUSES]->(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE target <> middle\n  AND middle <> driver\n  AND target <> driver\n  AND 'infores:go-cam' IN coalesce(step1.primary_knowledge_sources, [])\n  AND 'infores:go-cam' IN coalesce(step2.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 12,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.11944095802027732
+    },
+    {
+      "id": "TREAT-I09-R159",
+      "name": "Causal-enzyme substrate exposure diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug that is both a substrate and inhibitor of a causal enzyme might modulate the corresponding disease.",
+      "body": "causal gene has drug as ChEMBL substrate; drug directly binds and decreases same top-three disease gene",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The observed ABCG2-gout cohort is more naturally interpreted as altered exposure or toxicity risk than therapeutic correction, so this motif is retained only as negative evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The substrate, target, and disease paths are TRAPI-expressible; rank and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (gene:Gene)-[:HAS_SUBSTRATE]->(subject:Drug)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.07525483396602795
+    }
+  ]
+}

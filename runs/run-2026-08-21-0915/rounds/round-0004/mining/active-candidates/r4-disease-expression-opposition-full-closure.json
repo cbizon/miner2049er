@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-disease-expression-opposition-full-closure",
+  "family_id": "explicit-disease-expression-reversal",
+  "name": "Opposing Disease And Drug Expression Effects (Full Descendant Control)",
+  "status": "baseline",
+  "plain_language_rule": "Predict treatment when Disease causally affects gene with an explicit increased or decreased direction for expression The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; Chemical causally affects gene with an explicit increased or decreased direction for expression The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control. The disease and drug expression directions must be opposite.",
+  "hypothesis": "Opposing signed effects of a disease and a drug on the same gene expression may support molecular reversal.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      }
+    ],
+    "edges": [
+      {
+        "id": "disease_effect",
+        "subject": "disease",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Disease causally affects gene with an explicit increased or decreased direction for expression The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": [
+            "increased",
+            "decreased"
+          ],
+          "object_aspect_qualifier": [
+            "expression"
+          ]
+        }
+      },
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects gene with an explicit increased or decreased direction for expression The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": [
+            "increased",
+            "decreased"
+          ],
+          "object_aspect_qualifier": [
+            "expression"
+          ]
+        }
+      }
+    ],
+    "constraints": [
+      {
+        "id": "opposite-expression",
+        "kind": "property",
+        "expression": "The disease and drug expression directions must be opposite.",
+        "explanation": "The disease and drug expression directions must be opposite."
+      }
+    ]
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Opposing signed effects of a disease and a drug on the same gene expression may support molecular reversal. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (disease:Disease)-[disease_effect:{{relationship_types:disease_effect}}]->(gene:GeneOrGeneProduct) WHERE disease_effect.predicate IN {{predicates:disease_effect}} AND disease_effect.qualified_predicate = \"biolink:causes\" AND disease_effect.object_direction_qualifier IN [\"increased\",\"decreased\"] AND disease_effect.object_aspect_qualifier IN [\"expression\"] MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(gene:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND target.object_direction_qualifier IN [\"increased\",\"decreased\"] AND target.object_aspect_qualifier IN [\"expression\"] AND (target.object_direction_qualifier<>disease_effect.object_direction_qualifier) RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "disease_effect": {
+                "subject": "disease",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "expression"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "expression"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "target": {
+                "subject": "chemical",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "expression"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "expression"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: The disease and drug expression directions must be opposite."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation.",
+    "The full affects closure includes ameliorates_condition and is classified as treatment-using even if no such edge satisfies the other constraints in this graph."
+  ],
+  "parent_rule_id": "r4-disease-expression-opposition"
+}

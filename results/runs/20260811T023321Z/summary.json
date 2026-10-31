@@ -1,0 +1,222 @@
+{
+  "created_at": "2026-08-11T02:33:21.933923+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I06-R032",
+      "name": "Tissue-specific causal target mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I05-R031",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal target is more likely to be therapeutically relevant when Bgee places the human gene in a relatively disease-specific anatomy linked to the disease.",
+      "body": "R031 plus human causal gene -expressed_in[Bgee]-> anatomy <-located_in|occurs_in- disease; anatomy disease degree <=200",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds independently sourced target-expression context and an anatomy-specificity constraint, but the disease-anatomy assertion is literature-derived and disease gain/loss direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological cycle is TRAPI-expressible; evidence provenance, anatomy degree, NPMI, target degree, and adverse-edge absence require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 79,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 62
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.21518987341772153,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0030544775046715536,
+        "validation_precision_lower_bound": 0.015873015873015872,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.001920860545524395
+      },
+      "runtime_seconds": 2.0707114589749835
+    },
+    {
+      "id": "TREAT-I06-R033",
+      "name": "Phenotype-corroborated tissue mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R032",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An anatomical target match is stronger when a disease phenotype independently localizes to the same anatomy.",
+      "body": "R032 plus disease -has_phenotype-> phenotype -located_in|occurs_in-> same anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Forms a nonlinear target-expression, disease-location, and phenotype-location cycle, but both disease anatomy branches are currently SemMed-derived and therapeutic direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The nonlinear biological graph is TRAPI-expressible; cardinality, provenance, specificity, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nMATCH (object)-[:HAS_PHENOTYPE]->(:PhenotypicFeature)\n      -[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.26666666666666666,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007253735673872042,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 3.910929625038989
+    },
+    {
+      "id": "TREAT-I06-R034",
+      "name": "Independent clinical tissue mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R032",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A tissue-specific causal mechanism plus independently sourced clinical-trial evidence should improve precision while retaining common-disease targets.",
+      "body": "R032 plus drug -in_clinical_trials_for[multiomics-clinicaltrials]-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target, causal, expression, anatomical, and independent clinical evidence, but the clinical branch is treatment-oriented and disease-mechanism direction remains absent.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological and clinical graph motifs are TRAPI-expressible; provenance, specificity, NPMI, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 3\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 23,
+        "validation_hits": 1,
+        "training_hits": 12,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 10
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5652173913043478,
+        "visible_target_recall": 0.00047252108170979935,
+        "visible_target_f0_5": 0.0023547311983770467,
+        "validation_precision_lower_bound": 0.09090909090909091,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020876826722338207
+      },
+      "runtime_seconds": 1.324921416991856
+    },
+    {
+      "id": "TREAT-I06-R035",
+      "name": "Tissue-localized compact pathway mechanism",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R032",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A tissue-specific causal target is more credible when it participates in a compact process supported by multiple genes associated with the disease.",
+      "body": "R032 plus disease -process support[2-20 genes]-> process <-involved_in- causal target; process gene degree <=100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds a compact disease-supported process to the target, causal, and anatomical branches, but pathway membership and disease localization do not establish corrective direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The nonlinear source graph is TRAPI-expressible; derived support cardinality, provenance, anatomy specificity, NPMI, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nMATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\n      <-[:INVOLVED_IN]-(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND support.gene_count >= 2\n  AND support.gene_count <= 20\n  AND process._miner_gene_member_degree <= 100\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 1.0,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003633720930232558,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 4.517362000013236
+    },
+    {
+      "id": "TREAT-I06-R036",
+      "name": "Signed regulatory pathway intervention",
+      "iteration": 6,
+      "parent_rule": "TREAT-I06-R035",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A selective drug may treat a disease when it inhibits a tissue-localized target that positively regulates a causal disease gene within the same compact disease-supported process.",
+      "body": "drug binds and decreases target -regulates[upregulated, SIGNOR]-> causal driver -causes-> disease; target and driver share compact disease process; target expressed in specific disease anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses a signed three-hop molecular propagation path with independent pathway and anatomy branches, but the graph still does not establish whether reducing the causal driver is corrective for the disease.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The molecular, pathway, and anatomy graph is TRAPI-expressible; signed edge properties, provenance, support cardinality, specificity, relevance, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target_gene:Gene)\n      -[regulation:REGULATES]->(driver_gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(target_gene)\nMATCH (driver_gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (target_gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nMATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\n      <-[:INVOLVED_IN]-(target_gene)\nMATCH (driver_gene)-[:INVOLVED_IN]->(process)\nWHERE target_gene <> driver_gene\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])\n  AND 'NCBITaxon:9606' IN coalesce(target_gene.in_taxon, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND anatomy._miner_disease_location_degree <= 200\n  AND support.gene_count >= 2\n  AND support.gene_count <= 20\n  AND process._miner_gene_member_degree <= 100\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 5,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 22.561503875011113
+    }
+  ]
+}

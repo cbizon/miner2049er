@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T18:02:19.693895+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R387",
+      "name": "Mutant-form GOF driver inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can treat a GOF disease when both its direct binding and decreased-activity assertions explicitly target the mutant form of the causal driver.",
+      "body": "mutant-qualified binding and activity inhibition of a Gene2Phenotype GOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The pharmacologic and disease edges independently agree on mutant target form and causal direction, providing mutation-specific intervention evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Mutant binding, mutant activity inhibition, and the variant-qualified disease edge are TRAPI-expressible; disease ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE binding.object_form_or_variant_qualifier = 'mutant_form'\n  AND effect.object_form_or_variant_qualifier = 'mutant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 13
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.13333333333333333,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003626867836936021,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9715758749516681
+    },
+    {
+      "id": "TREAT-I09-R388",
+      "name": "Mutant-form GOF driver activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing activity of a mutant GOF driver is the matched worsening control.",
+      "body": "R387 with mutant driver activity increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same mutation-specific evidence is retained, but the pharmacologic direction reinforces the GOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R387.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE binding.object_form_or_variant_qualifier = 'mutant_form'\n  AND effect.object_form_or_variant_qualifier = 'mutant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.058600999996997416
+    }
+  ]
+}

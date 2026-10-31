@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-production-unsigned-direct",
+  "family_id": "disease-produced-molecule-intervention",
+  "name": "Disease Product Unsigned",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.; The disease produces the molecular gene product The pinned descendant closure is biolink:produces.; Chemical causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+  "hypothesis": "Curated pharmacologic action on a molecule produced by the disease may interrupt an overproduction mechanism.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      }
+    ],
+    "edges": [
+      {
+        "id": "direct",
+        "subject": "chemical",
+        "object": "disease",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning."
+      },
+      {
+        "id": "production",
+        "subject": "disease",
+        "object": "gene",
+        "predicates": [
+          "biolink:produces"
+        ],
+        "direction": "forward",
+        "explanation": "The disease produces the molecular gene product The pinned descendant closure is biolink:produces."
+      },
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes"
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [
+    {
+      "name": "complete curated causal drug-target access path",
+      "definition": "A stored Drug-to-GeneOrGeneProduct relationship exists for a causes-qualified member of the full affects descendant closure with ChEMBL, Guide to Pharmacology, or DrugCentral primary-source support.",
+      "inputs": [
+        "The full pinned affects descendant closure on Drug-to-GeneOrGeneProduct edges",
+        "Raw qualified_predicate and primary_knowledge_sources properties"
+      ],
+      "construction": "Filter raw edges by causes qualification and any of the three sources, group by canonical endpoint pair, count distinct raw relationship identities, and merge one compact relationship per pair. Missing qualifiers or source arrays do not qualify. The rule uses only presence, then rematches raw edges with its recorded exact predicates, qualifiers, and sources. Removing the initial access-path MATCH and WITH before the marked comment gives the otherwise identical unmaterialized query.",
+      "formula": "compact presence iff count(distinct qualifying raw relationship)>0",
+      "interpretation": "This is a query acceleration, not a prediction threshold or an extra biological condition. Full-closure and exact-filtered target rules both rematch their own raw evidence. No training or held-out treatment labels define the access path.",
+      "neo4j_artifact_id": "r0004-curated-causal-target-v1"
+    }
+  ],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Curated pharmacologic action on a molecule produced by the disease may interrupt an overproduction mechanism. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[compact:MINER_R0004_CURATED_TARGET]->(gene:GeneOrGeneProduct) WHERE compact.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT chemical,gene /* END CURATED ACCESS PATH */ MATCH (chemical:Drug)-[direct:{{relationship_types:direct}}]->(disease:Disease) WHERE direct.predicate IN {{predicates:direct}} MATCH (disease:Disease)-[production:{{relationship_types:production}}]->(gene:GeneOrGeneProduct) WHERE production.predicate IN {{predicates:production}} MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(gene:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(target.primary_knowledge_sources,[])) RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "direct": {
+                "subject": "chemical",
+                "object": "disease",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              },
+              "production": {
+                "subject": "disease",
+                "object": "gene",
+                "predicates": [
+                  "biolink:produces"
+                ]
+              },
+              "target": {
+                "subject": "chemical",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: direct: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; target: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; the compact curated target access path is a Cypher optimization; TRAPI should retrieve the equivalent rematched raw target edge."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Production may be a consequence or biomarker rather than a harmful driver; inhibition is not necessarily corrective."
+  ]
+}

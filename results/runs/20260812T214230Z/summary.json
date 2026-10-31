@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T21:42:30.155219+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R477",
+      "name": "SIGNOR-bridged dual-arm correction",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R472",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "R472 is more mechanistic when the inhibited target directly interacts with a second gene in the disrupted disease-associated process.",
+      "body": "R472 plus SIGNOR-like direct target-to-process-member interaction",
+      "mechanism_score": "high",
+      "mechanism_rationale": "An explicit gene-gene bridge connects the independent target and process arms, but this variant has narrow target diversity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; dynamic bridge type, source exclusions, rank, and harm veto require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'DIRECTLY_PHYSICALLY_INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.42857142857142855,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005446623093681918,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.6810119160218164
+    },
+    {
+      "id": "TREAT-I09-R478",
+      "name": "SIGNOR-bridged target activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R477",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the bridged top disease target is the matched control for R477.",
+      "body": "R477 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The network bridge remains, but the target direction lacks a general corrective interpretation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R477.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'DIRECTLY_PHYSICALLY_INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0209514159942046
+    },
+    {
+      "id": "TREAT-I09-R479",
+      "name": "SemMed interaction-bridged dual-arm correction",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R472",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A literature interaction between the inhibited target and a disrupted-process member may connect R472's two arms.",
+      "body": "R472 plus generic target-to-process-member interaction",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The bridge links the two arms but uses an unsigned literature interaction and has narrow target diversity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R477.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5555555555555556,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009075068970524175,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.3139275420107879
+    },
+    {
+      "id": "TREAT-I09-R480",
+      "name": "SemMed interaction-bridged target activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R479",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the generically bridged target is the matched control for R479.",
+      "body": "R479 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The target direction is not corrective despite the network bridge.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R477.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9840893750078976
+    },
+    {
+      "id": "TREAT-I09-R481",
+      "name": "IntAct-bridged dual-arm correction",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R472",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "R472 is more mechanistic when the inhibited target physically interacts with a gene participating in the disrupted disease-associated process.",
+      "body": "R472 plus IntAct target-to-process-member physical interaction",
+      "mechanism_score": "high",
+      "mechanism_rationale": "A curated physical-interaction bridge connects the independently supported target and process arms across multiple targets and pathway members.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R477.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'PHYSICALLY_INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 11,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 8
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2727272727272727,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005443460589345333,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.4135053749778308
+    },
+    {
+      "id": "TREAT-I09-R482",
+      "name": "IntAct-bridged target activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R481",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the physically bridged target is the matched control for R481.",
+      "body": "R481 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The physical network bridge remains while the target direction is reversed.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R477.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(process)\nMATCH (target:Gene)-[bridge]-(partner)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE type(bridge) = 'PHYSICALLY_INTERACTS_WITH'\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(bridge.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0492167500196956
+    }
+  ]
+}

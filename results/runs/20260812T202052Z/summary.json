@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T20:20:52.422537+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R439",
+      "name": "Pathway-corroborated inhibition without black-box warning",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R404",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Pathway-corroborated target inhibition is more useful for treatment prediction when the candidate drug lacks a ChEMBL black-box warning.",
+      "body": "R404 excluding drugs with a populated ChEMBL black-box-warning flag",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The biological mechanism is unchanged from R404; the drug-level safety property is independent negative evidence intended to remove high-risk candidates.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive biological motif is TRAPI-expressible; the node-property exclusion, source constraints, disease-relative rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (process:Pathway)-[path_evidence:GENETIC_ASSOCIATION]->\n      (object:Disease)\nMATCH (target:Gene)-[membership:INVOLVED_IN]->(process)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE process.id STARTS WITH 'GO:'\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:goa' IN coalesce(membership.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n\n  AND subject.chembl_black_box_warning IS NULL\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 19,
+        "validation_hits": 0,
+        "training_hits": 10,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5263157894736842,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0018123821951573148,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.4221022499841638
+    },
+    {
+      "id": "TREAT-I09-R440",
+      "name": "Pathway-corroborated black-box-warning diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R404",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The black-box-warning subset of R404 should have lower treatment enrichment or more contraindications if the ChEMBL safety property is useful negative evidence.",
+      "body": "R404 restricted to drugs with ChEMBL black-box warning",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is a matched negative-evidence diagnostic rather than an independent treatment mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same graph-path constraints as R439, with a positive node-property requirement.",
+      "trapi_template": null,
+      "cypher": "MATCH (process:Pathway)-[path_evidence:GENETIC_ASSOCIATION]->\n      (object:Disease)\nMATCH (target:Gene)-[membership:INVOLVED_IN]->(process)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE process.id STARTS WITH 'GO:'\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:goa' IN coalesce(membership.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n\n  AND subject.chembl_black_box_warning = 'True'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 26,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 23
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11538461538461539,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005431633835457706,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.24047808296745643
+    }
+  ]
+}

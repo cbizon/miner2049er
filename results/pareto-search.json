@@ -1,0 +1,1044 @@
+{
+  "created_at": "2026-08-11T13:48:00.970893+00:00",
+  "feature_rows": 1998,
+  "configurations": 44595,
+  "current_front": [
+    {
+      "id": "TREAT-I02-R011",
+      "visible_hits": 12180,
+      "visible_precision": 0.039201676209603444
+    },
+    {
+      "id": "TREAT-I02-R013",
+      "visible_hits": 6564,
+      "visible_precision": 0.11809366173110483
+    },
+    {
+      "id": "TREAT-I03-R022",
+      "visible_hits": 23,
+      "visible_precision": 0.48936170212765956
+    },
+    {
+      "id": "TREAT-I04-R026",
+      "visible_hits": 21,
+      "visible_precision": 0.5675675675675675
+    },
+    {
+      "id": "TREAT-I05-R030",
+      "visible_hits": 22,
+      "visible_precision": 0.5116279069767442
+    },
+    {
+      "id": "TREAT-I07-R059",
+      "visible_hits": 13,
+      "visible_precision": 0.9285714285714286
+    },
+    {
+      "id": "TREAT-I07-R060",
+      "visible_hits": 16,
+      "visible_precision": 0.8888888888888888
+    },
+    {
+      "id": "TREAT-I07-R061",
+      "visible_hits": 17,
+      "visible_precision": 0.85
+    },
+    {
+      "id": "TREAT-I07-R062",
+      "visible_hits": 19,
+      "visible_precision": 0.6785714285714286
+    },
+    {
+      "id": "TREAT-I07-R063",
+      "visible_hits": 20,
+      "visible_precision": 0.6451612903225806
+    }
+  ],
+  "new_front": [
+    {
+      "conditions": [
+        "pair_treatment_parent_semmed",
+        "non_semmed_primary_source_count_>=_1",
+        "binding_source_count_>=_4",
+        "disease_descendant_degree_<=_500"
+      ],
+      "expressions": [
+        "pair_treatment_parent_semmed",
+        "non_semmed_primary_source_count >= 1",
+        "binding_source_count >= 4",
+        "disease_descendant_degree <= 500"
+      ],
+      "metrics": {
+        "candidate_pairs": 21,
+        "training_hits": 19,
+        "validation_hits": 1,
+        "visible_hits": 20,
+        "unresolved_or_blind_pairs": 1,
+        "visible_precision": 0.9523809523809523
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "not_pair_direct_adverse",
+        "translational_evidence_count_gte_4",
+        "min_anatomy_gene_degree_<=_6000",
+        "binding_source_count_>=_2"
+      ],
+      "expressions": [
+        "NOT pair_direct_adverse",
+        "translational_evidence_count >= 4",
+        "min_anatomy_gene_degree <= 6000",
+        "binding_source_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 21,
+        "training_hits": 20,
+        "validation_hits": 0,
+        "visible_hits": 20,
+        "unresolved_or_blind_pairs": 1,
+        "visible_precision": 0.9523809523809523
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "binding_ttd",
+        "binding_gtopdb",
+        "translational_evidence_count_gte_3",
+        "binding_source_count_>=_5"
+      ],
+      "expressions": [
+        "binding_ttd",
+        "binding_gtopdb",
+        "translational_evidence_count >= 3",
+        "binding_source_count >= 5"
+      ],
+      "metrics": {
+        "candidate_pairs": 31,
+        "training_hits": 28,
+        "validation_hits": 1,
+        "visible_hits": 29,
+        "unresolved_or_blind_pairs": 2,
+        "visible_precision": 0.9354838709677419
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "binding_ttd",
+        "translational_evidence_count_gte_3",
+        "binding_source_count_>=_5"
+      ],
+      "expressions": [
+        "binding_ttd",
+        "translational_evidence_count >= 3",
+        "binding_source_count >= 5"
+      ],
+      "metrics": {
+        "candidate_pairs": 36,
+        "training_hits": 32,
+        "validation_hits": 1,
+        "visible_hits": 33,
+        "unresolved_or_blind_pairs": 3,
+        "visible_precision": 0.9166666666666666
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count_gte_4",
+        "non_semmed_primary_source_count_>=_1"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count >= 4",
+        "non_semmed_primary_source_count >= 1"
+      ],
+      "metrics": {
+        "candidate_pairs": 39,
+        "training_hits": 33,
+        "validation_hits": 1,
+        "visible_hits": 34,
+        "unresolved_or_blind_pairs": 5,
+        "visible_precision": 0.8717948717948718
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_chembl",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.25"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_chembl",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.25"
+      ],
+      "metrics": {
+        "candidate_pairs": 43,
+        "training_hits": 37,
+        "validation_hits": 0,
+        "visible_hits": 37,
+        "unresolved_or_blind_pairs": 6,
+        "visible_precision": 0.8604651162790697
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_chembl",
+        "translational_evidence_count_gte_4",
+        "causal_publication_count_>=_2"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_chembl",
+        "translational_evidence_count >= 4",
+        "causal_publication_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 46,
+        "training_hits": 39,
+        "validation_hits": 0,
+        "visible_hits": 39,
+        "unresolved_or_blind_pairs": 7,
+        "visible_precision": 0.8478260869565217
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count_gte_4",
+        "min_anatomy_gene_degree_<=_8000"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count >= 4",
+        "min_anatomy_gene_degree <= 8000"
+      ],
+      "metrics": {
+        "candidate_pairs": 55,
+        "training_hits": 45,
+        "validation_hits": 1,
+        "visible_hits": 46,
+        "unresolved_or_blind_pairs": 9,
+        "visible_precision": 0.8363636363636363
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count_gte_4",
+        "bgee_anatomy_count_>=_1"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count >= 4",
+        "bgee_anatomy_count >= 1"
+      ],
+      "metrics": {
+        "candidate_pairs": 61,
+        "training_hits": 49,
+        "validation_hits": 1,
+        "visible_hits": 50,
+        "unresolved_or_blind_pairs": 11,
+        "visible_precision": 0.819672131147541
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.25"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.25"
+      ],
+      "metrics": {
+        "candidate_pairs": 65,
+        "training_hits": 51,
+        "validation_hits": 1,
+        "visible_hits": 52,
+        "unresolved_or_blind_pairs": 13,
+        "visible_precision": 0.8
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "binding_dgidb",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 71,
+        "training_hits": 55,
+        "validation_hits": 1,
+        "visible_hits": 56,
+        "unresolved_or_blind_pairs": 15,
+        "visible_precision": 0.7887323943661971
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "direct_relation_type_count_>=_3"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "direct_relation_type_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 75,
+        "training_hits": 57,
+        "validation_hits": 1,
+        "visible_hits": 58,
+        "unresolved_or_blind_pairs": 17,
+        "visible_precision": 0.7733333333333333
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.0",
+        "bgee_anatomy_count_>=_1"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.0",
+        "bgee_anatomy_count >= 1"
+      ],
+      "metrics": {
+        "candidate_pairs": 79,
+        "training_hits": 59,
+        "validation_hits": 1,
+        "visible_hits": 60,
+        "unresolved_or_blind_pairs": 19,
+        "visible_precision": 0.759493670886076
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_4",
+        "bgee_anatomy_count_>=_1"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 4",
+        "bgee_anatomy_count >= 1"
+      ],
+      "metrics": {
+        "candidate_pairs": 79,
+        "training_hits": 59,
+        "validation_hits": 1,
+        "visible_hits": 60,
+        "unresolved_or_blind_pairs": 19,
+        "visible_precision": 0.759493670886076
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.25"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.25"
+      ],
+      "metrics": {
+        "candidate_pairs": 83,
+        "training_hits": 62,
+        "validation_hits": 1,
+        "visible_hits": 63,
+        "unresolved_or_blind_pairs": 20,
+        "visible_precision": 0.7590361445783133
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.0",
+        "direct_relation_type_count_>=_3"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.0",
+        "direct_relation_type_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 83,
+        "training_hits": 62,
+        "validation_hits": 1,
+        "visible_hits": 63,
+        "unresolved_or_blind_pairs": 20,
+        "visible_precision": 0.7590361445783133
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "causal_publication_count_>=_3"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "causal_publication_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 88,
+        "training_hits": 65,
+        "validation_hits": 1,
+        "visible_hits": 66,
+        "unresolved_or_blind_pairs": 22,
+        "visible_precision": 0.75
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.25"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.25"
+      ],
+      "metrics": {
+        "candidate_pairs": 92,
+        "training_hits": 67,
+        "validation_hits": 1,
+        "visible_hits": 68,
+        "unresolved_or_blind_pairs": 24,
+        "visible_precision": 0.7391304347826086
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 99,
+        "training_hits": 72,
+        "validation_hits": 1,
+        "visible_hits": 73,
+        "unresolved_or_blind_pairs": 26,
+        "visible_precision": 0.7373737373737373
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_4"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 4"
+      ],
+      "metrics": {
+        "candidate_pairs": 99,
+        "training_hits": 72,
+        "validation_hits": 1,
+        "visible_hits": 73,
+        "unresolved_or_blind_pairs": 26,
+        "visible_precision": 0.7373737373737373
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_4",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 4",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 108,
+        "training_hits": 77,
+        "validation_hits": 1,
+        "visible_hits": 78,
+        "unresolved_or_blind_pairs": 30,
+        "visible_precision": 0.7222222222222222
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count_>=_3"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 124,
+        "training_hits": 80,
+        "validation_hits": 1,
+        "visible_hits": 81,
+        "unresolved_or_blind_pairs": 43,
+        "visible_precision": 0.6532258064516129
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_npmi_>=_0.25"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_npmi >= 0.25"
+      ],
+      "metrics": {
+        "candidate_pairs": 138,
+        "training_hits": 88,
+        "validation_hits": 1,
+        "visible_hits": 89,
+        "unresolved_or_blind_pairs": 49,
+        "visible_precision": 0.644927536231884
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_count_>=_3"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 144,
+        "training_hits": 91,
+        "validation_hits": 1,
+        "visible_hits": 92,
+        "unresolved_or_blind_pairs": 52,
+        "visible_precision": 0.6388888888888888
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 159,
+        "training_hits": 99,
+        "validation_hits": 1,
+        "visible_hits": 100,
+        "unresolved_or_blind_pairs": 59,
+        "visible_precision": 0.6289308176100629
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 161,
+        "training_hits": 100,
+        "validation_hits": 1,
+        "visible_hits": 101,
+        "unresolved_or_blind_pairs": 60,
+        "visible_precision": 0.6273291925465838
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted"
+      ],
+      "expressions": [
+        "pair_applied",
+        "pair_clinical",
+        "pair_treatment_parent_targeted"
+      ],
+      "metrics": {
+        "candidate_pairs": 164,
+        "training_hits": 101,
+        "validation_hits": 1,
+        "visible_hits": 102,
+        "unresolved_or_blind_pairs": 62,
+        "visible_precision": 0.6219512195121951
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3",
+        "causal_publication_count_>=_3"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3",
+        "causal_publication_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 186,
+        "training_hits": 106,
+        "validation_hits": 5,
+        "visible_hits": 111,
+        "unresolved_or_blind_pairs": 75,
+        "visible_precision": 0.5967741935483871
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3",
+        "causal_publication_count_>=_2"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3",
+        "causal_publication_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 203,
+        "training_hits": 111,
+        "validation_hits": 5,
+        "visible_hits": 116,
+        "unresolved_or_blind_pairs": 87,
+        "visible_precision": 0.5714285714285714
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 211,
+        "training_hits": 115,
+        "validation_hits": 5,
+        "visible_hits": 120,
+        "unresolved_or_blind_pairs": 91,
+        "visible_precision": 0.5687203791469194
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 215,
+        "training_hits": 116,
+        "validation_hits": 5,
+        "visible_hits": 121,
+        "unresolved_or_blind_pairs": 94,
+        "visible_precision": 0.5627906976744186
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "translational_evidence_count_gte_3"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "translational_evidence_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 226,
+        "training_hits": 117,
+        "validation_hits": 5,
+        "visible_hits": 122,
+        "unresolved_or_blind_pairs": 104,
+        "visible_precision": 0.5398230088495575
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 291,
+        "training_hits": 121,
+        "validation_hits": 6,
+        "visible_hits": 127,
+        "unresolved_or_blind_pairs": 164,
+        "visible_precision": 0.436426116838488
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted"
+      ],
+      "expressions": [
+        "pair_clinical",
+        "pair_treatment_parent_targeted"
+      ],
+      "metrics": {
+        "candidate_pairs": 296,
+        "training_hits": 122,
+        "validation_hits": 6,
+        "visible_hits": 128,
+        "unresolved_or_blind_pairs": 168,
+        "visible_precision": 0.43243243243243246
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 306,
+        "training_hits": 126,
+        "validation_hits": 5,
+        "visible_hits": 131,
+        "unresolved_or_blind_pairs": 175,
+        "visible_precision": 0.42810457516339867
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_3"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 316,
+        "training_hits": 127,
+        "validation_hits": 5,
+        "visible_hits": 132,
+        "unresolved_or_blind_pairs": 184,
+        "visible_precision": 0.4177215189873418
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "translational_evidence_count_gte_3",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "translational_evidence_count >= 3",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 325,
+        "training_hits": 128,
+        "validation_hits": 5,
+        "visible_hits": 133,
+        "unresolved_or_blind_pairs": 192,
+        "visible_precision": 0.40923076923076923
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "translational_evidence_count_gte_3"
+      ],
+      "expressions": [
+        "translational_evidence_count >= 3"
+      ],
+      "metrics": {
+        "candidate_pairs": 333,
+        "training_hits": 130,
+        "validation_hits": 5,
+        "visible_hits": 135,
+        "unresolved_or_blind_pairs": 198,
+        "visible_precision": 0.40540540540540543
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_2",
+        "causal_publication_count_>=_2",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 2",
+        "causal_publication_count >= 2",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 460,
+        "training_hits": 131,
+        "validation_hits": 5,
+        "visible_hits": 136,
+        "unresolved_or_blind_pairs": 324,
+        "visible_precision": 0.2956521739130435
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_2",
+        "causal_publication_npmi_>=_0.0",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 2",
+        "causal_publication_npmi >= 0.0",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 482,
+        "training_hits": 136,
+        "validation_hits": 6,
+        "visible_hits": 142,
+        "unresolved_or_blind_pairs": 340,
+        "visible_precision": 0.2946058091286307
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_2",
+        "direct_relation_type_count_>=_2"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 2",
+        "direct_relation_type_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 495,
+        "training_hits": 138,
+        "validation_hits": 6,
+        "visible_hits": 144,
+        "unresolved_or_blind_pairs": 351,
+        "visible_precision": 0.2909090909090909
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_2",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 2",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 500,
+        "training_hits": 139,
+        "validation_hits": 6,
+        "visible_hits": 145,
+        "unresolved_or_blind_pairs": 355,
+        "visible_precision": 0.29
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count_gte_2"
+      ],
+      "expressions": [
+        "pair_treatment_parent_targeted",
+        "translational_evidence_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 513,
+        "training_hits": 141,
+        "validation_hits": 6,
+        "visible_hits": 147,
+        "unresolved_or_blind_pairs": 366,
+        "visible_precision": 0.28654970760233917
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "translational_evidence_count_gte_2",
+        "causal_publication_npmi_>=_0.0"
+      ],
+      "expressions": [
+        "translational_evidence_count >= 2",
+        "causal_publication_npmi >= 0.0"
+      ],
+      "metrics": {
+        "candidate_pairs": 567,
+        "training_hits": 144,
+        "validation_hits": 7,
+        "visible_hits": 151,
+        "unresolved_or_blind_pairs": 416,
+        "visible_precision": 0.26631393298059963
+      },
+      "dominated_by_current": false
+    },
+    {
+      "conditions": [
+        "translational_evidence_count_gte_2"
+      ],
+      "expressions": [
+        "translational_evidence_count >= 2"
+      ],
+      "metrics": {
+        "candidate_pairs": 581,
+        "training_hits": 146,
+        "validation_hits": 7,
+        "visible_hits": 153,
+        "unresolved_or_blind_pairs": 428,
+        "visible_precision": 0.2633390705679862
+      },
+      "dominated_by_current": false
+    }
+  ]
+}

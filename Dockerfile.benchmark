@@ -1,0 +1,16 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH=/app/.venv/bin:$PATH
+
+WORKDIR /app
+RUN python -m pip install --no-cache-dir uv
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+COPY schemas ./schemas
+COPY config ./config
+COPY data/reference/biolink/4.3.2 ./data/reference/biolink/4.3.2
+RUN uv sync --frozen --no-dev
+
+CMD ["uvicorn", "miner2049er.dashboard_server:APP", "--host", "0.0.0.0", "--port", "6431"]

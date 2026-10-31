@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "miner2049er"
+version = "0.1.0"
+description = "Local Neo4j and Gandalf query stores for Translator rule mining"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "gandalf-csr[server] @ https://github.com/ranking-agent/gandalf/archive/82a1fb2e1bcaac6aaa899f3ff4864fc4501c7879.tar.gz",
+    "httpx>=0.28.1",
+    "jsonschema>=4.23.0",
+    "neo4j>=5.26,<6",
+    "orjson>=3.10.15",
+    "pyarrow>=19.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "ruff>=0.9.10",
+]
+
+[project.scripts]
+miner-build-manifest = "miner2049er.manifest:main"
+miner-benchmark-setup = "miner2049er.benchmark_setup:main"
+miner-build-gandalf = "miner2049er.gandalf_build:main"
+miner-build-rule-features = "miner2049er.rule_features:main"
+miner-campaign-probes = "miner2049er.campaign_probes:main"
+miner-compare-rules = "miner2049er.rule_comparator:main"
+miner-expand-predicate = "miner2049er.biolink_semantics:main"
+miner-export-neo4j = "miner2049er.neo4j_export:main"
+miner-evaluate-rules = "miner2049er.rule_evaluator:main"
+miner-inspect-rule = "miner2049er.rule_inspector:main"
+miner-log-research-event = "miner2049er.research_log:main"
+miner-record-rule = "miner2049er.rule_recorder:main"
+miner-run-agent = "miner2049er.agent_runner:main"
+miner-search-pareto = "miner2049er.pareto_search:main"
+miner-select-rule-sets = "miner2049er.rule_set_selector:main"
+miner-score-predictions = "miner2049er.scorer:main"
+miner-submit-rule-set = "miner2049er.rule_set_submitter:main"
+miner-submit-feedback = "miner2049er.feedback_submitter:main"
+miner-run-rule-trapi = "miner2049er.trapi_runner:main"
+miner-target-inventory = "miner2049er.target_inventory:main"
+miner-validate = "miner2049er.validate:main"
+miner-validate-run = "miner2049er.run_validator:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/miner2049er"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

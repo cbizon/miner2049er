@@ -1,0 +1,204 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-taxon-target-decreased-two-targets",
+  "family_id": "taxon-identified-molecular-intervention",
+  "name": "Taxon-Identified Target Decreased Two Targets",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when Chemical causally affects gene in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; The same taxonomically identified organism is asserted to cause the disease The pinned descendant closure is biolink:causes. Additionally, The target gene or gene product must have a raw taxon string or an entry in its raw in_taxon string array exactly equal to the disease-causing organism's canonical identifier or an entry in its equivalent_identifiers array. Missing values supply empty lists; comparisons are exact and case-sensitive, with no inferred taxonomy, prefix conversion, ancestry expansion, or name matching. Either raw taxonomy field can establish identity. Duplicate strings do not multiply support, and conflicting annotations are not treated as independent corroboration. For the same drug, organism, and disease, at least two distinct canonical gene-or-gene-product target identifiers must qualify. Targets assigned to different organisms cannot be pooled to meet this requirement. Group qualifying raw drug-target evidence by target before matching organisms; this only removes duplicate access paths and does not change which drugs qualify.",
+  "hypothesis": "Explicit target taxonomic identity may connect a pharmacologic molecular effect to a disease-causing organism without relying on an ambiguous production assertion.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Pharmacologic gene or gene-product target carrying raw taxonomic identifiers",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Pharmacologic gene or gene-product target carrying raw taxonomic identifiers."
+      },
+      {
+        "id": "organism",
+        "role": "Organism asserted to cause the disease",
+        "categories": [
+          "biolink:OrganismTaxon"
+        ],
+        "explanation": "Organism asserted to cause the disease."
+      }
+    ],
+    "edges": [
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects gene in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": "decreased",
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "infection",
+        "subject": "organism",
+        "object": "disease",
+        "predicates": [
+          "biolink:causes"
+        ],
+        "direction": "forward",
+        "explanation": "The same taxonomically identified organism is asserted to cause the disease The pinned descendant closure is biolink:causes."
+      }
+    ],
+    "constraints": [
+      {
+        "id": "target-organism-identity",
+        "kind": "property",
+        "expression": "any(taxon IN coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[]))",
+        "explanation": "The target gene or gene product must have a raw taxon string or an entry in its raw in_taxon string array exactly equal to the disease-causing organism's canonical identifier or an entry in its equivalent_identifiers array. Missing values supply empty lists; comparisons are exact and case-sensitive, with no inferred taxonomy, prefix conversion, ancestry expansion, or name matching. Either raw taxonomy field can establish identity. Duplicate strings do not multiply support, and conflicting annotations are not treated as independent corroboration."
+      },
+      {
+        "id": "two-targets-same-organism",
+        "kind": "cardinality",
+        "expression": "count(DISTINCT gene.id)>=2",
+        "explanation": "For the same drug, organism, and disease, at least two distinct canonical gene-or-gene-product target identifiers must qualify. Targets assigned to different organisms cannot be pooled to meet this requirement."
+      }
+    ]
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Explicit target taxonomic identity may connect a pharmacologic molecular effect to a disease-causing organism without relying on an ambiguous production assertion. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(gene:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND target.object_direction_qualifier = \"decreased\" AND target.object_aspect_qualifier IN [\"activity\",\"activity_or_abundance\"] AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(target.primary_knowledge_sources,[])) WITH gene,collect(DISTINCT chemical) AS chemicals UNWIND coalesce(gene.in_taxon,[])+CASE WHEN gene.taxon IS NULL THEN [] ELSE [gene.taxon] END AS taxon WITH taxon,collect(DISTINCT {gene:gene,chemicals:chemicals}) AS target_groups MATCH (organism:OrganismTaxon) WHERE taxon IN [organism.id]+coalesce(organism.equivalent_identifiers,[]) MATCH (organism:OrganismTaxon)-[infection:{{relationship_types:infection}}]->(disease:Disease) WHERE infection.predicate IN {{predicates:infection}} UNWIND target_groups AS target_group UNWIND target_group.chemicals AS chemical WITH chemical,target_group.gene AS gene,organism,disease  WITH chemical,organism,disease,count(DISTINCT gene.id) AS targets WHERE targets>=2 RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT organism) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "organism": {
+                "categories": [
+                  "biolink:OrganismTaxon"
+                ]
+              }
+            },
+            "edges": {
+              "target": {
+                "subject": "chemical",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "infection": {
+                "subject": "organism",
+                "object": "disease",
+                "predicates": [
+                  "biolink:causes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: target: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; The target gene or gene product must have a raw taxon string or an entry in its raw in_taxon string array exactly equal to the disease-causing organism's canonical identifier or an entry in its equivalent_identifiers array. Missing values supply empty lists; comparisons are exact and case-sensitive, with no inferred taxonomy, prefix conversion, ancestry expansion, or name matching. Either raw taxonomy field can establish identity. Duplicate strings do not multiply support, and conflicting annotations are not treated as independent corroboration.; For the same drug, organism, and disease, at least two distinct canonical gene-or-gene-product target identifiers must qualify. Targets assigned to different organisms cannot be pooled to meet this requirement. The taxonomy relation is a raw node-property identity join, not an in_taxon graph edge. Retrieve the drug-target and organism-disease components separately if the provider rejects disconnected query graphs, then apply the exact cross-result property join. Do not substitute a nonexistent in_taxon edge."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "The raw node taxonomy fields do not provide annotation-level primary-source provenance.",
+    "Taxonomic membership does not establish target essentiality, exposure, inhibition in an organism, or clinical efficacy.",
+    "Organism-causes-disease assertions can be broad or text-mined and do not prove a pathogen-specific clinical mechanism.",
+    "One node in the complete graph has disagreeing taxon and in_taxon fields; the existential identity rule can accept either assertion.",
+    "Support counts distinct organism nodes per canonical drug-disease output pair, not target edges, aliases, or source occurrences."
+  ]
+}

@@ -1,0 +1,527 @@
+{
+  "created_at": "2026-08-10T12:46:12.083673+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I02-R006",
+      "name": "Selective inhibition of a causal disease gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R001",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it selectively decreases the activity or abundance of a gene asserted to cause the disease.",
+      "body": "chemical -affects[causes, activity_or_abundance, decreased]-> causal gene -causes-> disease; chemical qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule links directional perturbation to a causal disease gene, but the graph does not establish whether decreased gene activity corrects or reproduces the disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The path and edge qualifiers are TRAPI-expressible; the chemical degree constraint requires Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 170439,
+        "validation_hits": 38,
+        "training_hits": 429,
+        "contraindicated_pairs": 552,
+        "unresolved_or_blind_pairs": 169972
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0027399832198029793,
+        "visible_target_recall": 0.016974411166036638,
+        "visible_target_f0_5": 0.003292126530451113,
+        "validation_precision_lower_bound": 0.00022351626374919124,
+        "validation_recall": 0.016163334751169715,
+        "validation_f0_5": 0.0002784327460356306
+      },
+      "runtime_seconds": 7.9836870830040425
+    },
+    {
+      "id": "TREAT-I02-R007",
+      "name": "Multi-gene inhibition within a disease-supported process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R003",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A selective chemical may treat a disease when it decreases multiple disease-associated genes participating in the same bounded-size biological process.",
+      "body": "disease has 3-20 associated genes in a process; chemical decreases activity_or_abundance of >=2 of those genes; chemical qualified gene degree <=100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Requires coherent multi-gene perturbation and suppresses hubs, but the graph does not establish whether decreasing those genes is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 50623,
+        "validation_hits": 23,
+        "training_hits": 435,
+        "contraindicated_pairs": 466,
+        "unresolved_or_blind_pairs": 50165
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.009047271003298895,
+        "visible_target_recall": 0.016647281186391392,
+        "visible_target_f0_5": 0.009956348585241996,
+        "validation_precision_lower_bound": 0.0004582768789352036,
+        "validation_recall": 0.009783071033602722,
+        "validation_f0_5": 0.000566215171612433
+      },
+      "runtime_seconds": 15.805398500000592
+    },
+    {
+      "id": "TREAT-I02-R015",
+      "name": "Direct binding plus inhibition of a causal gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R006",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it both directly binds and decreases the activity or abundance of a causal disease gene.",
+      "body": "chemical -directly_physically_interacts_with-> causal gene -causes-> disease; same chemical -affects[causes, activity_or_abundance, decreased]-> same gene; qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Requires target engagement, directional perturbation, and a causal disease link on the same gene, but lacks disease-mechanism direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The parallel-edge motif and qualifiers are TRAPI-expressible; the degree constraint requires Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 2134,
+        "validation_hits": 5,
+        "training_hits": 35,
+        "contraindicated_pairs": 19,
+        "unresolved_or_blind_pairs": 2094
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.01874414245548266,
+        "visible_target_recall": 0.0014539110206455365,
+        "visible_target_f0_5": 0.005548158011540168,
+        "validation_precision_lower_bound": 0.0023820867079561697,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.0023262305759746906
+      },
+      "runtime_seconds": 0.2079655840061605
+    },
+    {
+      "id": "TREAT-I03-R017",
+      "name": "Specific drug binding and inhibition without adverse evidence",
+      "iteration": 3,
+      "parent_rule": "TREAT-I02-R015",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when the direct-binding and inhibition rule is restricted to drugs, specific MONDO diseases, and pairs without explicit adverse relations.",
+      "body": "drug binds and decreases causal gene; qualified gene degree <=50; MONDO disease with 1-500 descendants; no has_side_effect, contraindicated_in, exacerbates_condition, or causes edge from drug to disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains the same target-level evidence while excluding broad disease hubs and explicit adverse relations, but causal direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse graph patterns are TRAPI-expressible; degree and absence constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 350,
+        "validation_hits": 3,
+        "training_hits": 25,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 322
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08,
+        "visible_target_recall": 0.0010177377144518756,
+        "visible_target_f0_5": 0.0048422800221361376,
+        "validation_precision_lower_bound": 0.009230769230769232,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004108463434675432
+      },
+      "runtime_seconds": 0.052168624999467283
+    },
+    {
+      "id": "TREAT-I03-R018",
+      "name": "Curated-effect specific drug mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Requiring a curated SIGNOR perturbation edge further enriches the specific drug binding-and-inhibition rule.",
+      "body": "R017 plus affects primary source infores:signor",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses curated directional perturbation, direct binding, disease causality, specificity, and adverse-edge exclusion, but not disease-mechanism direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive, adverse, and provenance constraints can be represented in TRAPI only partly; degree and absence handling are easier in Cypher.",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 18
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.14285714285714285,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005435570372517756,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.054577041999436915
+    },
+    {
+      "id": "TREAT-I03-R019",
+      "name": "Low-fanout causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "Restricting the causal target to genes linked to at most 12 diseases removes literature-derived disease hubs while retaining specific causal mechanisms.",
+      "body": "R017 plus causal gene disease degree <=12",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains direct target engagement and directional perturbation with a specific causal gene-disease link, but cannot distinguish therapeutic inhibition from disease-producing loss of function.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse patterns are TRAPI-expressible; causal-gene degree and absence constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 244,
+        "validation_hits": 3,
+        "training_hits": 23,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 218
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10655737704918032,
+        "visible_target_recall": 0.0009450421634195987,
+        "visible_target_f0_5": 0.004563324908733502,
+        "validation_precision_lower_bound": 0.013574660633484163,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004636785162287482
+      },
+      "runtime_seconds": 0.05924199998844415
+    },
+    {
+      "id": "TREAT-I03-R020",
+      "name": "Causal target with disease-process corroboration",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "needs_refinement",
+      "status": "completed",
+      "hypothesis": "A direct inhibitory causal-target mechanism is more reliable when the same gene participates in a process independently supported by the disease's associated genes.",
+      "body": "R017 plus disease -process support-> process <-involved_in- same causal target gene",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds nonlinear systems-level corroboration around the directly engaged target, but does not resolve whether the perturbation direction is therapeutic.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The source graph motif is TRAPI-expressible; the derived process-support cardinality, degree, and absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 58,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 53
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08620689655172414,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009010957324106112,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.0805955000105314
+    },
+    {
+      "id": "TREAT-I03-R021",
+      "name": "Independently associated causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-target mechanism is more reliable when the same gene-disease pair also has a dedicated gene-associated-with-condition assertion.",
+      "body": "R017 plus same gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds an independent relation family supporting the exact target-disease pair, but does not resolve therapeutic direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005440301755404033,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.025768999999854714
+    },
+    {
+      "id": "TREAT-I03-R022",
+      "name": "Clinical-stage causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching clinical-trial evidence should strongly enrich for treatment relationships.",
+      "body": "R017 plus drug -in_clinical_trials_for-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target-level evidence with graph-internal translational evidence, but the molecular perturbation is not proven corrective.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 47,
+        "validation_hits": 3,
+        "training_hits": 20,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 24
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.48936170212765956,
+        "visible_target_recall": 0.0008359988368711835,
+        "visible_target_f0_5": 0.004151624548736461,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0061000406669377795
+      },
+      "runtime_seconds": 0.03046350000659004
+    },
+    {
+      "id": "TREAT-I03-R023",
+      "name": "Applied causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching applied-to-treat evidence should be a high-precision treatment rule.",
+      "body": "R017 plus drug -applied_to_treat-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target-level evidence with graph-internal treatment-use evidence, but the latter is target-adjacent and molecular direction is unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 24,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7083333333333334,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.003078817733990148,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020981955518254306
+      },
+      "runtime_seconds": 0.028612874972168356
+    },
+    {
+      "id": "TREAT-I04-R024",
+      "name": "Low-fanout process-corroborated mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Combining causal-target specificity with same-gene disease-process corroboration may remove both literature hubs and isolated causal assertions.",
+      "body": "R019 plus disease -process support-> process <-involved_in- same causal target gene",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses two independent biological branches around the same directly engaged gene without treatment evidence, but therapeutic direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The source graph motif is TRAPI-expressible; process-support cardinality, degree, and absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 33,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 29
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.12121212121212122,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007234843003906816,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.06538375001400709
+    },
+    {
+      "id": "TREAT-I04-R025",
+      "name": "Low-fanout independently associated mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "diagnostic_failure",
+      "status": "completed",
+      "hypothesis": "Combining causal-target specificity with a dedicated gene-condition association should isolate highly supported mechanisms.",
+      "body": "R019 plus same gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The graph pattern is highly specific, but its novel indapamide-long QT prediction exposes the missing gain-of-function versus loss-of-function constraint.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 4,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.75,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005448997384481256,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.03267983300611377
+    },
+    {
+      "id": "TREAT-I04-R026",
+      "name": "Independent clinical low-fanout mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R022",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism plus an independently sourced clinical-trial assertion should retain validation hits while excluding disease-gene hubs and target-source leakage.",
+      "body": "R022 plus causal gene disease degree <=12 and clinical-trial source infores:multiomics-clinicaltrials",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines specific target-level evidence with independent translational evidence, but still uses treatment-oriented evidence and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 37,
+        "validation_hits": 3,
+        "training_hits": 18,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 16
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5675675675675675,
+        "visible_target_recall": 0.0007633032858389067,
+        "visible_target_f0_5": 0.0037960954446854666,
+        "validation_precision_lower_bound": 0.15789473684210525,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006180469715698395
+      },
+      "runtime_seconds": 0.050722042040433735
+    },
+    {
+      "id": "TREAT-I04-R027",
+      "name": "Curated independent clinical mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I04-R026",
+      "library_status": "needs_refinement",
+      "status": "completed",
+      "hypothesis": "Requiring curated SIGNOR perturbation evidence within the independent clinical low-fanout rule may further improve precision.",
+      "body": "R026 plus affects primary source infores:signor",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines curated target perturbation, causal specificity, and independent clinical evidence, but remains tiny and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 5,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005448205724248149,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.03928516700398177
+    },
+    {
+      "id": "TREAT-I02-R016",
+      "name": "Tight multi-gene inhibition in a compact disease process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R007",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when a selective chemical decreases at least three disease-associated genes in a compact process.",
+      "body": "disease has 3-10 associated genes in a process; chemical decreases activity_or_abundance of >=3; chemical qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "This is a stricter, hub-resistant multi-target pathway perturbation, but the graph does not establish that decreasing the genes is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 17246,
+        "validation_hits": 8,
+        "training_hits": 159,
+        "contraindicated_pairs": 177,
+        "unresolved_or_blind_pairs": 17079
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00968340484750087,
+        "visible_target_recall": 0.0060700785111951145,
+        "visible_target_f0_5": 0.008653208423147074,
+        "validation_precision_lower_bound": 0.0004681921928951835,
+        "validation_recall": 0.0034028073160357296,
+        "validation_f0_5": 0.0005657788653304856
+      },
+      "runtime_seconds": 9.548033999977633
+    }
+  ]
+}

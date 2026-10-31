@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T12:27:37.445667+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R187",
+      "name": "SIGNOR-corroborated GOF inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R160",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct GOF correction is more credible when the directional drug effect is independently represented by SIGNOR.",
+      "body": "R160 requiring SIGNOR provenance on the decreased target effect",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The explicit GOF disease direction is paired with a curated SIGNOR drug-effect assertion rather than relying solely on targeted text mining.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target and disease paths are TRAPI-expressible; effect provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 44,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 41
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.06818181818181818,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005417509390349609,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.833153499988839
+    },
+    {
+      "id": "TREAT-I09-R188",
+      "name": "Dual-effect and multisource-binding GOF inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R160",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "GOF correction is more credible when direction is supported by two sources and binding by at least four independent sources.",
+      "body": "R160 with at least two directional-effect sources and four direct-binding sources",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Independent effect and binding provenance reduce dependence on a single extraction channel while retaining explicit disease direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; cross-edge source cardinality, variant form, and ontology constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[seed_effect:AFFECTS]->(gene:Gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND seed_effect.qualified_predicate = 'biolink:causes'\n  AND seed_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND seed_effect.object_direction_qualifier = 'decreased'\nCALL (subject, gene) {\n  MATCH (subject)-[effect:AFFECTS]->(gene)\n  WHERE effect.qualified_predicate = 'biolink:causes'\n    AND effect.object_aspect_qualifier = 'activity_or_abundance'\n    AND effect.object_direction_qualifier = 'decreased'\n  UNWIND coalesce(effect.primary_knowledge_sources, []) AS source\n  RETURN collect(DISTINCT source) AS effect_sources\n}\nCALL (subject, gene) {\n  MATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\n  UNWIND coalesce(binding.primary_knowledge_sources, []) AS source\n  RETURN collect(DISTINCT source) AS binding_sources\n}\nWITH subject, object, effect_sources, binding_sources\nWHERE size(effect_sources) >= 2\n  AND size(binding_sources) >= 4\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 40,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 37
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.075,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005420641803989593,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 5.377340041974094
+    },
+    {
+      "id": "TREAT-I09-R189",
+      "name": "DrugCentral-bound LOF activation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R161",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct LOF restoration is more credible when the activating drug-gene binding is represented by DrugCentral.",
+      "body": "R161 requiring DrugCentral provenance on direct binding",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The source constraint isolates a compact pharmacological channel that contains both known exon-skipping treatments.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target and disease paths are TRAPI-expressible; binding provenance, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:drugcentral' IN coalesce(binding.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2222222222222222,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036300275882096707,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 3.0861247499706224
+    }
+  ]
+}

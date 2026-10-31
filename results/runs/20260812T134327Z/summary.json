@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T13:43:27.428807+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R222",
+      "name": "Drug-exposed affected-anatomy causal inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-gene inhibitor is more likely to treat a disease when the drug is located in an affected anatomy where the gene is expressed.",
+      "body": "drug decreases bound causal gene; drug and Bgee gene expression converge in disease anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines target causality with graph-resident tissue exposure and expression, though drug location is SemMed-derived.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The exposure and expression paths are TRAPI-expressible; shared anatomy identity, provenance, and causal feature edge require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 297,
+        "validation_hits": 1,
+        "training_hits": 31,
+        "contraindicated_pairs": 24,
+        "unresolved_or_blind_pairs": 265
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10774410774410774,
+        "visible_target_recall": 0.0011631288165164292,
+        "visible_target_f0_5": 0.005574912891986063,
+        "validation_precision_lower_bound": 0.0037593984962406013,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0014641288433382138
+      },
+      "runtime_seconds": 2.8227310410002246
+    },
+    {
+      "id": "TREAT-I09-R223",
+      "name": "Top-driver drug-exposed affected-anatomy inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R222",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Anatomical exposure is more predictive when the inhibited gene is among the disease's top three causal genes.",
+      "body": "R222 plus top-three causal disease-gene evidence rank",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines tissue exposure with a high-ranked causal target, but does not encode disease activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; shared anatomy, source, causal rank, and identity constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND evidence._miner_disease_rank <= 3\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 167,
+        "validation_hits": 0,
+        "training_hits": 15,
+        "contraindicated_pairs": 22,
+        "unresolved_or_blind_pairs": 152
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08982035928143713,
+        "visible_target_recall": 0.0005452166327420761,
+        "visible_target_f0_5": 0.0026614620298083744,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7527569580124691
+    },
+    {
+      "id": "TREAT-I09-R224",
+      "name": "Contradiction-gated top-driver anatomical exposure",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R223",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A top-driver anatomical exposure rule improves when the drug is not also represented as disrupting the same affected anatomy.",
+      "body": "R223 excluding drug DISRUPTS the matched anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule removes graph-native tissue toxicity evidence from an otherwise causal exposure architecture.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive and negative paths are TRAPI-expressible; absence, shared anatomy, provenance, and causal rank require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND evidence._miner_disease_rank <= 3\n  AND NOT EXISTS { MATCH (subject)-[:DISRUPTS]->(anatomy) }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 165,
+        "validation_hits": 0,
+        "training_hits": 15,
+        "contraindicated_pairs": 21,
+        "unresolved_or_blind_pairs": 150
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.09090909090909091,
+        "visible_target_recall": 0.0005452166327420761,
+        "visible_target_f0_5": 0.002662217804912679,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.4666191250435077
+    },
+    {
+      "id": "TREAT-I09-R225",
+      "name": "Drug-exposed affected-anatomy GOF correction",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct GOF inhibition is more credible when the drug and target converge in an anatomy affected by the disease.",
+      "body": "drug decreases bound GOF driver; drug location and Bgee driver expression converge in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit corrective direction is localized by drug exposure, target expression, and disease anatomy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; variant form, shared anatomy, provenance, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND 'infores:gene2phenotype' IN coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 4
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003631609529343405,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.8942839580122381
+    },
+    {
+      "id": "TREAT-I09-R226",
+      "name": "Drug-exposed affected-anatomy LOF restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct LOF activation is more credible when the drug and target converge in an anatomy affected by the disease.",
+      "body": "drug increases bound LOF driver; drug location and Bgee driver expression converge in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit restorative direction is localized by drug exposure, target expression, and disease anatomy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; variant form, shared anatomy, provenance, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND 'infores:gene2phenotype' IN coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6241002079914324
+    },
+    {
+      "id": "TREAT-I09-R227",
+      "name": "Affected-anatomy disruption diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R222",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "A drug represented as disrupting the same affected anatomy is matched negative evidence for an anatomical exposure treatment rule.",
+      "body": "R222 requiring drug DISRUPTS the matched anatomy",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The causal target path is retained, but graph-native tissue disruption provides a countermechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and negative paths are TRAPI-expressible; shared anatomy, provenance, and identity constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[location:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:semmeddb' IN coalesce(location.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND EXISTS { MATCH (subject)-[:DISRUPTS]->(anatomy) }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 4.537456374964677
+    }
+  ]
+}

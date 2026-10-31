@@ -1,0 +1,262 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-activity-input-reverse-control",
+  "family_id": "directed-causal-activity-input-intervention",
+  "name": "Gene Ontology Activity Reverse Control",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.; Chemical causally affects regulator in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; The Gene Ontology activity-model connection follows the stated stored direction from the disease gene toward the drug target as a reverse-direction control The pinned descendant closure is biolink:consumed_by, biolink:is_input_of. At least one primary source must be infores:go-cam.; The gene has independent genetic association evidence for the same disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp. The drug-target gene and disease-implicated gene must be distinct canonical nodes.",
+  "hypothesis": "Changing functional direction or using temporal precedence tests which part of the activity-model connection supplies predictive evidence.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "regulator",
+        "role": "Drug-engaged upstream gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Drug-engaged upstream gene or gene product."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      }
+    ],
+    "edges": [
+      {
+        "id": "direct",
+        "subject": "chemical",
+        "object": "disease",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning."
+      },
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "regulator",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects regulator in the decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": "decreased",
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "activity_input",
+        "subject": "gene",
+        "object": "regulator",
+        "predicates": [
+          "biolink:is_input_of"
+        ],
+        "direction": "forward",
+        "explanation": "The Gene Ontology activity-model connection follows the stated stored direction from the disease gene toward the drug target as a reverse-direction control The pinned descendant closure is biolink:consumed_by, biolink:is_input_of. At least one primary source must be infores:go-cam.",
+        "source_constraints": [
+          "infores:go-cam"
+        ]
+      },
+      {
+        "id": "genetic",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:gene_associated_with_condition"
+        ],
+        "direction": "forward",
+        "explanation": "The gene has independent genetic association evidence for the same disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp.",
+        "source_constraints": [
+          "infores:geneticskp"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "distinct-genes",
+        "kind": "other",
+        "expression": "The drug-target gene and disease-implicated gene must be distinct canonical nodes.",
+        "explanation": "The drug-target gene and disease-implicated gene must be distinct canonical nodes."
+      }
+    ]
+  },
+  "derived_features": [
+    {
+      "name": "complete curated causal drug-target access path",
+      "definition": "A stored Drug-to-GeneOrGeneProduct relationship exists for a causes-qualified member of the full affects descendant closure with ChEMBL, Guide to Pharmacology, or DrugCentral primary-source support.",
+      "inputs": [
+        "The full pinned affects descendant closure on Drug-to-GeneOrGeneProduct edges",
+        "Raw qualified_predicate and primary_knowledge_sources properties"
+      ],
+      "construction": "Filter raw edges by causes qualification and any of the three sources, group by canonical endpoint pair, count distinct raw relationship identities, and merge one compact relationship per pair. Missing qualifiers or source arrays do not qualify. The rule uses only presence, then rematches raw edges with its recorded exact predicates, qualifiers, and sources. Removing the initial access-path MATCH and WITH before the marked comment gives the otherwise identical unmaterialized query.",
+      "formula": "compact presence iff count(distinct qualifying raw relationship)>0",
+      "interpretation": "This is a query acceleration, not a prediction threshold or an extra biological condition. Full-closure and exact-filtered target rules both rematch their own raw evidence. No training or held-out treatment labels define the access path.",
+      "neo4j_artifact_id": "r0004-curated-causal-target-v1"
+    }
+  ],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Changing functional direction or using temporal precedence tests which part of the activity-model connection supplies predictive evidence. Association does not establish a corrective clinical mechanism."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[compact:MINER_R0004_CURATED_TARGET]->(regulator:GeneOrGeneProduct) WHERE compact.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT chemical,regulator /* END CURATED ACCESS PATH */ MATCH (chemical:Drug)-[direct:{{relationship_types:direct}}]->(disease:Disease) WHERE direct.predicate IN {{predicates:direct}} MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(regulator:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} AND target.qualified_predicate = \"biolink:causes\" AND target.object_direction_qualifier = \"decreased\" AND target.object_aspect_qualifier IN [\"activity\",\"activity_or_abundance\"] AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(target.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[activity_input:{{relationship_types:activity_input}}]->(regulator:GeneOrGeneProduct) WHERE activity_input.predicate IN {{predicates:activity_input}} AND any(source IN [\"infores:go-cam\"] WHERE source IN coalesce(activity_input.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[genetic:{{relationship_types:genetic}}]->(disease:Disease) WHERE genetic.predicate IN {{predicates:genetic}} AND any(source IN [\"infores:geneticskp\"] WHERE source IN coalesce(genetic.primary_knowledge_sources,[])) AND (regulator<>gene) RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "regulator": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "direct": {
+                "subject": "chemical",
+                "object": "disease",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              },
+              "target": {
+                "subject": "chemical",
+                "object": "regulator",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "activity_input": {
+                "subject": "gene",
+                "object": "regulator",
+                "predicates": [
+                  "biolink:is_input_of"
+                ]
+              },
+              "genetic": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:gene_associated_with_condition"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: direct: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; target: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; activity_input: enforce primary-source membership in infores:go-cam; genetic: enforce primary-source membership in infores:geneticskp; The drug-target gene and disease-implicated gene must be distinct canonical nodes."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation.",
+    "The source models activities, but graph canonicalization places gene identifiers at the endpoints. An input edge is not a measured signed regulatory effect, and some source models are nonhuman."
+  ],
+  "parent_rule_id": "r4-activity-input-genetic-direct"
+}

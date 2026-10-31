@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T17:51:43.359691+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R384",
+      "name": "Dual-target dual-driver physical bridge",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can suppress a disease module when two distinct inhibited targets independently contact two distinct top-ranked causal disease drivers.",
+      "body": "drug decreases two bound targets; each target directly interacts with a different top-three causal driver",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Two intervention arms reach two independent causal drivers and avoid dependence on one interaction hub, but driver-specific disease direction is not encoded.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The repeated target, effect, interaction, and disease paths are TRAPI-expressible; distinct-node constraints, rank, and ontology filters require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver1:Gene)\nMATCH (driver1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target2)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver2:Gene)\nMATCH (driver2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target1.id < target2.id\n  AND driver1.id < driver2.id\n  AND target1 <> driver1\n  AND target2 <> driver2\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND evidence1._miner_disease_rank <= 3\n  AND evidence2._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 187,
+        "validation_hits": 1,
+        "training_hits": 6,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 180
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0374331550802139,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012384996461429583,
+        "validation_precision_lower_bound": 0.0055248618784530384,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0016260162601626016
+      },
+      "runtime_seconds": 9.704841000027955
+    },
+    {
+      "id": "TREAT-I09-R385",
+      "name": "Dual-target dual-driver activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing both targets in the same dual-driver topology is a matched directional control.",
+      "body": "R384 topology with both target effects increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The nonlinear topology is retained, but generic activation is not expected to suppress the disease module.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R384.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver1:Gene)\nMATCH (driver1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target2)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver2:Gene)\nMATCH (driver2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target1.id < target2.id\n  AND driver1.id < driver2.id\n  AND target1 <> driver1\n  AND target2 <> driver2\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'increased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'increased'\n  AND evidence1._miner_disease_rank <= 3\n  AND evidence2._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 4.760443667008076
+    },
+    {
+      "id": "TREAT-I09-R386",
+      "name": "Compact-process dual-target dual-driver bridge",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R384",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The dual-arm physical bridge is more coherent when both causal drivers participate in the same compact biological process.",
+      "body": "R384 plus both causal drivers share a process with at most 100 gene members",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two inhibited targets independently reach two causal drivers in one bounded process, creating a four-gene nonlinear disease-module mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive topology is TRAPI-expressible; repeated-node identity, process degree, rank, and ontology filters require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver1:Gene)\nMATCH (driver1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target2)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver2:Gene)\nMATCH (driver2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\n\nMATCH (driver1)-[:INVOLVED_IN]->(process:BiologicalProcess)\n      <-[:INVOLVED_IN]-(driver2)\nWHERE target1.id < target2.id\n  AND driver1.id < driver2.id\n  AND target1 <> driver1\n  AND target2 <> driver2\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND evidence1._miner_disease_rank <= 3\n  AND evidence2._miner_disease_rank <= 3\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 84,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 80
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.047619047619047616,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007181844297615627,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 3.7706113329622895
+    }
+  ]
+}

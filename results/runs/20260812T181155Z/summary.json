@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T18:11:55.942071+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R389",
+      "name": "Explicit inhibitory pharmacology for GOF driver",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Explicit inhibition, antagonism, channel block, or negative modulation of a GOF disease driver is more reliable than an untyped decreased effect.",
+      "body": "drug binds GOF driver; activity decrease carries an explicit negative pharmacologic mechanism",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule aligns a curated GOF disease mechanism with explicit pharmacologic semantics rather than relying only on an effect-direction string.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Binding, activity effect, mechanism qualifier, and variant-qualified disease association are TRAPI-expressible; ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND effect.causal_mechanism_qualifier IN ['inhibition', 'antagonism', 'molecular_channel_blockage', 'antibody_inhibition', 'inverse_agonism', 'negative_modulation', 'negative_allosteric_modulation', 'gating_inhibition', 'competitive_inhibition', 'antisense_oligonucleotide_inhibition']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 827,
+        "validation_hits": 0,
+        "training_hits": 10,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 817
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012091898428053204,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0016223231667748218,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.2289679999812506
+    },
+    {
+      "id": "TREAT-I09-R390",
+      "name": "Explicit positive pharmacology for GOF control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Explicit agonism, activation, or positive modulation of a GOF driver is a matched worsening control.",
+      "body": "R389 disease structure with explicit positive pharmacology",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The pharmacologic semantics reinforce rather than suppress the GOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R389.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND effect.causal_mechanism_qualifier IN ['agonism', 'partial_agonism', 'positive_modulation', 'positive_allosteric_modulation', 'activation', 'potentiation', 'opening', 'molecular_channel_opening']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 66,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 66
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7573733750032261
+    },
+    {
+      "id": "TREAT-I09-R391",
+      "name": "Explicit positive pharmacology for LOF driver",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Explicit agonism, activation, opening, or positive modulation of a LOF disease driver can restore deficient activity.",
+      "body": "drug binds LOF driver; activity increase carries an explicit positive pharmacologic mechanism",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule aligns curated LOF direction with explicit receptor, channel, or target activation semantics.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R389.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND effect.causal_mechanism_qualifier IN ['agonism', 'partial_agonism', 'positive_modulation', 'positive_allosteric_modulation', 'activation', 'potentiation', 'opening', 'molecular_channel_opening']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 238,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 236
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.008403361344537815,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003513209668353007,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7630962920375168
+    },
+    {
+      "id": "TREAT-I09-R392",
+      "name": "Explicit inhibitory pharmacology for LOF control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Explicit inhibition, antagonism, or channel block of a LOF driver is a matched worsening control.",
+      "body": "R391 disease structure with explicit negative pharmacology",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The pharmacologic semantics further suppress rather than restore the LOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R389.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND effect.causal_mechanism_qualifier IN ['inhibition', 'antagonism', 'molecular_channel_blockage', 'antibody_inhibition', 'inverse_agonism', 'negative_modulation', 'negative_allosteric_modulation', 'gating_inhibition', 'competitive_inhibition', 'antisense_oligonucleotide_inhibition']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 911,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 909
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0021953896816684962,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003209654641160611,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.1862233339925297
+    },
+    {
+      "id": "TREAT-I09-R393",
+      "name": "Direct activation of LOF driver",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R391",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The most specific LOF restoration subtype is an explicit activation assertion rather than generic agonism or positive modulation.",
+      "body": "R391 restricted to causal mechanism activation",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Direct activation can represent cofactor or pharmacological-chaperone restoration of deficient enzyme activity, avoiding broad receptor-modulator cohorts.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R389.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND effect.causal_mechanism_qualifier IN ['activation']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 30,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 28
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.06666666666666667,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003618992472495657,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7236247909604572
+    },
+    {
+      "id": "TREAT-I09-R394",
+      "name": "Direct activation of GOF driver control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Direct activation of a GOF driver is a mechanism-matched worsening control for R393.",
+      "body": "R393 pharmacologic subtype crossed with GOF disease direction",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same explicit activation semantics reinforce rather than restore the disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R389.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND effect.causal_mechanism_qualifier IN ['activation']\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 18,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 18
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6788928330061026
+    }
+  ]
+}

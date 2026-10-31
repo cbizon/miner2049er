@@ -1,0 +1,603 @@
+[criteria_sets]
+direct_inhibitory_core = "The drug directly physically interacts with a gene, has an AFFECTS assertion that it decreases that gene's activity or abundance, and the gene has graph-derived evidence linking it to the candidate MONDO disease."
+translational_channels = "The seven counted drug-disease evidence channels are: APPLIED_TO_TREAT; a Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR edge; a CTD treatment-family edge; a targeted-text treatment-family edge; a SemMedDB treatment-family edge; targeted-text CONTRIBUTES_TO; and CTD CORRELATED_WITH."
+specific_mondo = "The candidate is a MONDO disease with at least one superclass and no more than 500 ontology descendants."
+no_direct_adverse = "The graph contains no direct drug-to-disease CONTRAINDICATED_IN, EXACERBATES_CONDITION, CAUSES, CONTRIBUTES_TO, or PREDISPOSES_TO_CONDITION edge."
+nonblind_molecular_edges = "The qualifying drug-gene binding and directional effect edges contain neither Drug Repurposing Hub nor TTD among their primary sources."
+
+[[rules]]
+id = "TREAT-I01-R001"
+description = "Predict that a chemical treats a disease when the chemical affects a gene that is associated with that disease."
+criteria = [
+  "A ChemicalEntity has an AFFECTS edge to a Gene.",
+  "That Gene has a GENE_ASSOCIATED_WITH_CONDITION edge to the candidate Disease.",
+  "No direction, binding, degree, provenance, or negative-evidence constraint is imposed.",
+]
+
+[[rules]]
+id = "TREAT-I02-R006"
+description = "Predict that a chemical treats a disease when it decreases the activity or abundance of a gene asserted to cause the disease, provided the chemical is not an extremely broad inhibitor."
+criteria = [
+  "The chemical has an AFFECTS assertion that causes decreased activity or abundance of a Gene.",
+  "That Gene has a CAUSES edge to the candidate Disease.",
+  "The chemical has qualifying decreased-activity-or-abundance effects on no more than 50 genes.",
+]
+
+[[rules]]
+id = "TREAT-I02-R007"
+description = "Predict that a chemical treats a disease when it decreases at least two disease-associated genes in the same disease-supported biological process."
+criteria = [
+  "The disease has a MINER_DISEASE_PROCESS_SUPPORT edge based on 3 through 20 associated genes.",
+  "At least two genes counted in that process are associated with the disease and involved in the process.",
+  "The chemical decreases the activity or abundance of each counted gene.",
+  "The chemical has qualifying decreased effects on no more than 100 genes overall.",
+]
+
+[[rules]]
+id = "TREAT-I02-R011"
+description = "Return a chemical-disease pair whenever the graph says that the chemical is in clinical trials for that disease."
+criteria = [
+  "A ChemicalEntity has an IN_CLINICAL_TRIALS_FOR edge to the candidate Disease.",
+  "No source, phase, status, mechanism, or negative-evidence constraint is imposed.",
+]
+
+[[rules]]
+id = "TREAT-I02-R013"
+description = "Return a chemical-disease pair whenever the graph says that the chemical is applied to treat that disease."
+criteria = [
+  "A ChemicalEntity has an APPLIED_TO_TREAT edge to the candidate Disease.",
+  "No mechanism, provenance, or negative-evidence constraint is imposed.",
+]
+
+[[rules]]
+id = "TREAT-I02-R015"
+description = "Predict that a chemical treats a disease when it both binds and decreases a gene asserted to cause the disease."
+criteria = [
+  "The chemical directly physically interacts with a Gene.",
+  "The same chemical has an AFFECTS assertion that causes decreased activity or abundance of that same Gene.",
+  "The Gene has a CAUSES edge to the candidate Disease.",
+  "The chemical has qualifying decreased effects on no more than 50 genes overall.",
+]
+
+[[rules]]
+id = "TREAT-I02-R016"
+description = "Predict that a chemical treats a disease when it decreases at least three disease-associated genes in one compact disease-supported process."
+criteria = [
+  "The disease has a MINER_DISEASE_PROCESS_SUPPORT edge based on 3 through 10 associated genes.",
+  "At least three genes counted in that process are associated with the disease and involved in the process.",
+  "The chemical decreases the activity or abundance of each counted gene.",
+  "The chemical has qualifying decreased effects on no more than 50 genes overall.",
+]
+
+[[rules]]
+id = "TREAT-I03-R019"
+description = "Predict that a drug treats a specific MONDO disease when it binds and decreases a relatively disease-specific causal gene and no direct adverse relation is present."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "The drug directly physically interacts with a Gene and decreases its activity or abundance.",
+  "The Gene has a CAUSES edge to the candidate disease and causes no more than 12 diseases in the graph.",
+  "The drug has qualifying decreased effects on no more than 50 genes.",
+  "No HAS_SIDE_EFFECT, CONTRAINDICATED_IN, EXACERBATES_CONDITION, or CAUSES edge directly connects the drug to the disease.",
+]
+
+[[rules]]
+id = "TREAT-I07-R059"
+description = "Predict that a drug treats a specific MONDO disease when it inhibits a causal gene and the same drug-disease pair is supported by both an applied-treatment assertion and an independently sourced clinical-trial assertion."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "The drug directly binds a Gene, decreases its activity or abundance, and the Gene has a CAUSES edge to the disease.",
+  "The drug has qualifying decreased effects on no more than 50 genes.",
+  "The gene is linked to no more than 12 diseases, or it has at least three causal publications, causal-publication NPMI of at least 0.5, and ranks among the disease's top three genes.",
+  "The pair has an APPLIED_TO_TREAT edge and a Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR edge.",
+  "No HAS_SIDE_EFFECT, CONTRAINDICATED_IN, EXACERBATES_CONDITION, or CAUSES edge directly connects the drug to the disease.",
+]
+
+[[rules]]
+id = "TREAT-I07-R062"
+description = "Predict that a drug treats a specific MONDO disease when it selectively inhibits a causal gene, the gene and disease share at least three Bgee-supported anatomical contexts, and the pair has applied-treatment or independent clinical-trial evidence."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "The drug directly binds a Gene, decreases its activity or abundance, and the Gene has a CAUSES edge to the disease.",
+  "The drug has qualifying decreased effects on no more than 30 genes.",
+  "The gene-disease evidence records at least three Bgee anatomy overlaps.",
+  "The pair has either an APPLIED_TO_TREAT edge or a Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR edge.",
+  "No HAS_SIDE_EFFECT, CONTRAINDICATED_IN, EXACERBATES_CONDITION, or CAUSES edge directly connects the drug to the disease.",
+]
+
+[[rules]]
+id = "TREAT-I08-R064"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, SemMedDB reports a treatment-family relation for the same pair, and both the binding and gene-disease evidence have independent support."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "SemMedDB supplies a TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge for the same drug-disease pair.",
+  "The gene-disease evidence has at least one primary source other than SemMedDB.",
+  "The drug-gene binding edges collectively cite at least four distinct primary sources.",
+  "The candidate disease has no more than 500 ontology descendants.",
+]
+
+[[rules]]
+id = "TREAT-I08-R065"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, at least five sources support binding including TTD and GtoPdb, and at least three drug-disease evidence channels agree."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The binding-source set contains both infores:ttd and infores:gtopdb.",
+  "At least five distinct primary sources support the drug-gene binding.",
+  "At least three of the seven translational channels support the same drug-disease pair.",
+]
+
+[[rules]]
+id = "TREAT-I08-R066"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, at least five sources support binding including TTD, and at least three drug-disease evidence channels agree."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The binding-source set contains infores:ttd.",
+  "At least five distinct primary sources support the drug-gene binding.",
+  "At least three of the seven translational channels support the same drug-disease pair.",
+]
+
+[[rules]]
+id = "TREAT-I08-R067"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, DGIdb supports the binding, Multiomics reports a clinical trial, at least four drug-disease channels agree, and the gene-disease claim has non-SemMed support."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "DGIdb is among the drug-gene binding sources.",
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence has at least one primary source other than SemMedDB.",
+]
+
+[[rules]]
+id = "TREAT-I08-R068"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, DGIdb supports the binding, Multiomics reports a clinical trial, four drug-disease channels agree, and the best shared anatomy is not broadly expressed."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "DGIdb is among the drug-gene binding sources.",
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The minimum gene-expression degree among the shared disease anatomies is no more than 8,000 genes.",
+]
+
+[[rules]]
+id = "TREAT-I08-R069"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, DGIdb supports the binding, Multiomics reports a clinical trial, four drug-disease channels agree, and Bgee supplies at least one gene-disease anatomy overlap."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "DGIdb is among the drug-gene binding sources.",
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence records at least one Bgee anatomy overlap.",
+]
+
+[[rules]]
+id = "TREAT-I08-R070"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, DGIdb and Multiomics support the pair, four drug-disease channels agree, and causal publications are concentrated on this disease."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "DGIdb is among the drug-gene binding sources.",
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.25.",
+]
+
+[[rules]]
+id = "TREAT-I08-R071"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, DGIdb and Multiomics support the pair, four drug-disease channels agree, and causal publications are at least as concentrated on this disease as expected by chance."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "DGIdb is among the drug-gene binding sources.",
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.",
+]
+
+[[rules]]
+id = "TREAT-I08-R072"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, the pair has applied-treatment and Multiomics clinical evidence, four drug-disease channels agree, and the gene-disease link is represented by at least three relation types."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both APPLIED_TO_TREAT and Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The direct gene-disease evidence contains at least three distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R073"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics reports a clinical trial, four drug-disease channels agree, Bgee supplies an anatomy overlap, and the causal literature concentration is nonnegative."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence records at least one Bgee anatomy overlap.",
+  "The gene-disease causal-publication NPMI is at least 0.",
+]
+
+[[rules]]
+id = "TREAT-I08-R074"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, applied-treatment and Multiomics clinical evidence support the pair, four drug-disease channels agree, and causal publications are concentrated on this disease."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both APPLIED_TO_TREAT and Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.25.",
+]
+
+[[rules]]
+id = "TREAT-I08-R075"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, applied-treatment and Multiomics clinical evidence support the pair, four drug-disease channels agree, and at least three publications support the causal gene-disease link."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both APPLIED_TO_TREAT and Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence has at least three causal publications.",
+]
+
+[[rules]]
+id = "TREAT-I08-R076"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics clinical evidence and targeted text mining support the pair, four drug-disease channels agree, and causal publications are concentrated on this disease."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence and a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.25.",
+]
+
+[[rules]]
+id = "TREAT-I08-R077"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, applied-treatment and Multiomics clinical evidence support the pair, four drug-disease channels agree, and the causal literature concentration is nonnegative."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both APPLIED_TO_TREAT and Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.",
+]
+
+[[rules]]
+id = "TREAT-I08-R078"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics clinical evidence and targeted text mining support the pair, four drug-disease channels agree, and the causal literature concentration is nonnegative."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has both Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence and a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "At least four of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease causal-publication NPMI is at least 0.",
+]
+
+[[rules]]
+id = "TREAT-I08-R079"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, and the same drug-disease pair has applied-treatment, Multiomics clinical-trial, and targeted-text treatment evidence plus at least three kinds of gene-disease relation."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has an APPLIED_TO_TREAT edge.",
+  "The pair has a Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR edge.",
+  "The pair has a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "The direct gene-disease evidence contains at least three distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R080"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, the pair has applied-treatment, Multiomics clinical-trial, and targeted-text treatment evidence, and causal publications are concentrated on this disease."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has APPLIED_TO_TREAT, Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR, and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "The gene-disease causal-publication NPMI is at least 0.25.",
+]
+
+[[rules]]
+id = "TREAT-I08-R081"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, the pair has applied-treatment, Multiomics clinical-trial, and targeted-text treatment evidence, and at least three publications support the causal gene-disease link."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has APPLIED_TO_TREAT, Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR, and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "The gene-disease evidence has at least three causal publications.",
+]
+
+[[rules]]
+id = "TREAT-I08-R082"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, the pair has applied-treatment, Multiomics clinical-trial, and targeted-text treatment evidence, and the causal literature concentration is nonnegative."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has APPLIED_TO_TREAT, Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR, and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "The gene-disease causal-publication NPMI is at least 0.",
+]
+
+[[rules]]
+id = "TREAT-I08-R083"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, the pair has applied-treatment, Multiomics clinical-trial, and targeted-text treatment evidence, and the gene-disease link is represented by at least two relation types."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has APPLIED_TO_TREAT, Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR, and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "The direct gene-disease evidence contains at least two distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R084"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene and the same drug-disease pair is independently represented by applied-treatment, Multiomics clinical-trial, and targeted-text treatment assertions."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has an APPLIED_TO_TREAT edge.",
+  "The pair has a Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR edge.",
+  "The pair has a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+]
+
+[[rules]]
+id = "TREAT-I08-R085"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics and targeted text mining support the pair, at least three drug-disease channels agree, and at least three publications support the causal gene-disease link."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "At least three of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence has at least three causal publications.",
+]
+
+[[rules]]
+id = "TREAT-I08-R086"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics and targeted text mining support the pair, at least three drug-disease channels agree, and at least two publications support the causal gene-disease link."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "At least three of the seven translational channels support the same drug-disease pair.",
+  "The gene-disease evidence has at least two causal publications.",
+]
+
+[[rules]]
+id = "TREAT-I08-R087"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics and targeted text mining support the pair, at least three drug-disease channels agree, and the gene-disease link is represented by at least two relation types."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "At least three of the seven translational channels support the same drug-disease pair.",
+  "The direct gene-disease evidence contains at least two distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R088"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, both Multiomics and targeted text mining support the drug-disease pair, and at least one additional translational channel supports that pair."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR and targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT evidence.",
+  "At least three of the seven translational channels support the same pair, so at least one channel beyond those two is required.",
+]
+
+[[rules]]
+id = "TREAT-I08-R089"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, Multiomics reports a clinical trial for the pair, and at least two additional translational channels support that pair."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "Multiomics Clinical Trials supplies an IN_CLINICAL_TRIALS_FOR edge for the pair.",
+  "At least three of the seven translational channels support the same pair, so at least two channels beyond the clinical-trial edge are required.",
+]
+
+[[rules]]
+id = "TREAT-I08-R090"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, both Multiomics and targeted text mining support the drug-disease pair, and the gene-disease link is represented by at least two relation types."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The pair has Multiomics Clinical Trials IN_CLINICAL_TRIALS_FOR evidence.",
+  "The pair has a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "The direct gene-disease evidence contains at least two distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R092"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, targeted text mining supports the drug-disease pair, at least two additional translational channels support that pair, and the gene-disease link is represented by at least two relation types."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "At least three of the seven translational channels support the same pair, so at least two channels beyond targeted text are required.",
+  "The direct gene-disease evidence contains at least two distinct relation types.",
+]
+
+[[rules]]
+id = "TREAT-I08-R093"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene, targeted text mining reports a treatment-family relation for the same drug-disease pair, and at least two other translational evidence channels support that pair."
+criteria_sets = ["direct_inhibitory_core", "translational_channels"]
+criteria = [
+  "The pair has a targeted-text TREATS_OR_APPLIED_OR_STUDIED_TO_TREAT edge.",
+  "At least three of the seven translational channels support the same pair; because targeted text is one of them, at least two additional channels are required.",
+]
+
+[[rules]]
+id = "TREAT-I09-R097"
+description = "Predict that a drug treats a MONDO disease when it inhibits a bound gene that physically interacts with a disease-linked driver, and both genes occur in the same compact process and disease-relevant anatomy."
+criteria = [
+  "The drug directly physically interacts with a target Gene and decreases its activity or abundance.",
+  "The target directly physically interacts with a different Gene that has graph-derived evidence linking it to the disease.",
+  "The target and disease-linked driver are both involved in the same biological process containing no more than 100 genes.",
+  "Bgee reports both genes expressed in the same anatomy, and the disease is located in or occurs in that anatomy.",
+  "The shared anatomy is linked to no more than 50 disease locations.",
+]
+
+[[rules]]
+id = "TREAT-I09-R098"
+description = "Predict that a drug treats a MONDO disease when it inhibits a bound upstream gene that upregulates a disease-linked driver, and both genes occur in the same compact process and disease-relevant anatomy."
+criteria = [
+  "The drug directly physically interacts with a target Gene and decreases its activity or abundance.",
+  "The target has a causal REGULATES edge that upregulates a different disease-linked driver Gene.",
+  "The target and driver are both involved in the same biological process containing no more than 100 genes.",
+  "Bgee reports both genes expressed in the same anatomy, and the disease is located in or occurs in that anatomy.",
+  "The shared anatomy is linked to no more than 50 disease locations.",
+]
+
+[[rules]]
+id = "TREAT-I09-R100"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene and both the drug-gene and gene-disease claims have multiple independent forms of support."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "At least three distinct primary sources support the drug-gene binding.",
+  "At least one non-SemMedDB primary source supports the gene-disease evidence.",
+  "The direct gene-disease evidence contains at least three distinct relation types.",
+  "At least two publications support the causal gene-disease claim.",
+]
+
+[[rules]]
+id = "TREAT-I09-R101"
+description = "Predict that a drug treats a MONDO disease when it directly inhibits a disease-linked gene that is also connected to a disease-associated process and shares at least two Bgee anatomical contexts with the disease."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The gene-disease evidence records at least one direct disease-process connection.",
+  "The gene-disease evidence records at least two Bgee anatomy overlaps.",
+]
+
+[[rules]]
+id = "TREAT-I09-R102"
+description = "Predict that a drug treats a MONDO disease using the pathway-and-anatomy rule, but reject the pair if the graph contains direct adverse evidence, a matching side-effect phenotype, or an opposite activating effect on the same gene."
+criteria_sets = ["direct_inhibitory_core"]
+criteria = [
+  "The gene-disease evidence records at least one direct disease-process connection and at least two Bgee anatomy overlaps.",
+  "The graph contains no direct drug-to-disease CONTRAINDICATED_IN, EXACERBATES_CONDITION, or CAUSES edge.",
+  "No drug side-effect phenotype is also a phenotype of the disease.",
+  "The drug has no AFFECTS assertion that increases the activity or abundance of the same inhibited gene.",
+]
+
+[[rules]]
+id = "TREAT-I09-R110"
+description = "Predict that a drug treats a specific MONDO disease when it directly inhibits a disease-linked gene and the binding and gene-disease claims have several independent sources, relation types, and publications."
+criteria_sets = ["direct_inhibitory_core", "specific_mondo"]
+criteria = [
+  "At least three distinct primary sources support the drug-gene binding.",
+  "At least one non-SemMedDB primary source supports the gene-disease evidence.",
+  "The direct gene-disease evidence contains at least three distinct relation types.",
+  "At least two publications support the causal gene-disease claim.",
+]
+
+[[rules]]
+id = "TREAT-I09-R125"
+description = "Predict that a drug treats a candidate MONDO disease by transferring a known indication from a different disease, but only when the drug also directly inhibits a gene linked to the candidate and the two diseases share both phenotype and anatomical context."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "The drug treats or ameliorates an anchor disease through an edge having at least one source other than Drug Repurposing Hub or TTD.",
+  "The drug directly physically interacts with a gene and decreases that gene's activity or abundance.",
+  "The same gene has graph-derived evidence linking it to the candidate disease.",
+  "The anchor and candidate are different diseases that share an exact phenotype occurring in no more than 34 diseases.",
+  "The anchor and candidate share an exact anatomy linked to no more than 50 disease locations.",
+]
+
+[[rules]]
+id = "TREAT-I09-R127"
+description = "Predict that a drug treats a specific MONDO disease when the drug directly decreases a compact biological process supported by multiple disease-associated genes."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "The drug has an AFFECTS assertion that causally decreases a BiologicalProcess.",
+  "The disease has a MINER_DISEASE_PROCESS_SUPPORT edge to that same process based on 2 through 20 genes.",
+  "The process contains no more than 100 genes.",
+]
+
+[[rules]]
+id = "TREAT-I09-R138"
+description = "Predict that a ChEMBL-flagged prodrug treats a specific MONDO disease when an active drug derived from that prodrug already treats or ameliorates the disease in nonblind sources."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "An active Drug has a DERIVES_FROM edge to the candidate Drug.",
+  "The candidate Drug has chembl_prodrug equal to True.",
+  "The active drug has a TREATS or AMELIORATES_CONDITION edge to the disease with at least one source other than Drug Repurposing Hub or TTD.",
+]
+
+[[rules]]
+id = "TREAT-I09-R139"
+description = "Predict that a ChEMBL-flagged prodrug treats a specific MONDO disease when its active drug directly binds and decreases one of the disease's top three graph-supported genes."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "An active Drug has a DERIVES_FROM edge to the candidate Drug, whose chembl_prodrug property is True.",
+  "The active drug directly physically interacts with a Gene and decreases its activity or abundance.",
+  "The Gene has graph-derived disease evidence and ranks among the candidate disease's top three genes.",
+]
+
+[[rules]]
+id = "TREAT-I09-R243"
+description = "Predict that a drug treats a specific MONDO disease when it directly inhibits a disease-linked gene that Bgee reports as expressed in the exact cell type where the disease is located."
+criteria_sets = ["direct_inhibitory_core", "specific_mondo"]
+criteria = [
+  "Bgee supplies an EXPRESSED_IN edge from the inhibited gene to a Cell.",
+  "The disease has a LOCATED_IN or OCCURS_IN edge to that exact same Cell.",
+]
+
+[[rules]]
+id = "TREAT-I09-R249"
+description = "Predict that a drug treats a specific MONDO disease when it binds and decreases at least three of the disease's top five graph-supported genes and no direct adverse disease relation is present."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "For each counted Gene, the drug directly physically interacts with it and decreases its activity or abundance.",
+  "Each counted Gene ranks among the disease's top five genes in MINER_GENE_DISEASE_EVIDENCE.",
+  "At least three distinct qualifying genes are counted.",
+  "The graph contains no direct drug-to-disease CONTRAINDICATED_IN, EXACERBATES_CONDITION, or CAUSES edge.",
+]
+
+[[rules]]
+id = "TREAT-I09-R264"
+description = "Predict that a drug treats a specific MONDO disease when it binds and decreases at least two of the disease's top three genes, with at least two evidence items supporting each directional drug-gene effect."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "For each counted Gene, the drug directly physically interacts with it and decreases its activity or abundance.",
+  "Each counted Gene ranks among the disease's top three genes in MINER_GENE_DISEASE_EVIDENCE.",
+  "Each qualifying decreased-effect edge has evidence_count of at least two, or at least two listed publications.",
+  "At least two distinct qualifying genes are counted.",
+]
+
+[[rules]]
+id = "TREAT-I09-R265"
+description = "Predict that a drug treats a specific MONDO disease when it binds and decreases at least three of the disease's top five genes, with at least two evidence items supporting each directional drug-gene effect."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "For each counted Gene, the drug directly physically interacts with it and decreases its activity or abundance.",
+  "Each counted Gene ranks among the disease's top five genes in MINER_GENE_DISEASE_EVIDENCE.",
+  "Each qualifying decreased-effect edge has evidence_count of at least two, or at least two listed publications.",
+  "At least three distinct qualifying genes are counted.",
+]
+
+[[rules]]
+id = "TREAT-I09-R370"
+description = "Predict that a drug treats a specific MONDO disease when it binds and repeatedly decreases at least two of the disease's top three genes, and none of those genes also has an opposite increased-activity assertion for the drug."
+criteria_sets = ["specific_mondo"]
+criteria = [
+  "For each counted Gene, the drug directly physically interacts with it and decreases its activity or abundance.",
+  "Each counted Gene ranks among the disease's top three genes and each decreased-effect edge has at least two evidence items or publications.",
+  "The drug has no AFFECTS assertion that increases the activity or abundance of any counted Gene.",
+  "At least two distinct qualifying genes are counted.",
+]
+
+[[rules]]
+id = "TREAT-I09-R439"
+description = "Predict that a drug treats a specific MONDO disease when it binds and decreases a top-three disease gene in a GO pathway genetically associated with the disease, provided the molecular evidence is nonblind and ChEMBL does not record a black-box-warning value."
+mechanism_rationale = "The rule combines an independently disease-associated GO process, GOA target membership, a high-ranked disease gene, direct binding, and decreased target activity. The absent ChEMBL black-box-warning property is only a graph filter and is not evidence that the drug is safe."
+criteria_sets = ["specific_mondo", "nonblind_molecular_edges"]
+criteria = [
+  "GeneticsKP supplies a GENETIC_ASSOCIATION between a GO process and the disease.",
+  "GOA places the inhibited target Gene in that process.",
+  "The target has graph-derived disease evidence and ranks among the disease's top three genes.",
+  "The drug directly physically interacts with the target and decreases its activity or abundance.",
+  "The drug's chembl_black_box_warning property is absent.",
+]
+
+[[rules]]
+id = "TREAT-I09-R485"
+description = "Predict that a drug treats a specific MONDO disease when it disrupts a disease-associated process, a gene in that process upregulates a top-three disease target, and the drug binds and decreases that target without direct adverse evidence."
+trapi_notes = "The positive drug-process, process-gene, signed gene-gene, drug-target, and target-disease paths can be represented in TRAPI. Exact source requirements, target rank, shared-node identity, exclusion of Drug Repurposing Hub and TTD molecular edges, and absence of direct adverse relations require post-processing."
+criteria_sets = ["specific_mondo", "nonblind_molecular_edges", "no_direct_adverse"]
+criteria = [
+  "SemMedDB reports that the drug DISRUPTS a BiologicalProcess genetically associated with the disease by GeneticsKP.",
+  "A Gene in that process has a SIGNOR causal REGULATES edge that upregulates a different target Gene.",
+  "The target ranks among the disease's top three genes in MINER_GENE_DISEASE_EVIDENCE.",
+  "The drug directly physically interacts with the target and decreases its activity or abundance.",
+]
+
+[[rules]]
+id = "TREAT-I09-R486"
+description = "Apply the signed process-interception rule, but reject a drug-disease pair when targeted text mining says the drug causes or contributes to a phenotype or manifestation of that disease."
+criteria_sets = ["specific_mondo", "nonblind_molecular_edges", "no_direct_adverse"]
+criteria = [
+  "SemMedDB reports that the drug disrupts a GeneticsKP disease-associated process.",
+  "A Gene in that process upregulates a different top-three disease target through a causal SIGNOR edge.",
+  "The drug directly physically interacts with the target and decreases its activity or abundance.",
+  "Targeted text mining must not report that the drug CAUSES or CONTRIBUTES_TO an entity that is an HPO-annotated phenotype of the disease or has a MANIFESTATION_OF edge to the disease.",
+]
+
+[[rules]]
+id = "TREAT-I09-R488"
+description = "Predict that a drug treats a specific MONDO disease when it disrupts the direct GO parent of a disease-associated process, a member of the narrower process upregulates a top-three disease target, and the drug binds and decreases that target without direct adverse evidence."
+criteria_sets = ["specific_mondo", "nonblind_molecular_edges", "no_direct_adverse"]
+criteria = [
+  "SemMedDB reports that the drug DISRUPTS a broader BiologicalProcess.",
+  "Ubergraph records a direct SUBCLASS_OF edge from a different, narrower process to that broader process.",
+  "GeneticsKP genetically associates the narrower process with the disease.",
+  "A Gene in the narrower process upregulates a different target through a causal SIGNOR edge.",
+  "The target ranks among the disease's top three genes, and the drug directly binds and decreases it.",
+]

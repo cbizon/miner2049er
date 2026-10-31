@@ -1,0 +1,95 @@
+{
+  "created_at": "2026-08-12T14:46:08.995310+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R270",
+      "name": "Binding-and-direction provenance consensus",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R264",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-three causal-module coverage is most reliable when every counted target has repeated directional evidence and binding support from at least two independent primary databases.",
+      "body": "R246 with evidence count at least two and at least two binding sources per counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Independent target assignment and repeated directional evidence strengthen both intervention arms, though the directional channel remains text-mining dominated.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; evidence and source aggregation, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(\n        effect.evidence_count,\n        size(coalesce(effect.publications, [])),\n        1\n      ) >= 2\n\n\nUNWIND coalesce(binding.primary_knowledge_sources, []) AS binding_source\nWITH subject, object, gene,\n     collect(DISTINCT binding_source) AS provenance_values\nWHERE size(provenance_values) >= 2\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 16,
+        "validation_hits": 1,
+        "training_hits": 7,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 8
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5,
+        "visible_target_recall": 0.0002907822041291073,
+        "visible_target_f0_5": 0.0014505366985784738,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002094679514034353
+      },
+      "runtime_seconds": 0.4468390420079231
+    }
+  ]
+}

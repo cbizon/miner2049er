@@ -1,0 +1,200 @@
+{
+  "created_at": "2026-08-10T12:25:36.742212+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I02-R009",
+      "name": "Normalized phenotype indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when at least half of the smaller disease phenotype profile is shared and both profiles are bounded.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=3 phenotypes; shared/min(phenotype degrees) >=0.5; each phenotype degree 3-50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Phenotypic similarity supports indication transfer but does not identify the drug mechanism responsible for efficacy.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 15562,
+        "validation_hits": 0,
+        "training_hits": 211,
+        "contraindicated_pairs": 4,
+        "unresolved_or_blind_pairs": 15351
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013558668551600052,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 9.075317749986425,
+      "pareto_front": false
+    },
+    {
+      "id": "TREAT-I02-R010",
+      "name": "Normalized genetic indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when the diseases share multiple associated genes and at least half of the smaller gene profile.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=2 associated genes; shared/min(gene degrees) >=0.5; each gene degree 2-100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Genetic similarity provides a disease-mechanism bridge, but efficacy is still transferred from an existing indication.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 46,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 44
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.043478260869565216,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.2187072079977952,
+      "pareto_front": false
+    },
+    {
+      "id": "TREAT-I02-R014",
+      "name": "Shared selective inhibitory mechanism transfer",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "failed",
+      "hypothesis": "A chemical may share an indication with a known treatment when both selectively decrease the activity or abundance of multiple identical genes.",
+      "body": "anchor chemical -treats-> disease; anchor and candidate chemicals each decrease activity_or_abundance of >=2 shared genes; each qualified gene degree <=50; shared/min(degrees) >=0.5",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Transfers an indication through a directional molecular signature, but still depends on an existing treatment and does not prove that the shared targets drive the disease.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The shared-target motif and qualifiers are TRAPI-expressible; overlap, degree, and source constraints require post-processing or Cypher.",
+      "error": "ClientError: {code: Neo.ClientError.Transaction.TransactionTimedOutClientConfiguration} {message: The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer timeout. }",
+      "runtime_seconds": 180.74371158296708,
+      "pareto_front": false
+    },
+    {
+      "id": "TREAT-I02-R015",
+      "name": "Direct binding plus inhibition of a causal gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R006",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it both directly binds and decreases the activity or abundance of a causal disease gene.",
+      "body": "chemical -directly_physically_interacts_with-> causal gene -causes-> disease; same chemical -affects[causes, activity_or_abundance, decreased]-> same gene; qualified gene degree <=50",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Requires target engagement, a directionally corrective perturbation, and a causal disease link on the same gene.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The parallel-edge motif and qualifiers are TRAPI-expressible; the degree constraint requires Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 2134,
+        "validation_hits": 5,
+        "training_hits": 35,
+        "contraindicated_pairs": 19,
+        "unresolved_or_blind_pairs": 2094
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.01874414245548266,
+        "validation_precision_lower_bound": 0.0023820867079561697,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.0023262305759746906
+      },
+      "runtime_seconds": 0.6900645000278018,
+      "pareto_front": true
+    },
+    {
+      "id": "TREAT-I02-R016",
+      "name": "Tight multi-gene inhibition in a compact disease process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R007",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when a selective chemical decreases at least three disease-associated genes in a compact process.",
+      "body": "disease has 3-10 associated genes in a process; chemical decreases activity_or_abundance of >=3; chemical qualified gene degree <=50",
+      "mechanism_score": "high",
+      "mechanism_rationale": "This is a stricter, hub-resistant form of multi-target pathway correction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 17246,
+        "validation_hits": 8,
+        "training_hits": 159,
+        "contraindicated_pairs": 177,
+        "unresolved_or_blind_pairs": 17079
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00968340484750087,
+        "validation_precision_lower_bound": 0.0004681921928951835,
+        "validation_recall": 0.0034028073160357296,
+        "validation_f0_5": 0.0005657788653304856
+      },
+      "runtime_seconds": 10.288298833998851,
+      "pareto_front": true
+    }
+  ]
+}

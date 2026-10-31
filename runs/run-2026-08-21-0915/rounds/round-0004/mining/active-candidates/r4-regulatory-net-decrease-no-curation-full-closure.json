@@ -1,0 +1,346 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-regulatory-net-decrease-no-curation-full-closure",
+  "family_id": "net-signed-regulatory-intervention",
+  "name": "Net Decrease No Curation (Full Descendant Control)",
+  "status": "baseline",
+  "plain_language_rule": "Predict treatment when The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; Chemical causally affects regulator with an explicit increased or decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; Regulator causally affects gene with an explicit increased or decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; The downstream gene causes or contributes to the disease The pinned descendant closure is biolink:causes, biolink:contributes_to. No predicate descendants are excluded in this control. The regulator and downstream disease gene must be different nodes. The two signs must be opposite, giving net decrease.",
+  "hypothesis": "Composing two signed activity effects tests a regulatory intervention rather than unsigned network proximity.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "regulator",
+        "role": "Drug-engaged upstream gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Drug-engaged upstream gene or gene product."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      }
+    ],
+    "edges": [
+      {
+        "id": "direct",
+        "subject": "chemical",
+        "object": "disease",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control."
+      },
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "regulator",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects regulator with an explicit increased or decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": [
+            "increased",
+            "decreased"
+          ],
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        }
+      },
+      {
+        "id": "bridge",
+        "subject": "regulator",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Regulator causally affects gene with an explicit increased or decreased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": [
+            "increased",
+            "decreased"
+          ],
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        }
+      },
+      {
+        "id": "causal",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:contributes_to"
+        ],
+        "direction": "forward",
+        "explanation": "The downstream gene causes or contributes to the disease The pinned descendant closure is biolink:causes, biolink:contributes_to. No predicate descendants are excluded in this control."
+      }
+    ],
+    "constraints": [
+      {
+        "id": "distinct-genes",
+        "kind": "other",
+        "expression": "The regulator and downstream disease gene must be different nodes.",
+        "explanation": "The regulator and downstream disease gene must be different nodes."
+      },
+      {
+        "id": "composed-sign",
+        "kind": "property",
+        "expression": "The two signs must be opposite, giving net decrease.",
+        "explanation": "The two signs must be opposite, giving net decrease."
+      }
+    ]
+  },
+  "derived_features": [
+    {
+      "name": "complete signed regulator-to-causal-disease context",
+      "definition": "A regulator has a causes-qualified affects-descendant edge to a distinct downstream gene with increased or decreased activity or activity_or_abundance, and that gene causes or contributes to a disease. Every such regulator-disease context is stored.",
+      "inputs": [
+        "All raw GeneOrGeneProduct-to-GeneOrGeneProduct edges in the full Biolink 4.3.2 affects closure, with the stated causal, direction, and activity qualifiers",
+        "All raw downstream-gene-to-Disease edges in the complete contributes_to closure, namely causes and contributes_to",
+        "Original Neo4j endpoint identity, without treatment labels, external mappings, or feedback data"
+      ],
+      "construction": "Deduplicate disease neighbors by downstream gene, then regulator-direction pairs by downstream gene. Group all paths by regulator and disease, and collect distinct downstream-gene node element identifiers separately for increased and decreased regulatory directions. Store both lists and their summed length in one relationship. Parallel source edges do not multiply support; a gene with both signs appears in both lists. Missing causal, direction, or aspect qualifiers do not qualify. Empty sign neighborhoods are empty lists. Write complete results in thousand-row transactions; no context is ranked or removed to satisfy resource limits.",
+      "formula": "For a drug-regulator direction, retrieve the opposite regulatory-direction gene list to propose net-decreasing paths. Rematch every raw bridge and causal edge against this rule's exact expanded predicates and qualifiers. Prediction support is count(distinct rematched downstream gene nodes), not the stored list length.",
+      "interpretation": "This is computational access, not an additional biological condition or a predictive score. No numerical support threshold is applied. Raw rematching prevents the full affects closure, including ameliorates_condition, from silently contributing excluded evidence. Element identifiers are local to the fixed Neo4j instance. Sign composition does not establish disease risk direction or efficacy.",
+      "neo4j_artifact_id": "r0004-signed-regulator-causal-context-v1"
+    }
+  ],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Composing two signed activity effects tests a regulatory intervention rather than unsigned network proximity. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[direct:{{relationship_types:direct}}]->(disease:Disease)\nWHERE direct.predicate IN {{predicates:direct}}\nWITH chemical,collect(DISTINCT disease) AS diseases\nCALL (chemical,diseases) {\n  MATCH (chemical)-[target:{{relationship_types:target}}]->(regulator:GeneOrGeneProduct)\n  WHERE target.predicate IN {{predicates:target}}\n    AND target.qualified_predicate='biolink:causes'\n    AND target.object_direction_qualifier IN ['increased','decreased']\n    AND target.object_aspect_qualifier IN ['activity','activity_or_abundance']\n  WITH DISTINCT regulator,target.object_direction_qualifier AS drug_direction,diseases\n  MATCH (regulator)-[context:MINER_R0004_SIGNED_CAUSAL_CONTEXT]->(disease:Disease)\n  WHERE context.artifact_id='r0004-signed-regulator-causal-context-v1'\n    AND context.run_id='run-2026-08-21-0915'\n    AND disease IN diseases\n  WITH regulator,disease,drug_direction,\n    CASE WHEN drug_direction='increased' THEN context.decreased_gene_element_ids\n         ELSE context.increased_gene_element_ids END AS downstream_gene_ids\n  UNWIND downstream_gene_ids AS downstream_gene_id\n  MATCH (gene:GeneOrGeneProduct)\n  WHERE elementId(gene)=downstream_gene_id\n  MATCH (regulator)-[bridge:{{relationship_types:bridge}}]->(gene)\n  WHERE bridge.predicate IN {{predicates:bridge}}\n    AND bridge.qualified_predicate='biolink:causes'\n    AND bridge.object_direction_qualifier IN ['increased','decreased']\n    AND bridge.object_aspect_qualifier IN ['activity','activity_or_abundance']\n    AND regulator<>gene\n    AND drug_direction<>bridge.object_direction_qualifier\n  MATCH (gene)-[causal:{{relationship_types:causal}}]->(disease)\n  WHERE causal.predicate IN {{predicates:causal}}\n  RETURN disease,count(DISTINCT gene) AS support_count\n}\nRETURN chemical.id AS subject_id,disease.id AS object_id,support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "regulator": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "direct": {
+                "subject": "chemical",
+                "object": "disease",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              },
+              "target": {
+                "subject": "chemical",
+                "object": "regulator",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bridge": {
+                "subject": "regulator",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "decreased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "causal": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:contributes_to"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: The regulator and downstream disease gene must be different nodes.; The two signs must be opposite, giving net decrease."
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation.",
+    "The full affects closure includes ameliorates_condition and is classified as treatment-using even if no such edge satisfies the other constraints in this graph."
+  ],
+  "parent_rule_id": "r4-regulatory-net-decrease-no-curation"
+}

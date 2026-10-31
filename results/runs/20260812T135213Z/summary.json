@@ -1,0 +1,326 @@
+{
+  "created_at": "2026-08-12T13:52:13.067516+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R228",
+      "name": "Compact-paralog LOF compensatory activation",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Increasing a distinct compact-family paralog can compensate for a loss-of-function disease driver.",
+      "body": "drug increases bound target; target and LOF driver share p90-compact Panther family",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The drug direction is explicitly restorative and compact paralogy supplies a plausible functional bypass, although family membership does not prove compensation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The drug, family, and LOF paths are TRAPI-expressible; variant form, repeated family identity, compactness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:MEMBER_OF]->(family:GeneFamily)\n      <-[:MEMBER_OF]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND family._miner_gene_family_member_degree <= 14\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6001748330309056
+    },
+    {
+      "id": "TREAT-I09-R229",
+      "name": "Compact-paralog LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R228",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing a distinct paralog of a LOF driver is matched negative evidence for paralog compensation.",
+      "body": "R228 with target decreased rather than increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same paralog architecture is retained but the drug direction cannot restore the deficient disease driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; matched sign interpretation and compactness require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:MEMBER_OF]->(family:GeneFamily)\n      <-[:MEMBER_OF]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND family._miner_gene_family_member_degree <= 14\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 80,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 80
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.5607608330319636
+    },
+    {
+      "id": "TREAT-I09-R230",
+      "name": "Process-convergent compact-paralog LOF compensation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R228",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Paralog compensation is more credible when target and LOF driver also share a compact biological process.",
+      "body": "R228 plus shared process with at most 100 gene members",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Directionally restorative perturbation, compact paralogy, and pathway convergence jointly support a functional bypass.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; repeated identities, variant form, family/process degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:MEMBER_OF]->(family:GeneFamily)\n      <-[:MEMBER_OF]-(driver)\nMATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n      <-[:INVOLVED_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND family._miner_gene_family_member_degree <= 14\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.6343941670493223
+    },
+    {
+      "id": "TREAT-I09-R231",
+      "name": "Process-convergent compact-paralog suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R230",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing the process-convergent paralog is a matched adverse control for LOF compensation.",
+      "body": "R230 with target decreased rather than increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The functional context is preserved, but the perturbation direction is inconsistent with restoring deficient activity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; matched sign interpretation and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:MEMBER_OF]->(family:GeneFamily)\n      <-[:MEMBER_OF]-(driver)\nMATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n      <-[:INVOLVED_IN]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND family._miner_gene_family_member_degree <= 14\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 62,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 62
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.3018721669795923
+    },
+    {
+      "id": "TREAT-I09-R232",
+      "name": "Cellular-component LOF compensatory activation",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Increasing a distinct gene in the same compact cellular component can compensate for a LOF disease driver.",
+      "body": "drug increases bound target; target and LOF driver share p90-compact cellular component",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule gives restorative drug direction and molecular-assembly context, but component membership can also indicate nonredundant subunits.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The drug, component, and LOF paths are TRAPI-expressible; repeated component identity, degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:PART_OF]->(component:CellularComponent)\n      <-[:PART_OF]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND component._miner_component_gene_member_degree <= 54\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 134,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 134
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.7240817500278354
+    },
+    {
+      "id": "TREAT-I09-R233",
+      "name": "Cellular-component LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R232",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing another member of a LOF driver's cellular component is a matched adverse control.",
+      "body": "R232 with target decreased rather than increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The assembly context is retained while the perturbation direction argues against restoration.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; matched sign interpretation, degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:PART_OF]->(component:CellularComponent)\n      <-[:PART_OF]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND component._miner_component_gene_member_degree <= 54\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 616,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 616
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.8097733749891631
+    },
+    {
+      "id": "TREAT-I09-R234",
+      "name": "Interacting-gene LOF compensatory activation",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Increasing a direct interaction partner can compensate for a LOF disease driver.",
+      "body": "drug increases bound target; target directly interacts with distinct LOF driver",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The drug direction is restorative and the genes physically interact, but interaction alone does not imply functional redundancy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The drug, interaction, and LOF paths are TRAPI-expressible; identity, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 999,
+        "validation_hits": 1,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 998
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.001001001001001001,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.0001586898565443697,
+        "validation_precision_lower_bound": 0.001001001001001001,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.000787773751378604
+      },
+      "runtime_seconds": 20.10264774999814
+    },
+    {
+      "id": "TREAT-I09-R235",
+      "name": "Interacting-gene LOF suppression diagnostic",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R234",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing an interaction partner of a LOF driver is a matched adverse control for interaction-based compensation.",
+      "body": "R234 with target decreased rather than increased",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The interaction architecture is retained while the perturbation direction cannot restore the deficient driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; matched sign interpretation and identity constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 4374,
+        "validation_hits": 2,
+        "training_hits": 5,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 4367
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.001600365797896662,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0007776395307500888,
+        "validation_precision_lower_bound": 0.00045777065690089265,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.00050436273768094
+      },
+      "runtime_seconds": 70.97365033399547
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-substrate-genetic",
+  "family_id": "enzyme-substrate-disease-context",
+  "name": "Enzyme Substrate Genetic Context",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The disease-associated enzyme has the candidate drug as a substrate The pinned descendant closure is biolink:has_substrate. At least one primary source must be infores:chembl.; The enzyme is genetically associated with the disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp.",
+  "hypothesis": "A disease-linked enzyme substrate may provide metabolic intervention or replacement context.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      }
+    ],
+    "edges": [
+      {
+        "id": "substrate",
+        "subject": "gene",
+        "object": "chemical",
+        "predicates": [
+          "biolink:has_substrate"
+        ],
+        "direction": "forward",
+        "explanation": "The disease-associated enzyme has the candidate drug as a substrate The pinned descendant closure is biolink:has_substrate. At least one primary source must be infores:chembl.",
+        "source_constraints": [
+          "infores:chembl"
+        ]
+      },
+      {
+        "id": "association",
+        "subject": "gene",
+        "object": "disease",
+        "predicates": [
+          "biolink:gene_associated_with_condition"
+        ],
+        "direction": "forward",
+        "explanation": "The enzyme is genetically associated with the disease The pinned descendant closure is biolink:gene_associated_with_condition. At least one primary source must be infores:geneticskp.",
+        "source_constraints": [
+          "infores:geneticskp"
+        ]
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "low",
+    "rationale": "A disease-linked enzyme substrate may provide metabolic intervention or replacement context. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (gene:GeneOrGeneProduct)-[substrate:{{relationship_types:substrate}}]->(chemical:Drug) WHERE substrate.predicate IN {{predicates:substrate}} AND any(source IN [\"infores:chembl\"] WHERE source IN coalesce(substrate.primary_knowledge_sources,[])) MATCH (gene:GeneOrGeneProduct)-[association:{{relationship_types:association}}]->(disease:Disease) WHERE association.predicate IN {{predicates:association}} AND any(source IN [\"infores:geneticskp\"] WHERE source IN coalesce(association.primary_knowledge_sources,[])) RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT gene) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              }
+            },
+            "edges": {
+              "substrate": {
+                "subject": "gene",
+                "object": "chemical",
+                "predicates": [
+                  "biolink:has_substrate"
+                ]
+              },
+              "association": {
+                "subject": "gene",
+                "object": "disease",
+                "predicates": [
+                  "biolink:gene_associated_with_condition"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: substrate: enforce primary-source membership in infores:chembl; association: enforce primary-source membership in infores:geneticskp"
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Metabolic processing can affect drug exposure without treating the enzyme-linked disease; this is an association diagnostic."
+  ]
+}

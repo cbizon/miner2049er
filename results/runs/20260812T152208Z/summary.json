@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T15:22:08.637295+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R281",
+      "name": "SIGNOR GOF-corrective regulatory cascade",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can correct a gain-of-function disease by perturbing a bound regulator so that a signed SIGNOR edge decreases a top-ranked GOF driver.",
+      "body": "drug signed effect on bound regulator; SIGNOR signed regulation of distinct top-three GOF disease driver; composed net direction decreases driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes two causal signs across a directed regulatory edge and an explicit GOF disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, drug-effect, regulation, and disease-association paths are TRAPI-expressible; sign composition, source, rank, identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND (\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 130,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 130
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3011778750224039
+    },
+    {
+      "id": "TREAT-I09-R282",
+      "name": "SIGNOR GOF-worsening regulatory control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "The sign-reversed cascade should worsen a gain-of-function disease and serves as a directional control.",
+      "body": "R281 structure with composed net direction increasing GOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The path is mechanistic but predicts the adverse direction for a GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R281.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND (\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 85,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 85
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.19883850001497194
+    },
+    {
+      "id": "TREAT-I09-R283",
+      "name": "SIGNOR LOF-corrective regulatory cascade",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can correct a loss-of-function disease by perturbing a bound regulator so that a signed SIGNOR edge increases a top-ranked LOF driver.",
+      "body": "drug signed effect on bound regulator; SIGNOR signed regulation of distinct top-three LOF disease driver; composed net direction increases driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes two causal signs across a directed regulatory edge and an explicit LOF disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, drug-effect, regulation, and disease-association paths are TRAPI-expressible; sign composition, source, rank, identity, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND (\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 290,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 290
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.41830183402635157
+    },
+    {
+      "id": "TREAT-I09-R284",
+      "name": "SIGNOR LOF-worsening regulatory control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "The sign-reversed cascade should worsen a loss-of-function disease and serves as a directional control.",
+      "body": "R283 structure with composed net direction decreasing LOF driver",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The path is mechanistic but predicts the adverse direction for an LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R283.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (regulator:Gene)\nMATCH (subject)-[drug_effect:AFFECTS]->(regulator)\nMATCH (regulator)-[gene_effect:REGULATES]->(driver:Gene)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE regulator <> driver\n  AND drug_effect.qualified_predicate = 'biolink:causes'\n  AND drug_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND 'infores:signor' IN\n      coalesce(gene_effect.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND (\n    (drug_effect.object_direction_qualifier = 'decreased' AND gene_effect.object_direction_qualifier = 'upregulated') OR\n    (drug_effect.object_direction_qualifier = 'increased' AND gene_effect.object_direction_qualifier = 'downregulated')\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 327,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 327
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.43585120799252763
+    }
+  ]
+}

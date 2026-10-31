@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915-opus-low",
+  "benchmark_id": "translator-treats-2026-06-21-v1",
+  "split_id": "104e2e7cf15192c4",
+  "graph_version": "2026_06_21",
+  "biolink_version": "4.3.2",
+  "predicate_expansion": "descendants",
+  "target_predicates": [
+    "biolink:treats",
+    "biolink:ameliorates_condition",
+    "biolink:preventative_for_condition"
+  ],
+  "prompt_path": "/Users/bizon/Projects/experiments/miner2049er/prompts/treats-rule-mining.md",
+  "started_at": "2026-08-20T23:57:15.596667+00:00",
+  "completed_at": null,
+  "current_round_id": null,
+  "round_count": 1,
+  "status": "round_complete",
+  "artifacts": {
+    "base_prompt": "base-prompt.md",
+    "rounds": "rounds",
+    "neo4j_artifacts": "neo4j-artifacts.jsonl",
+    "rules": "rules.jsonl",
+    "predictions": "predictions.jsonl",
+    "research_log": "research-log.jsonl",
+    "evaluations": "../../data/evaluations/run-2026-08-21-0915-opus-low.jsonl"
+  }
+}

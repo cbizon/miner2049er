@@ -1,0 +1,38 @@
+[
+  {
+    "purpose": "Verify Neo4j connectivity and discover stored predicate types without an unbounded relationship scan.",
+    "query": "CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType ORDER BY relationshipType",
+    "timeout_seconds": 20,
+    "next_action": "Select previously untested biological path legs using the pinned predicate closure."
+  },
+  {
+    "purpose": "Inventory usable node categories for pathogen, gene-product, and signed disease-context mechanisms.",
+    "query": "CALL db.labels() YIELD label RETURN label ORDER BY label",
+    "timeout_seconds": 20,
+    "next_action": "Use explicit endpoint labels for bounded leg profiles."
+  },
+  {
+    "purpose": "Inspect existing identifier indexes without changing graph schema.",
+    "query": "SHOW INDEXES YIELD name, type, entityType, labelsOrTypes, properties, state RETURN name, type, entityType, labelsOrTypes, properties, state",
+    "timeout_seconds": 20,
+    "next_action": "Use Entity identifier seeks when joining bounded canonical endpoint sets."
+  },
+  {
+    "purpose": "Check whether directed disease-to-gene effects encode a molecular direction suitable for reversal.",
+    "query": "MATCH (d:Disease)-[e:AFFECTS]->(g:GeneOrGeneProduct) WHERE e.predicate='biolink:affects' RETURN e.qualified_predicate AS qualified_predicate,e.object_direction_qualifier AS direction,e.object_aspect_qualifier AS aspect,e.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT d) AS diseases,count(DISTINCT g) AS genes ORDER BY edges DESC LIMIT 60",
+    "timeout_seconds": 90,
+    "next_action": "Compare opposite and matching drug-effect directions if disease molecular polarity exists."
+  },
+  {
+    "purpose": "Profile pathogen-to-disease causality before attempting anti-infective drug joins.",
+    "query": "MATCH (organism:OrganismTaxon)-[e:CAUSES|CONTRIBUTES_TO]->(d:Disease) WHERE e.predicate IN ['biolink:causes','biolink:contributes_to'] RETURN e.predicate AS predicate,e.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT organism) AS organisms,count(DISTINCT d) AS diseases",
+    "timeout_seconds": 60,
+    "next_action": "Profile chemical effects on the same organism category, including viability and abundance qualifiers."
+  },
+  {
+    "purpose": "Profile protein-gene identity bridges independently of treatment and association edges.",
+    "query": "MATCH (s)-[e:GENE_PRODUCT_OF|HAS_GENE_PRODUCT|TRANSLATION_OF|TRANSLATES_TO|TRANSCRIBED_FROM|TRANSCRIBED_TO]->(o) RETURN e.predicate AS predicate,labels(s) AS subject_labels,labels(o) AS object_labels,e.primary_knowledge_sources AS sources,count(*) AS edges LIMIT 60",
+    "timeout_seconds": 60,
+    "next_action": "Test whether canonical protein targets can reach genetically implicated genes through a valid identity bridge."
+  }
+]

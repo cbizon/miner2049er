@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/round.schema.json",
+  "title": "Rule-mining round",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "round_id",
+    "round_number",
+    "parent_round_id",
+    "status",
+    "started_at",
+    "deadline",
+    "completed_at",
+    "instruction_path",
+    "instruction_sha256",
+    "agent_prompt_path",
+    "agent_prompt_sha256",
+    "starting_artifacts",
+    "ending_artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "round_number": {"type": "integer", "minimum": 1},
+    "parent_round_id": {
+      "type": ["string", "null"],
+      "pattern": "^round-[0-9]{4}$"
+    },
+    "status": {"enum": ["running", "completed"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "deadline": {"type": ["string", "null"], "format": "date-time"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"},
+    "instruction_path": {"type": "string", "minLength": 1},
+    "instruction_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "agent_prompt_path": {"type": "string", "minLength": 1},
+    "agent_prompt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "starting_artifacts": {"$ref": "#/$defs/artifactCheckpoint"},
+    "ending_artifacts": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/artifactCheckpoint"}
+      ]
+    }
+  },
+  "$defs": {
+    "fileState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "bytes", "sha256"],
+      "properties": {
+        "records": {"type": "integer", "minimum": 0},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "artifactCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "neo4j_artifacts",
+        "rules",
+        "predictions",
+        "research_log",
+        "evaluations"
+      ],
+      "properties": {
+        "neo4j_artifacts": {"$ref": "#/$defs/fileState"},
+        "rules": {"$ref": "#/$defs/fileState"},
+        "predictions": {"$ref": "#/$defs/fileState"},
+        "research_log": {"$ref": "#/$defs/fileState"},
+        "evaluations": {"$ref": "#/$defs/fileState"}
+      }
+    }
+  }
+}

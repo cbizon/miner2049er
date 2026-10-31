@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T19:21:36.683771+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R415",
+      "name": "Temporally forward shared-target indication transfer",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug may prevent or treat a disease that follows its established indication when both diseases share the same top-three inhibited causal gene.",
+      "body": "Known indication precedes candidate disease; drug decreases a top-three causal gene shared by both",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines temporal order with a shared directional molecular mechanism, but the temporal edge is literature-mined and the anchor treatment is used as prior evidence.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; source exclusions, shared-gene identity, rank, staged execution, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->\n      (anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[anchor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND anchor_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT subject, anchor, gene\nMATCH (anchor)-[temporal:PRECEDES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(temporal.primary_knowledge_sources, [])\nMATCH (gene)-[object_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object_evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 12,
+        "validation_hits": 0,
+        "training_hits": 7,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 5
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5833333333333334,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012699564586357039,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.1808197500067763
+    },
+    {
+      "id": "TREAT-I09-R416",
+      "name": "Temporally forward target-activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R415",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing rather than decreasing the shared causal gene is a matched direction control for forward temporal transfer.",
+      "body": "R415 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The temporal and shared-target evidence is unchanged while the drug direction is reversed.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R415.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->\n      (anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[anchor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND anchor_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT subject, anchor, gene\nMATCH (anchor)-[temporal:PRECEDES]->(object:Disease)\nWHERE 'infores:semmeddb' IN\n      coalesce(temporal.primary_knowledge_sources, [])\nMATCH (gene)-[object_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object_evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.10232479200931266
+    },
+    {
+      "id": "TREAT-I09-R417",
+      "name": "Reverse-temporal shared-target transfer control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R415",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Predicting an earlier disease from a later treated indication is a temporal-order control for R415.",
+      "body": "Candidate disease precedes known indication; drug decreases a top-three causal gene shared by both",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The shared target remains directional, but the temporal order does not support prevention of the candidate disease.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R415.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->\n      (anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[anchor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND anchor_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT subject, anchor, gene\nMATCH (object:Disease)-[temporal:PRECEDES]->(anchor)\nWHERE 'infores:semmeddb' IN\n      coalesce(temporal.primary_knowledge_sources, [])\nMATCH (gene)-[object_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object_evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 6,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.8571428571428571,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0010893246187363835,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.1691853329539299
+    },
+    {
+      "id": "TREAT-I09-R418",
+      "name": "Reverse-temporal target-activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R417",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Reversing both temporal interpretation and target direction is the least mechanistic matched control.",
+      "body": "R417 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Neither temporal order nor target direction supports the proposed therapeutic transfer.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R415.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->\n      (anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[anchor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND anchor_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\nWITH DISTINCT subject, anchor, gene\nMATCH (object:Disease)-[temporal:PRECEDES]->(anchor)\nWHERE 'infores:semmeddb' IN\n      coalesce(temporal.primary_knowledge_sources, [])\nMATCH (gene)-[object_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE object_evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.09865358402021229
+    }
+  ]
+}

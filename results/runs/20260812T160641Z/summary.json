@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T16:06:41.570655+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R306",
+      "name": "GOF downstream-effector interception",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can correct a gain-of-function disease by directly opposing a signed downstream effector of the causal driver.",
+      "body": "GOF Gene2Phenotype driver signed-regulates effector; drug directly binds and changes effector in the opposite direction",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule intercepts a signed downstream consequence of an explicit GOF driver rather than requiring direct drug action on the causal gene.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, signed regulation, drug effect, and variant-qualified disease paths are TRAPI-expressible; provenance and disease constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1262,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1253
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0071315372424722665,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.001382063882063882,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.4451589999953285
+    },
+    {
+      "id": "TREAT-I09-R307",
+      "name": "GOF downstream-effector reinforcement control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Changing a GOF driver's downstream effector in the same direction is a matched reinforcing control.",
+      "body": "R306 with drug effect reinforcing rather than opposing the GOF downstream consequence",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug effect reinforces the signed downstream consequence of the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R306.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 776,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 776
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.018870458006859
+    },
+    {
+      "id": "TREAT-I09-R308",
+      "name": "LOF downstream-effector restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can compensate for a loss-of-function disease by directly restoring the signed downstream effector state of the causal driver.",
+      "body": "LOF Gene2Phenotype driver signed-regulates effector; drug directly binds and changes effector in the direction lost under LOF",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule restores a signed downstream consequence of an explicit LOF driver without assuming that a paralog or physical interactor is functionally redundant.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, signed regulation, drug effect, and variant-qualified disease paths are TRAPI-expressible; provenance and disease constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1256,
+        "validation_hits": 2,
+        "training_hits": 4,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 1250
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.004777070063694267,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0009220555692156381,
+        "validation_precision_lower_bound": 0.001597444089456869,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.0013588802826470987
+      },
+      "runtime_seconds": 2.0390393750276417
+    },
+    {
+      "id": "TREAT-I09-R309",
+      "name": "LOF downstream-effector suppression control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Changing a LOF driver's downstream effector opposite the normal driver effect is a matched worsening control.",
+      "body": "R308 with drug effect suppressing rather than restoring the normal LOF downstream consequence",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug effect further suppresses the signed downstream consequence already lost under LOF.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R308.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1536,
+        "validation_hits": 1,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 1535
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0006510416666666666,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.0001485619206085096,
+        "validation_precision_lower_bound": 0.0006510416666666666,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0005885815185403178
+      },
+      "runtime_seconds": 2.2571913339779712
+    }
+  ]
+}

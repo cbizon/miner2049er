@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T21:40:14.233764+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R470",
+      "name": "Independent disease-process disruption and target inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "superseded",
+      "status": "completed",
+      "hypothesis": "A drug is more credible when it independently disrupts a GeneticsKP disease-associated process and inhibits a separate top-three disease gene.",
+      "body": "drug disrupts disease-associated process; independently binds and decreases top-three disease gene",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The nonlinear motif supplies two independent disease-level intervention arms: process disruption and signed top-ranked target inhibition.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Both positive arms are TRAPI-expressible; source exclusions, disease-relative rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.42857142857142855,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.001630671111755327,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.5770148750161752
+    },
+    {
+      "id": "TREAT-I09-R472",
+      "name": "Dual-arm correction without direct disease harm",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R470",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "R470 should be more precise after excluding graph assertions that the same drug directly harms the candidate disease.",
+      "body": "R470 excluding direct contraindication, exacerbation, causation, contribution, or predisposition",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The two positive intervention arms are preserved while explicit pair-specific harm evidence is vetoed.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and negative motifs are TRAPI-expressible; source exclusions, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 19,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 10
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.47368421052631576,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.0016311439756415834,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0082152499817312
+    },
+    {
+      "id": "TREAT-I09-R474",
+      "name": "Dual-arm correction without matching adverse phenotype",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R470",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "R470 should improve after excluding drugs whose side effects reproduce a phenotype of the candidate disease.",
+      "body": "R470 excluding shared drug-side-effect and disease phenotype",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule retains both positive arms while vetoing a graph-native adverse phenotype overlap.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and negative motifs are TRAPI-expressible; source exclusions, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(phenotype:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 19,
+        "validation_hits": 0,
+        "training_hits": 8,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.42105263157894735,
+        "visible_target_recall": 0.0002907822041291073,
+        "visible_target_f0_5": 0.0014499057561258516,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.043205666996073
+    },
+    {
+      "id": "TREAT-I09-R476",
+      "name": "Dual-arm correction without strong graph harm",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R470",
+      "library_status": "superseded",
+      "status": "completed",
+      "hypothesis": "Combining pair-specific harm and adverse-phenotype vetoes should isolate the safest R470 predictions.",
+      "body": "R470 excluding direct disease harm and shared adverse phenotype",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The nonlinear positive mechanism is retained only when neither strong graph-native negative-evidence channel fires.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R472 and R474.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (process:BiologicalProcess)-[path_evidence:GENETIC_ASSOCIATION]-\n      (object:Disease)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(phenotype:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 17,
+        "validation_hits": 0,
+        "training_hits": 8,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.47058823529411764,
+        "visible_target_recall": 0.0002907822041291073,
+        "visible_target_f0_5": 0.0014503263234227702,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.3640503749484196
+    }
+  ]
+}

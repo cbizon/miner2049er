@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T01:44:26.940372+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R127",
+      "name": "Direct decrease of a compact disease process",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug that directly decreases a compact biological process supported by multiple disease-associated genes can treat the disease without requiring a single privileged target.",
+      "body": "drug directly decreases biological process supported by 2-20 disease genes and containing <=100 genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule directly perturbs a multi-gene disease process, but the graph does not state whether decreasing the process is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The drug-process and disease-process paths are TRAPI-expressible; support cardinality, process degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[effect:AFFECTS]->(process:BiologicalProcess)\nMATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND support.gene_count >= 2\n  AND support.gene_count <= 20\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7967,
+        "validation_hits": 7,
+        "training_hits": 311,
+        "contraindicated_pairs": 326,
+        "unresolved_or_blind_pairs": 7649
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.03991464792268106,
+        "visible_target_recall": 0.011558592614132016,
+        "visible_target_f0_5": 0.026776692489053556,
+        "validation_precision_lower_bound": 0.0009143155694879833,
+        "validation_recall": 0.0029774564015312634,
+        "validation_f0_5": 0.0010614101592115238
+      },
+      "runtime_seconds": 0.7931558749987744
+    },
+    {
+      "id": "TREAT-I09-R128",
+      "name": "Direct decrease of a disease-associated molecular activity",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug that directly decreases a molecular activity genetically associated with a disease can treat the disease.",
+      "body": "drug directly decreases molecular activity with disease genetic-association edge",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule provides direct activity-level perturbation and disease genetic association, but the association does not establish that reduced activity is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "The positive drug-activity-disease motif and direction qualifier are directly expressible in TRAPI; ontology specificity may require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[effect:AFFECTS]->(activity:MolecularActivity)\nMATCH (object:Disease)-[:GENETIC_ASSOCIATION]-(activity)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1468,
+        "validation_hits": 0,
+        "training_hits": 19,
+        "contraindicated_pairs": 25,
+        "unresolved_or_blind_pairs": 1449
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012942779291553134,
+        "visible_target_recall": 0.0006906077348066298,
+        "visible_target_f0_5": 0.002845674574646537,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.11858899996150285
+    },
+    {
+      "id": "TREAT-I09-R129",
+      "name": "Direct decrease of a disease-associated pathway",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug that directly decreases a pathway genetically associated with a disease can treat the disease.",
+      "body": "drug directly decreases Pathway node with disease genetic-association edge",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule directly links pathway perturbation to disease genetics, but pathway association lacks corrective direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "The drug-pathway-disease motif and direction qualifier are directly expressible in TRAPI; ontology specificity may require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[effect:AFFECTS]->(pathway:Pathway)\nMATCH (object:Disease)-[:GENETIC_ASSOCIATION]->(pathway)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 616,
+        "validation_hits": 1,
+        "training_hits": 25,
+        "contraindicated_pairs": 18,
+        "unresolved_or_blind_pairs": 590
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.04220779220779221,
+        "visible_target_recall": 0.0009450421634195987,
+        "visible_target_f0_5": 0.004336802775553776,
+        "validation_precision_lower_bound": 0.001692047377326565,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0010604453870625662
+      },
+      "runtime_seconds": 0.13139066600706428
+    },
+    {
+      "id": "TREAT-I09-R130",
+      "name": "Cross-channel direct process and target decrease",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R127",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct process-level decrease is more credible when the drug also directly inhibits a causal disease gene within that same compact process.",
+      "body": "R127 plus directly bound and decreased causal disease gene involved in the process",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule triangulates direct process and target perturbation in a multi-gene disease process, but disease-driving direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; shared process identity, support cardinality, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[process_effect:AFFECTS]->(process:BiologicalProcess)\nMATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[gene_effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene)-[:INVOLVED_IN]->(process)\nWHERE process_effect.qualified_predicate = 'biolink:causes'\n  AND process_effect.object_direction_qualifier = 'decreased'\n  AND gene_effect.qualified_predicate = 'biolink:causes'\n  AND gene_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND gene_effect.object_direction_qualifier = 'decreased'\n  AND support.gene_count >= 2\n  AND support.gene_count <= 20\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6065148750203662
+    }
+  ]
+}

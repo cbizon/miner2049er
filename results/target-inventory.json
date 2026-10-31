@@ -1,0 +1,54 @@
+{
+  "target_predicate": "biolink:treats",
+  "predicate_closure": [
+    "biolink:treats",
+    "biolink:ameliorates_condition",
+    "biolink:preventative_for_condition"
+  ],
+  "neo4j_relationship_types": [
+    "TREATS",
+    "AMELIORATES_CONDITION",
+    "PREVENTATIVE_FOR_CONDITION"
+  ],
+  "partition_policy": {
+    "training": "all target facts except source-exclusive validation and blind facts",
+    "validation_source": "infores:drug-repurposing-hub",
+    "blind_source": "infores:ttd"
+  },
+  "counts": {
+    "semantic_pairs": 28988,
+    "edge_rows": 33641,
+    "training_pairs": 25161,
+    "validation_pairs": 2351,
+    "blind_pairs": 1476,
+    "subjects": 5040,
+    "objects": 5066
+  },
+  "sources": [
+    {
+      "source": "infores:multiomics-clinicaltrials",
+      "supported_pairs": 12906,
+      "exclusive_pairs": 11662
+    },
+    {
+      "source": "infores:drugcentral",
+      "supported_pairs": 9608,
+      "exclusive_pairs": 7291
+    },
+    {
+      "source": "infores:multiomics-drugapprovals",
+      "supported_pairs": 5095,
+      "exclusive_pairs": 2941
+    },
+    {
+      "source": "infores:drug-repurposing-hub",
+      "supported_pairs": 3579,
+      "exclusive_pairs": 2351
+    },
+    {
+      "source": "infores:ttd",
+      "supported_pairs": 2453,
+      "exclusive_pairs": 1476
+    }
+  ]
+}

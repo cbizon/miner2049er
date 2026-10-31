@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/rule-set.schema.json",
+  "title": "Selected rule portfolio",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "through_round_id",
+    "rule_set_id",
+    "surface",
+    "selection_method",
+    "generated_at",
+    "is_estimated_pareto",
+    "members",
+    "excluded_rules",
+    "union",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "through_round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "rule_set_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "surface": {"enum": ["treats-included", "treats-excluded"]},
+    "selection_method": {"const": "greedy_marginal_f0_5_coverage_v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "is_estimated_pareto": {"type": "boolean"},
+    "members": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "position",
+          "rule_id",
+          "feedback_precision",
+          "prediction_count",
+          "eligible_prediction_count",
+          "new_predictions",
+          "new_eligible_predictions",
+          "overlapping_eligible_predictions",
+          "guaranteed_new_feedback_hits",
+          "estimated_new_feedback_hits",
+          "new_training_hits",
+          "cumulative_predictions",
+          "cumulative_eligible_predictions",
+          "cumulative_training_hits",
+          "cumulative_training_recall",
+          "cumulative_estimated_feedback_hits",
+          "cumulative_estimated_feedback_precision",
+          "cumulative_estimated_feedback_recall",
+          "cumulative_estimated_f0_5"
+        ],
+        "properties": {
+          "position": {"type": "integer", "minimum": 1},
+          "rule_id": {"type": "string", "minLength": 1},
+          "feedback_precision": {"type": "number", "minimum": 0, "maximum": 1},
+          "prediction_count": {"type": "integer", "minimum": 0},
+          "eligible_prediction_count": {"type": "integer", "minimum": 0},
+          "new_predictions": {"type": "integer", "minimum": 0},
+          "new_eligible_predictions": {"type": "integer", "minimum": 0},
+          "overlapping_eligible_predictions": {"type": "integer", "minimum": 0},
+          "guaranteed_new_feedback_hits": {"type": "integer", "minimum": 0},
+          "estimated_new_feedback_hits": {"type": "number", "minimum": 0},
+          "new_training_hits": {"type": "integer", "minimum": 0},
+          "cumulative_predictions": {"type": "integer", "minimum": 0},
+          "cumulative_eligible_predictions": {"type": "integer", "minimum": 0},
+          "cumulative_training_hits": {"type": "integer", "minimum": 0},
+          "cumulative_training_recall": {"type": "number", "minimum": 0, "maximum": 1},
+          "cumulative_estimated_feedback_hits": {"type": "number", "minimum": 0},
+          "cumulative_estimated_feedback_precision": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "cumulative_estimated_feedback_recall": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "cumulative_estimated_f0_5": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "excluded_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "reason", "explanation", "redundant_with"],
+        "properties": {
+          "rule_id": {"type": "string", "minLength": 1},
+          "reason": {
+            "enum": [
+              "surface_ineligible",
+              "rule_rejected",
+              "unscored",
+              "zero_precision",
+              "no_predictions",
+              "not_selected_at_this_prefix",
+              "zero_marginal_confidence"
+            ]
+          },
+          "explanation": {"type": "string", "minLength": 1},
+          "redundant_with": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "union": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "member_count",
+        "prediction_count",
+        "eligible_prediction_count",
+        "training_hits",
+        "training_labels",
+        "training_recall",
+        "guaranteed_feedback_hits",
+        "estimated_feedback_hits",
+        "estimated_feedback_precision",
+        "estimated_feedback_recall",
+        "estimated_f0_5",
+        "feedback_partition_labels"
+      ],
+      "properties": {
+        "member_count": {"type": "integer", "minimum": 1},
+        "prediction_count": {"type": "integer", "minimum": 0},
+        "eligible_prediction_count": {"type": "integer", "minimum": 0},
+        "training_hits": {"type": "integer", "minimum": 0},
+        "training_labels": {"type": "integer", "minimum": 0},
+        "training_recall": {"type": "number", "minimum": 0, "maximum": 1},
+        "guaranteed_feedback_hits": {"type": "integer", "minimum": 0},
+        "estimated_feedback_hits": {"type": "number", "minimum": 0},
+        "estimated_feedback_precision": {"type": "number", "minimum": 0, "maximum": 1},
+        "estimated_feedback_recall": {"type": "number", "minimum": 0, "maximum": 1},
+        "estimated_f0_5": {"type": "number", "minimum": 0, "maximum": 1},
+        "feedback_partition_labels": {"type": "integer", "minimum": 0}
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

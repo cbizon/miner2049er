@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915",
+  "round_id": "round-0003",
+  "round_number": 3,
+  "parent_round_id": "round-0002",
+  "status": "completed",
+  "started_at": "2026-08-24T14:01:27.420289+00:00",
+  "deadline": "2026-08-24T17:00:00-04:00",
+  "completed_at": "2026-08-24T21:28:38.489190+00:00",
+  "instruction_path": "rounds/round-0003/instructions.md",
+  "instruction_sha256": "4955da47c47561d905e70e9b01313ea3bdaf635ef83780051e42cfe1b04fc24f",
+  "agent_prompt_path": "rounds/round-0003/agent-prompt.md",
+  "agent_prompt_sha256": "270d6850a41976cd9517cc34d60a88988e388942d59a561afdd6c37b1d59d661",
+  "starting_artifacts": {
+    "neo4j_artifacts": {
+      "records": 2,
+      "bytes": 10466,
+      "sha256": "aa4e860137318b686727a76663bf6d90721ce7824b72edc8db6add5a0fb0b781"
+    },
+    "rules": {
+      "records": 77,
+      "bytes": 462944,
+      "sha256": "3ec5c36d56d4135296a8dcdcb70dc8c2a1390c569eaf554718adec6844159779"
+    },
+    "predictions": {
+      "records": 1316927,
+      "bytes": 805641643,
+      "sha256": "ae65e8d12cb20adb8bb170d3df4d4c6a72c75d42935204bddcff6ed74b69e084"
+    },
+    "research_log": {
+      "records": 145,
+      "bytes": 243672,
+      "sha256": "db8756da19256a58c8e71cefd1476124abe0685c39ad1a6873d8a9d3dbc5d507"
+    },
+    "evaluations": {
+      "records": 64,
+      "bytes": 35316,
+      "sha256": "a3378d06c694f9e34105a51ac48e948fbd793c33b99682cbc06fc3e1c410bf01"
+    }
+  },
+  "ending_artifacts": {
+    "neo4j_artifacts": {
+      "records": 3,
+      "bytes": 16285,
+      "sha256": "7f52c7bce850e8345997e7e22c657e0581eeb5074688c1bda65bca1a5c4e69c1"
+    },
+    "rules": {
+      "records": 116,
+      "bytes": 728463,
+      "sha256": "e4798a1cca1840e5eb359e9b62d41ef0fdc1839946503f343740106fc1cfdc1b"
+    },
+    "predictions": {
+      "records": 1461968,
+      "bytes": 881603214,
+      "sha256": "cf87b89e3b179a8431f9ab43f335c55f69e578d3f7321cd50596783d0a4475fc"
+    },
+    "research_log": {
+      "records": 197,
+      "bytes": 341830,
+      "sha256": "636a5f9437b1ed47da817fc843a1bcb080e534391709489ec5367a98afff7bc5"
+    },
+    "evaluations": {
+      "records": 99,
+      "bytes": 54858,
+      "sha256": "5c55bb0005c2b1b7ca090410b780c51d81bef1127596137d6d9ab31bac120836"
+    }
+  }
+}

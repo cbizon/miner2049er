@@ -1,0 +1,260 @@
+{
+  "created_at": "2026-08-12T14:43:39.112999+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R264",
+      "name": "Repeated-evidence top-three causal-module coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R246",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-three causal-module coverage is more reliable when every counted directional target has at least two extracted evidence items.",
+      "body": "R246 with drug-decrease evidence count at least two for each counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Repeated directional evidence strengthens each intervention arm, although repeated extractions may originate from one publication.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; evidence count, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(\n        effect.evidence_count,\n        size(coalesce(effect.publications, [])),\n        1\n      ) >= 2\n\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 27,
+        "validation_hits": 2,
+        "training_hits": 8,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.37037037037037035,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0018102824040550324,
+        "validation_precision_lower_bound": 0.10526315789473684,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004120313143798929
+      },
+      "runtime_seconds": 0.4314893750124611
+    },
+    {
+      "id": "TREAT-I09-R265",
+      "name": "Repeated-evidence top-five causal-module coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R247",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-five majority coverage becomes more precise when all three directional targets have repeated extracted evidence.",
+      "body": "R247 with drug-decrease evidence count at least two for each counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Three high-ranked targets each have repeated directional evidence, but extraction count does not guarantee publication independence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; evidence count, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 5\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(\n        effect.evidence_count,\n        size(coalesce(effect.publications, [])),\n        1\n      ) >= 2\n\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 3\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6666666666666666,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003633192849876471,
+        "validation_precision_lower_bound": 0.5,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021195421788893602
+      },
+      "runtime_seconds": 0.38799970800755545
+    },
+    {
+      "id": "TREAT-I09-R266",
+      "name": "Distinct-publication top-three causal-module coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R246",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-three causal-module coverage is more reliable when every counted directional target is supported by at least two distinct publications.",
+      "body": "R246 with at least two distinct drug-decrease publications per counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Publication independence reduces repeated-extraction artifacts while preserving multi-target disease-relative coverage.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; distinct-publication aggregation, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n\nUNWIND coalesce(effect.publications, []) AS publication\nWITH subject, object, gene,\n     collect(DISTINCT publication) AS provenance_values\nWHERE size(provenance_values) >= 2\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 29,
+        "validation_hits": 1,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 19
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3448275862068966,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.001809758216302302,
+        "validation_precision_lower_bound": 0.05,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020567667626491155
+      },
+      "runtime_seconds": 0.40549762500450015
+    },
+    {
+      "id": "TREAT-I09-R267",
+      "name": "Distinct-publication top-five causal-module coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R247",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-five majority coverage is strongest when every counted directional target has at least two distinct publications.",
+      "body": "R247 with at least two distinct drug-decrease publications per counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Three high-ranked targets have publication-independent directional support, though disease activity direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; distinct-publication aggregation, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 5\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n\nUNWIND coalesce(effect.publications, []) AS publication\nWITH subject, object, gene,\n     collect(DISTINCT publication) AS provenance_values\nWHERE size(provenance_values) >= 2\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 3\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.0001816860465116279,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.37180837499909103
+    },
+    {
+      "id": "TREAT-I09-R268",
+      "name": "Multi-database-binding top-three causal-module coverage",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R246",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Top-three causal-module coverage is more reliable when every counted drug-target binding is present in at least two independent primary databases.",
+      "body": "R246 with at least two binding primary sources per counted target",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Independent binding databases strengthen physical target assignment while directional effects remain text-mined.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source aggregation, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n\nUNWIND coalesce(binding.primary_knowledge_sources, []) AS binding_source\nWITH subject, object, gene,\n     collect(DISTINCT binding_source) AS provenance_values\nWHERE size(provenance_values) >= 2\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 22,
+        "validation_hits": 1,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.45454545454545453,
+        "visible_target_recall": 0.0003634777551613841,
+        "visible_target_f0_5": 0.0018115942028985505,
+        "validation_precision_lower_bound": 0.07692307692307693,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020807324178110697
+      },
+      "runtime_seconds": 0.5773202499840409
+    },
+    {
+      "id": "TREAT-I09-R269",
+      "name": "SIGNOR-only top-three causal-module holdout",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R246",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A curated SIGNOR-only directional-effect holdout tests whether ranked-module performance survives removal of the dominant text-mining channel.",
+      "body": "R246 requiring SIGNOR as primary source for each counted decrease edge",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Curated directional effects remove text-mining dependence, but graph coverage is expected to be sparse.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source, rank, cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])\n\n\nWITH subject, object, count(DISTINCT gene) AS targeted_genes\nWHERE targeted_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 1.0,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.0001817124582061346,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3919203749974258
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T01:40:16.242424+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R123",
+      "name": "Specific shared-phenotype indication transfer",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug's treated indication can support a mechanistically linked candidate disease when the two diseases share a relatively specific phenotype.",
+      "body": "training-treated anchor and inhibited causal-target candidate share an exact phenotype occurring in <=34 diseases",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The candidate has a direct causal-target mechanism and phenotype similarity to a treated indication, but the target mechanism need not be shared by the anchor.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The treatment, target, and phenotype paths are TRAPI-expressible; source exclusion and phenotype/ontology degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE anchor <> object\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND phenotype._miner_disease_member_degree <= 34\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 27,
+        "validation_hits": 0,
+        "training_hits": 8,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 19
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2962962962962963,
+        "visible_target_recall": 0.0002907822041291073,
+        "visible_target_f0_5": 0.001448225923244026,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.1011697910143994
+    },
+    {
+      "id": "TREAT-I09-R124",
+      "name": "Repeated shared-phenotype indication transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R123",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Two or more specific shared phenotypes provide stronger disease similarity for indication transfer than a single phenotype.",
+      "body": "R123 with at least two distinct shared phenotypes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Repeated phenotype similarity and a direct candidate target mechanism reduce single-hub matches, but the treated anchor need not share the target mechanism.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; phenotype cardinality, source exclusion, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE anchor <> object\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND phenotype._miner_disease_member_degree <= 34\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, anchor, gene, count(DISTINCT phenotype) AS phenotype_count\nWHERE phenotype_count >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 12,
+        "validation_hits": 0,
+        "training_hits": 6,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 6
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.001088534107402032,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9999949160264805
+    },
+    {
+      "id": "TREAT-I09-R125",
+      "name": "Phenotype-and-anatomy indication transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R123",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Indication transfer is more credible when treated and candidate diseases share both a specific phenotype and a specific anatomy.",
+      "body": "R123 plus exact shared disease anatomy with disease-location degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines candidate target mechanism, phenotype similarity, and anatomical concordance, but the anchor and candidate may have different causal mechanisms.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive phenotype and anatomy paths are TRAPI-expressible; shared-node identity, source exclusion, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nMATCH (anchor)-[:LOCATED_IN|OCCURS_IN]->(anatomy:AnatomicalEntity)\n      <-[:LOCATED_IN|OCCURS_IN]-(object)\nWHERE anchor <> object\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND phenotype._miner_disease_member_degree <= 34\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 1.0,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003633720930232558,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 8.150068250019103
+    },
+    {
+      "id": "TREAT-I09-R126",
+      "name": "Shared-target and shared-phenotype indication transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R123",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The strongest phenotype transfer requires treated and candidate diseases to share both a specific phenotype and the same inhibited causal target.",
+      "body": "R123 plus the inhibited gene is causal for both treated anchor and candidate",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule preserves an identical target mechanism and disease phenotype similarity, but disease-driving target activity direction remains absent.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion, shared-target identity, and phenotype/ontology degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object)\nWHERE anchor <> object\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND phenotype._miner_disease_member_degree <= 34\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 2.8703694170108065
+    }
+  ]
+}

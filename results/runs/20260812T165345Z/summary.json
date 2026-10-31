@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T16:53:45.503130+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R349",
+      "name": "Literature-concentrated GOF activity correction",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct suppression of a GOF driver is more relevant in noisy diseases when repeated causal literature is concentrated on that gene-disease pair and the driver ranks among the disease's top genes.",
+      "body": "drug directly decreases GOF driver activity; causal publications >=3, NPMI >=0.5, and disease rank <=3",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit allele-corrective action is independently prioritized by disease-relative causal literature and graph rank.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The binding, effect, and variant-qualified disease path are TRAPI-expressible; publication statistics and rank require Cypher or post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_causal_publication_count >= 3\n  AND evidence._miner_causal_publication_npmi >= 0.5\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 34,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 34
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.10843658301746473
+    },
+    {
+      "id": "TREAT-I09-R350",
+      "name": "Literature-concentrated GOF activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a literature-prioritized GOF driver is the matched worsening control for R349.",
+      "body": "R349 with increased rather than decreased driver activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The direct effect reinforces the explicit GOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R349.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_causal_publication_count >= 3\n  AND evidence._miner_causal_publication_npmi >= 0.5\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.035159457998815924
+    },
+    {
+      "id": "TREAT-I09-R351",
+      "name": "Literature-concentrated LOF activity restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activation of a LOF driver is more relevant when repeated causal literature is concentrated on that gene-disease pair and the driver ranks among the disease's top genes.",
+      "body": "drug directly increases LOF driver activity; causal publications >=3, NPMI >=0.5, and disease rank <=3",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit allele-corrective action is independently prioritized by disease-relative causal literature and graph rank.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R349.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_causal_publication_count >= 3\n  AND evidence._miner_causal_publication_npmi >= 0.5\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 43,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 41
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.046511627906976744,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003612194769541974,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.05106645805062726
+    },
+    {
+      "id": "TREAT-I09-R352",
+      "name": "Literature-concentrated LOF suppression control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing a literature-prioritized LOF driver is the matched worsening control for R351.",
+      "body": "R351 with decreased rather than increased driver activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The direct effect further suppresses the explicit LOF mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R349.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver:Gene)\nMATCH (subject)-[effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_causal_publication_count >= 3\n  AND evidence._miner_causal_publication_npmi >= 0.5\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 88,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 86
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.022727272727272728,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00035888601780074655,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.052712750039063394
+    }
+  ]
+}

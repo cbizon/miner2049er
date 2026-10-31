@@ -1,0 +1,3256 @@
+[[rules]]
+id = "TREAT-I01-R001"
+name = "Affected disease-associated gene baseline"
+iteration = 1
+status = "baseline"
+hypothesis = "A chemical that affects a gene associated with a disease may treat that disease."
+body = "chemical -affects-> gene -gene_associated_with_condition-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Connects a chemical to a disease-linked gene, but does not require a therapeutically corrective direction or corroborating mechanism."
+uses_treatment_edges = false
+trapi_expressibility = "full"
+trapi_notes = "A two-edge TRAPI query can express the graph pattern; edge-property refinements would require constraints."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:AFFECTS]->(gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I08-R064"
+name = "SemMed treatment-parent with multisource binding and genetic support"
+iteration = 8
+parent_rule = "TREAT-I07-R063"
+status = "retained"
+hypothesis = "A SemMed treatment-family assertion becomes highly predictive when a directly inhibited causal target has non-SemMed disease evidence and binding support from at least four resources."
+body = "direct inhibited causal target plus SemMed treatment-parent assertion, non-SemMed gene-disease evidence, >=4 binding sources, and non-hub disease"
+mechanism_score = "medium"
+mechanism_rationale = "Combines a direct perturbation path, causal disease genetics, independent genetic support, and binding consensus; the treatment-family assertion is literature-derived and disease activity direction remains absent."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The causal-target and treatment-parent motifs are TRAPI-expressible; binding-source cardinality, derived genetic evidence, and disease degree require Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_treatment_parent_semmed",
+  "non_semmed_primary_source_count_>=_1",
+  "binding_source_count_>=_4",
+  "disease_descendant_degree_<=_500",
+]
+
+[[rules]]
+id = "TREAT-I08-R065"
+name = "Five-source TTD-GtoPdb binding consensus with triple translation"
+iteration = 8
+parent_rule = "TREAT-I08-R066"
+status = "retained"
+hypothesis = "A directly inhibited causal target supported by both TTD and GtoPdb binding records should be highly predictive when at least three translational evidence channels agree."
+body = "direct inhibited causal target plus TTD and GtoPdb binding, >=5 binding sources, and >=3 translational evidence channels"
+mechanism_score = "medium"
+mechanism_rationale = "Adds strong target-binding consensus and multiple translational channels to a causal-target path, but the translational evidence is treatment-oriented and causal activity direction is missing."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The causal-target motif is TRAPI-expressible; binding provenance cardinality and the multi-channel evidence count require Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "binding_ttd",
+  "binding_gtopdb",
+  "translational_evidence_count_gte_3",
+  "binding_source_count_>=_5",
+]
+
+[[rules]]
+id = "TREAT-I08-R066"
+name = "Five-source TTD binding consensus with triple translation"
+iteration = 8
+parent_rule = "TREAT-I08-R067"
+status = "retained"
+hypothesis = "Requiring TTD among five binding sources and agreement from three translational channels should retain high precision while broadening beyond the GtoPdb subset."
+body = "direct inhibited causal target plus TTD binding, >=5 binding sources, and >=3 translational evidence channels"
+mechanism_score = "medium"
+mechanism_rationale = "Uses binding consensus and multiple translational channels around a causal target; treatment dependence and missing disease activity direction prevent a high mechanism score."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The causal-target motif is TRAPI-expressible; binding provenance cardinality and the multi-channel evidence count require Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "binding_ttd",
+  "translational_evidence_count_gte_3",
+  "binding_source_count_>=_5",
+]
+
+[[rules]]
+id = "TREAT-I08-R067"
+name = "Clinical DGIdb target with four-channel translation and independent genetics"
+iteration = 8
+parent_rule = "TREAT-I08-R068"
+status = "retained"
+hypothesis = "Clinical-stage causal-target predictions should be selective when DGIdb supports binding, four translational channels agree, and disease genetics includes a non-SemMed source."
+body = "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and non-SemMed gene-disease evidence"
+mechanism_score = "medium"
+mechanism_rationale = "Combines direct perturbation, causal genetics, target curation, and multiple translational signals, while still depending on treatment evidence and lacking causal activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and derived gene-disease evidence require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "binding_dgidb",
+  "translational_evidence_count_gte_4",
+  "non_semmed_primary_source_count_>=_1",
+]
+
+[[rules]]
+id = "TREAT-I08-R068"
+name = "Clinical DGIdb target with four-channel translation and selective anatomy"
+iteration = 8
+parent_rule = "TREAT-I08-R069"
+status = "retained"
+hypothesis = "A clinically studied DGIdb-supported causal target should generalize when four translational channels agree and its best shared anatomy expresses at most 8,000 human genes."
+body = "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and anatomy expression degree <=8000"
+mechanism_score = "medium"
+mechanism_rationale = "Adds target curation and tissue selectivity to a multi-channel translational causal-target path; treatment dependence and disease direction remain limitations."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and anatomy degree require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "binding_dgidb",
+  "translational_evidence_count_gte_4",
+  "min_anatomy_gene_degree_<=_8000",
+]
+
+[[rules]]
+id = "TREAT-I08-R069"
+name = "Clinical DGIdb target with four-channel translation and tissue concordance"
+iteration = 8
+parent_rule = "TREAT-I08-R070"
+status = "retained"
+hypothesis = "A clinically studied DGIdb-supported causal target should remain predictive when four translational channels agree and at least one Bgee disease-anatomy overlap exists."
+body = "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and >=1 Bgee disease-anatomy overlap"
+mechanism_score = "medium"
+mechanism_rationale = "Combines target curation, tissue concordance, causal genetics, and multiple translational signals, but does not establish whether inhibition reverses disease."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and anatomy cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "binding_dgidb",
+  "translational_evidence_count_gte_4",
+  "bgee_anatomy_count_>=_1",
+]
+
+[[rules]]
+id = "TREAT-I08-R070"
+name = "Clinical DGIdb target with four-channel translation and positive literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R071"
+status = "retained"
+hypothesis = "Disease-relative literature concentration should select relevant causal genes within clinically supported, DGIdb-bound, four-channel predictions."
+body = "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and causal-publication NPMI >=0.25"
+mechanism_score = "medium"
+mechanism_rationale = "Uses disease-relative causal literature, curated binding, and multiple translational signals; literature concentration cannot supply the missing disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "binding_dgidb",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.25",
+]
+
+[[rules]]
+id = "TREAT-I08-R071"
+name = "Clinical DGIdb target with four-channel translation and nonnegative literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R072"
+status = "retained"
+hypothesis = "Relaxing disease-relative literature concentration to nonnegative NPMI should add coverage without abandoning the clinical, DGIdb, and four-channel evidence core."
+body = "direct inhibited causal target plus multiomics clinical trial, DGIdb binding, >=4 translational channels, and causal-publication NPMI >=0"
+mechanism_score = "medium"
+mechanism_rationale = "Retains causal genetics, curated binding, and multiple translational signals at a broader literature threshold, with the same treatment and direction limitations."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance, channel cardinality, and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "binding_dgidb",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.0",
+]
+
+[[rules]]
+id = "TREAT-I08-R072"
+name = "Applied and clinical causal target with four-channel translation and relation diversity"
+iteration = 8
+parent_rule = "TREAT-I08-R073"
+status = "retained"
+hypothesis = "Agreement between applied-use and clinical evidence should be more reliable when four translational channels agree and the gene-disease pair has at least three direct relation types."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and >=3 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Combines a direct perturbation path with relation diversity and several translational signals, but therapeutic evidence and missing disease activity direction remain."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; channel and relation-type cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "translational_evidence_count_gte_4",
+  "direct_relation_type_count_>=_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R073"
+name = "Clinical four-channel causal target with tissue and nonnegative literature support"
+iteration = 8
+parent_rule = "TREAT-I08-R074"
+status = "retained"
+hypothesis = "Clinical four-channel predictions should broaden safely when a Bgee disease-anatomy overlap and nonnegative disease-relative literature concentration support the causal target."
+body = "direct inhibited causal target plus multiomics clinical trial, >=4 translational channels, Bgee tissue overlap, and causal-publication NPMI >=0"
+mechanism_score = "medium"
+mechanism_rationale = "Adds tissue localization and disease-relative literature to multi-channel clinical evidence, but still lacks causal activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; channel count, anatomy cardinality, and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.0",
+  "bgee_anatomy_count_>=_1",
+]
+
+[[rules]]
+id = "TREAT-I08-R074"
+name = "Applied and clinical four-channel target with positive literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R075"
+status = "retained"
+hypothesis = "Applied and clinical agreement should extend to more causal targets when four translational channels agree and causal-publication NPMI is at least 0.25."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and causal-publication NPMI >=0.25"
+mechanism_score = "medium"
+mechanism_rationale = "Combines direct target perturbation, causal literature concentration, and multiple therapeutic signals, while disease direction remains unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; channel cardinality and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.25",
+]
+
+[[rules]]
+id = "TREAT-I08-R075"
+name = "Applied and clinical four-channel target with repeated causal literature"
+iteration = 8
+parent_rule = "TREAT-I08-R076"
+status = "retained"
+hypothesis = "Three causal publications should provide a broader but still selective alternative to positive NPMI within applied, clinical, four-channel predictions."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and >=3 causal publications"
+mechanism_score = "medium"
+mechanism_rationale = "Uses repeated causal literature and multi-channel therapeutic support around a direct perturbation path; raw publication count cannot establish disease direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; channel cardinality and publication count require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "translational_evidence_count_gte_4",
+  "causal_publication_count_>=_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R076"
+name = "Clinical targeted-text four-channel target with positive literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R077"
+status = "retained"
+hypothesis = "Targeted text-mining treatment-family evidence can broaden the clinical causal-target rule when four channels agree and causal-publication NPMI is positive."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=4 translational channels, and causal-publication NPMI >=0.25"
+mechanism_score = "medium"
+mechanism_rationale = "Adds targeted literature evidence and disease-relative causal support to a direct perturbation mechanism, but treatment orientation and disease direction remain limitations."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.25",
+]
+
+[[rules]]
+id = "TREAT-I08-R077"
+name = "Applied and clinical four-channel target with nonnegative literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R078"
+status = "retained"
+hypothesis = "A nonnegative literature-concentration threshold should increase coverage within the applied, clinical, four-channel causal-target family."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, >=4 translational channels, and causal-publication NPMI >=0"
+mechanism_score = "medium"
+mechanism_rationale = "Retains a direct perturbation path and several therapeutic signals at a broader literature threshold, but treatment dependence and disease direction remain."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; channel cardinality and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.0",
+]
+
+[[rules]]
+id = "TREAT-I08-R078"
+name = "Clinical targeted-text four-channel target with nonnegative literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R079"
+status = "retained"
+hypothesis = "Relaxing NPMI to zero should broaden the clinical targeted-text four-channel family while retaining disease-relative support."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=4 translational channels, and causal-publication NPMI >=0"
+mechanism_score = "medium"
+mechanism_rationale = "Combines direct perturbation, targeted treatment literature, and multi-channel evidence; the broader NPMI threshold does not resolve disease direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_4",
+  "causal_publication_npmi_>=_0.0",
+]
+
+[[rules]]
+id = "TREAT-I08-R079"
+name = "Applied clinical targeted-text target with relation diversity"
+iteration = 8
+parent_rule = "TREAT-I08-R080"
+status = "retained"
+hypothesis = "Applied, clinical, and targeted-text agreement should support a broader cohort when the causal gene-disease pair has at least three direct relation types."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Uses three translational channels and relation diversity around a causal target, but remains treatment-oriented and directionally incomplete."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "direct_relation_type_count_>=_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R080"
+name = "Applied clinical targeted-text target with positive literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R081"
+status = "retained"
+hypothesis = "Positive disease-relative causal literature should select the strongest targets supported by applied, clinical, and targeted-text evidence."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and causal-publication NPMI >=0.25"
+mechanism_score = "medium"
+mechanism_rationale = "Combines disease-relative causal evidence with three translational channels, while therapeutic dependence and disease direction remain unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "causal_publication_npmi_>=_0.25",
+]
+
+[[rules]]
+id = "TREAT-I08-R081"
+name = "Applied clinical targeted-text target with repeated causal literature"
+iteration = 8
+parent_rule = "TREAT-I08-R082"
+status = "retained"
+hypothesis = "Three causal publications should provide a higher-coverage alternative within the applied, clinical, targeted-text causal-target family."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 causal publications"
+mechanism_score = "medium"
+mechanism_rationale = "Uses repeated causal literature and three treatment-oriented channels around a direct perturbation path; disease activity direction is still missing."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and publication count require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "causal_publication_count_>=_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R082"
+name = "Applied clinical targeted-text target with nonnegative literature NPMI"
+iteration = 8
+parent_rule = "TREAT-I08-R083"
+status = "retained"
+hypothesis = "A nonnegative NPMI threshold should extend the three-channel applied, clinical, and targeted-text family without discarding disease-relative relevance."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and causal-publication NPMI >=0"
+mechanism_score = "medium"
+mechanism_rationale = "Retains a causal-target path and three translational channels with broad literature support, but remains treatment-oriented and directionally incomplete."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and NPMI require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "causal_publication_npmi_>=_0.0",
+]
+
+[[rules]]
+id = "TREAT-I08-R083"
+name = "Applied clinical targeted-text target with two gene-disease relations"
+iteration = 8
+parent_rule = "TREAT-I08-R084"
+status = "retained"
+hypothesis = "Two direct gene-disease relation types should retain modest mechanistic corroboration while broadening the three-channel translational family."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, targeted-text treatment-parent evidence, and >=2 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Combines three treatment-oriented channels with direct relation diversity around a causal target, without resolving causal activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "direct_relation_type_count_>=_2",
+]
+
+[[rules]]
+id = "TREAT-I08-R084"
+name = "Applied clinical targeted-text causal-target consensus"
+iteration = 8
+parent_rule = "TREAT-I08-R085"
+status = "retained"
+hypothesis = "Agreement among applied use, independent clinical trials, and targeted-text treatment evidence should define a broad causal-target consensus rule."
+body = "direct inhibited causal target plus applied use, multiomics clinical trial, and targeted-text treatment-parent evidence"
+mechanism_score = "medium"
+mechanism_rationale = "Uses a direct perturbation path and three translational channels, but the evidence is treatment-oriented and disease activity direction is unavailable."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and evidence intersection require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_applied",
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+]
+
+[[rules]]
+id = "TREAT-I08-R085"
+name = "Clinical targeted-text triple-channel target with repeated causal literature"
+iteration = 8
+parent_rule = "TREAT-I08-R086"
+status = "retained"
+hypothesis = "Clinical and targeted-text evidence should scale to a broader target cohort when at least three translational channels agree and the causal relation has three publications."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=3 causal publications"
+mechanism_score = "medium"
+mechanism_rationale = "Combines repeated causal literature and multi-channel treatment evidence around a direct target perturbation, but disease direction remains absent."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and publication count require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+  "causal_publication_count_>=_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R086"
+name = "Clinical targeted-text triple-channel target with two causal publications"
+iteration = 8
+parent_rule = "TREAT-I08-R087"
+status = "retained"
+hypothesis = "Lowering the causal-publication requirement from three to two should add coverage within the clinical targeted-text triple-channel family."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=2 causal publications"
+mechanism_score = "medium"
+mechanism_rationale = "Retains repeated causal literature and multi-channel translational evidence at a broader threshold, with treatment dependence and missing disease direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and publication count require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+  "causal_publication_count_>=_2",
+]
+
+[[rules]]
+id = "TREAT-I08-R087"
+name = "Clinical targeted-text triple-channel target with relation corroboration"
+iteration = 8
+parent_rule = "TREAT-I08-R088"
+status = "retained"
+hypothesis = "Two direct gene-disease relation types should retain corroboration while broadening the clinical targeted-text triple-channel family."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, >=3 translational channels, and >=2 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Adds direct relation diversity to clinical and targeted treatment evidence around a causal target, but treatment orientation and disease direction remain."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and relation-type count require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+  "direct_relation_type_count_>=_2",
+]
+
+[[rules]]
+id = "TREAT-I08-R088"
+name = "Clinical targeted-text triple-channel causal-target consensus"
+iteration = 8
+parent_rule = "TREAT-I08-R089"
+status = "retained"
+hypothesis = "Clinical and targeted-text treatment evidence with agreement from a third translational channel should define a broad causal-target consensus."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, and >=3 translational channels"
+mechanism_score = "medium"
+mechanism_rationale = "Uses a direct causal-target path and at least three treatment-oriented signals, but does not establish whether target inhibition corrects disease."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and channel cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R089"
+name = "Clinical triple-channel causal-target consensus"
+iteration = 8
+parent_rule = "TREAT-I08-R090"
+status = "retained"
+hypothesis = "Independent clinical evidence plus agreement from at least two additional translational channels should support a higher-coverage causal-target rule."
+body = "direct inhibited causal target plus multiomics clinical trial and >=3 translational evidence channels"
+mechanism_score = "medium"
+mechanism_rationale = "Combines direct perturbation and causal genetics with several translational signals, but remains treatment-oriented and lacks disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; provenance and channel cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "translational_evidence_count_gte_3",
+]
+
+[[rules]]
+id = "TREAT-I08-R090"
+name = "Clinical targeted-text causal target with relation corroboration"
+iteration = 8
+parent_rule = "TREAT-I08-R091"
+status = "retained"
+hypothesis = "Clinical and targeted-text treatment evidence should remain useful without a channel-count threshold when the causal gene-disease pair has two direct relation types."
+body = "direct inhibited causal target plus multiomics clinical trial, targeted-text treatment-parent evidence, and >=2 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Combines a direct causal-target path with two treatment evidence sources and relation diversity, but disease activity direction is unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and relation-type cardinality require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+  "direct_relation_type_count_>=_2",
+]
+
+[[rules]]
+id = "TREAT-I08-R091"
+name = "Clinical targeted-text causal-target evidence pair"
+iteration = 8
+parent_rule = "TREAT-I08-R092"
+status = "retained"
+hypothesis = "The intersection of independent clinical trials and targeted-text treatment-family evidence should provide a broad evidence-backed causal-target rule."
+body = "direct inhibited causal target plus multiomics clinical trial and targeted-text treatment-parent evidence"
+mechanism_score = "medium"
+mechanism_rationale = "Uses direct perturbation and causal genetics with two treatment-oriented evidence sources; disease activity direction remains missing."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and evidence intersection require Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_clinical",
+  "pair_treatment_parent_targeted",
+]
+
+[[rules]]
+id = "TREAT-I08-R092"
+name = "Targeted-text triple-channel causal target with relation corroboration"
+iteration = 8
+parent_rule = "TREAT-I08-R093"
+status = "retained"
+hypothesis = "Targeted-text treatment evidence plus two additional translational channels should remain predictive when the causal gene-disease pair has two direct relation types."
+body = "direct inhibited causal target plus targeted-text treatment-parent evidence, >=3 translational channels, and >=2 direct gene-disease relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Combines direct perturbation, relation diversity, and several treatment-oriented signals, while causal disease direction remains unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance, channel cardinality, and relation-type count require Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+  "direct_relation_type_count_>=_2",
+]
+
+[[rules]]
+id = "TREAT-I08-R093"
+name = "Targeted-text triple-channel causal-target consensus"
+iteration = 8
+parent_rule = "TREAT-I08-R092"
+status = "retained"
+hypothesis = "Targeted-text treatment-family evidence with agreement from two additional translational channels should define the broad end of the new causal-target frontier."
+body = "direct inhibited causal target plus targeted-text treatment-parent evidence and >=3 translational evidence channels"
+mechanism_score = "medium"
+mechanism_rationale = "Uses direct perturbation and causal genetics with at least three treatment-oriented signals, but lacks explicit disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Positive motifs are TRAPI-expressible; targeted provenance and channel cardinality require Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+family = "direct_causal_translational"
+conditions = [
+  "pair_treatment_parent_targeted",
+  "translational_evidence_count_gte_3",
+]
+
+[[rules]]
+id = "TREAT-I01-R002"
+name = "Direct target with disease-gene association baseline"
+iteration = 1
+status = "baseline"
+hypothesis = "A chemical that directly physically interacts with a disease-associated gene may treat the disease."
+body = "chemical -directly_physically_interacts_with-> gene -gene_associated_with_condition-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Direct molecular interaction is stronger than generic affects, but the rule lacks direction, functional consequence, and pathway corroboration."
+uses_treatment_edges = false
+trapi_expressibility = "full"
+trapi_notes = "The two-edge path is directly expressible in TRAPI."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I01-R003"
+name = "Affected disease gene with pathway corroboration"
+iteration = 1
+status = "failed_resource"
+hypothesis = "A chemical is more likely to treat a disease when it affects a disease-associated gene that participates in a process containing multiple additional genes associated with the same disease."
+body = "chemical -affects-> gene -gene_associated_with_condition-> disease; gene -involved_in-> process <-involved_in- corroborating genes -gene_associated_with_condition-> disease"
+mechanism_score = "high"
+mechanism_rationale = "Requires a direct chemical target, disease association, and independent pathway-level disease-gene corroboration."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The branched graph is expressible, but requiring at least two distinct corroborating genes needs post-processing or Cypher."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:AFFECTS]->(gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)
+MATCH (gene)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(corroborating_gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+WHERE corroborating_gene <> gene
+WITH subject, object, process, count(DISTINCT corroborating_gene) AS corroborating_genes
+WHERE corroborating_genes >= 2
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R006"
+name = "Selective inhibition of a causal disease gene"
+iteration = 2
+parent_rule = "TREAT-I01-R001"
+status = "candidate"
+hypothesis = "A chemical may treat a disease when it selectively decreases the activity or abundance of a gene asserted to cause the disease."
+body = "chemical -affects[causes, activity_or_abundance, decreased]-> causal gene -causes-> disease; chemical qualified gene degree <=50"
+mechanism_score = "medium"
+mechanism_rationale = "The rule links directional perturbation to a causal disease gene, but the graph does not establish whether decreased gene activity corrects or reproduces the disease mechanism."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The path and edge qualifiers are TRAPI-expressible; the chemical degree constraint requires Cypher or post-processing."
+cypher = """
+MATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(gene:Gene)-[:CAUSES]->(object:Disease)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R007"
+name = "Multi-gene inhibition within a disease-supported process"
+iteration = 2
+parent_rule = "TREAT-I01-R003"
+status = "candidate"
+hypothesis = "A selective chemical may treat a disease when it decreases multiple disease-associated genes participating in the same bounded-size biological process."
+body = "disease has 3-20 associated genes in a process; chemical decreases activity_or_abundance of >=2 of those genes; chemical qualified gene degree <=100"
+mechanism_score = "medium"
+mechanism_rationale = "Requires coherent multi-gene perturbation and suppresses hubs, but the graph does not establish whether decreasing those genes is corrective."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing."
+cypher = """
+MATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)
+WHERE support.gene_count >= 3 AND support.gene_count <= 20
+MATCH (targeted_gene:Gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+MATCH (targeted_gene)-[:INVOLVED_IN]->(process)
+MATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(targeted_gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 100
+WITH subject, object, count(DISTINCT targeted_gene) AS targeted_disease_genes
+WHERE targeted_disease_genes >= 2
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R008"
+name = "Multiple direct targets in a disease-supported process"
+iteration = 2
+parent_rule = "TREAT-I01-R005"
+status = "blocked_feature"
+hypothesis = "A chemical may treat a disease when it directly interacts with multiple disease-associated genes in the same bounded-size process."
+body = "disease has 3-20 associated genes in a process; chemical directly interacts with >=2 of those genes; chemical direct-target degree <=30"
+mechanism_score = "high"
+mechanism_rationale = "Requires polypharmacologic engagement of a coherent disease-supported process while excluding promiscuous chemicals and very broad processes."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The graph motif is TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing."
+cypher = """
+MATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)
+WHERE support.gene_count >= 3 AND support.gene_count <= 20
+MATCH (targeted_gene:Gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+MATCH (targeted_gene)-[:INVOLVED_IN]->(process)
+MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(targeted_gene)
+WHERE subject._miner_direct_gene_target_degree <= 30
+WITH subject, object, count(DISTINCT targeted_gene) AS targeted_disease_genes
+WHERE targeted_disease_genes >= 2
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I01-R004"
+name = "Phenotype and gene supported indication transfer"
+iteration = 1
+status = "rejected_zero"
+hypothesis = "A treatment for one disease may transfer to another disease when the diseases share several phenotypes and at least one associated gene."
+body = "chemical -treats-> anchor disease; anchor disease and candidate disease share >=3 phenotypes and >=1 associated gene"
+mechanism_score = "medium"
+mechanism_rationale = "Combines phenotypic and genetic disease similarity, but still transfers an indication from an existing treatment rather than deriving a direct drug mechanism."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The branched paths are expressible; shared-neighbor counts and source-exclusion constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:ChemicalEntity)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+WHERE any(
+  source IN coalesce(treatment.primary_knowledge_sources, [])
+  WHERE NOT source IN [$validation_source, $blind_source]
+)
+  AND anchor._miner_phenotype_degree >= 3
+  AND anchor._miner_phenotype_degree <= 50
+MATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)
+      <-[:HAS_PHENOTYPE]-(object:Disease)
+WHERE object <> anchor
+  AND object._miner_phenotype_degree >= 3
+  AND object._miner_phenotype_degree <= 50
+WITH subject, anchor, object,
+     count(DISTINCT phenotype) AS shared_phenotypes,
+     anchor._miner_phenotype_degree AS anchor_phenotypes,
+     object._miner_phenotype_degree AS object_phenotypes
+WHERE shared_phenotypes >= 3
+  AND toFloat(shared_phenotypes) /
+      CASE
+        WHEN anchor_phenotypes < object_phenotypes
+        THEN anchor_phenotypes
+        ELSE object_phenotypes
+      END >= 0.5
+MATCH (anchor)<-[:GENE_ASSOCIATED_WITH_CONDITION]-(gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+WITH subject, object, count(DISTINCT gene) AS shared_genes
+WHERE shared_genes >= 1
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I01-R005"
+name = "Pathway-supported molecular target"
+iteration = 1
+status = "needs_refinement"
+hypothesis = "A chemical may treat a disease when it directly targets a gene in a process containing multiple genes independently associated with the disease."
+body = "chemical -directly_physically_interacts_with-> gene -involved_in-> process <-involved_in- >=2 disease-associated genes <-condition_associated_with_gene- disease"
+mechanism_score = "high"
+mechanism_rationale = "Links a direct chemical target to a disease-supported molecular process without using an existing treatment edge."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The path and branch are TRAPI-expressible, but the distinct-gene count constraint requires post-processing or Cypher."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target_gene:Gene)
+      -[:INVOLVED_IN]->(process)
+MATCH (object:Disease)-[:CONDITION_ASSOCIATED_WITH_GENE]->(disease_gene:Gene)
+      -[:INVOLVED_IN]->(process)
+WHERE disease_gene <> target_gene
+WITH subject, object, process, count(DISTINCT disease_gene) AS disease_genes
+WHERE disease_genes >= 2
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R009"
+name = "Normalized phenotype indication transfer"
+iteration = 2
+parent_rule = "TREAT-I01-R004"
+status = "candidate"
+hypothesis = "A treatment for one disease may transfer to another disease when at least half of the smaller disease phenotype profile is shared and both profiles are bounded."
+body = "chemical -treats-> anchor disease; anchor and candidate disease share >=3 phenotypes; shared/min(phenotype degrees) >=0.5; each phenotype degree 3-50"
+mechanism_score = "medium"
+mechanism_rationale = "Phenotypic similarity supports indication transfer but does not identify the drug mechanism responsible for efficacy."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher."
+cypher = """
+MATCH (subject:ChemicalEntity)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+WHERE any(
+  source IN coalesce(treatment.primary_knowledge_sources, [])
+  WHERE NOT source IN [$validation_source, $blind_source]
+)
+  AND anchor._miner_phenotype_degree >= 3
+  AND anchor._miner_phenotype_degree <= 50
+MATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)
+      <-[:HAS_PHENOTYPE]-(object:Disease)
+WHERE object <> anchor
+  AND object._miner_phenotype_degree >= 3
+  AND object._miner_phenotype_degree <= 50
+WITH subject, anchor, object,
+     count(DISTINCT phenotype) AS shared_phenotypes,
+     anchor._miner_phenotype_degree AS anchor_phenotypes,
+     object._miner_phenotype_degree AS object_phenotypes
+WHERE shared_phenotypes >= 3
+  AND toFloat(shared_phenotypes) /
+      CASE
+        WHEN anchor_phenotypes < object_phenotypes
+        THEN anchor_phenotypes
+        ELSE object_phenotypes
+      END >= 0.5
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R010"
+name = "Normalized genetic indication transfer"
+iteration = 2
+parent_rule = "TREAT-I01-R004"
+status = "candidate"
+hypothesis = "A treatment for one disease may transfer to another disease when the diseases share multiple associated genes and at least half of the smaller gene profile."
+body = "chemical -treats-> anchor disease; anchor and candidate disease share >=2 associated genes; shared/min(gene degrees) >=0.5; each gene degree 2-100"
+mechanism_score = "medium"
+mechanism_rationale = "Genetic similarity provides a disease-mechanism bridge, but efficacy is still transferred from an existing indication."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher."
+cypher = """
+MATCH (subject:ChemicalEntity)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+WHERE any(
+  source IN coalesce(treatment.primary_knowledge_sources, [])
+  WHERE NOT source IN [$validation_source, $blind_source]
+)
+  AND anchor._miner_gene_association_degree >= 2
+  AND anchor._miner_gene_association_degree <= 100
+MATCH (anchor)<-[:GENE_ASSOCIATED_WITH_CONDITION]-(gene:Gene)
+      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)
+WHERE object <> anchor
+  AND object._miner_gene_association_degree >= 2
+  AND object._miner_gene_association_degree <= 100
+WITH subject, anchor, object,
+     count(DISTINCT gene) AS shared_genes,
+     anchor._miner_gene_association_degree AS anchor_genes,
+     object._miner_gene_association_degree AS object_genes
+WHERE shared_genes >= 2
+  AND toFloat(shared_genes) /
+      CASE
+        WHEN anchor_genes < object_genes THEN anchor_genes ELSE object_genes
+      END >= 0.5
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R011"
+name = "Clinical-trial evidence benchmark"
+iteration = 2
+status = "candidate"
+hypothesis = "A chemical tested in clinical trials for a disease is enriched for exact treats assertions."
+body = "chemical -in_clinical_trials_for-> disease"
+mechanism_score = "low"
+mechanism_rationale = "This is direct treatment-development evidence rather than an explanatory biological mechanism."
+uses_treatment_edges = true
+trapi_expressibility = "full"
+trapi_notes = "A one-edge TRAPI query expresses the rule."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:IN_CLINICAL_TRIALS_FOR]->(object:Disease)
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R012"
+name = "Studied-to-treat evidence benchmark"
+iteration = 2
+status = "candidate"
+hypothesis = "A chemical studied to treat a disease is enriched for exact treats assertions."
+body = "chemical -studied_to_treat-> disease"
+mechanism_score = "low"
+mechanism_rationale = "The rule restates treatment study evidence and does not explain efficacy."
+uses_treatment_edges = true
+trapi_expressibility = "full"
+trapi_notes = "A one-edge TRAPI query expresses the rule."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:STUDIED_TO_TREAT]->(object:Disease)
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R013"
+name = "Applied-to-treat evidence benchmark"
+iteration = 2
+status = "candidate"
+hypothesis = "A chemical applied to treat a disease is enriched for exact treats assertions."
+body = "chemical -applied_to_treat-> disease"
+mechanism_score = "low"
+mechanism_rationale = "This is treatment-use evidence rather than a mechanistic explanation."
+uses_treatment_edges = true
+trapi_expressibility = "full"
+trapi_notes = "A one-edge TRAPI query expresses the rule."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:APPLIED_TO_TREAT]->(object:Disease)
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R014"
+name = "Shared selective inhibitory mechanism transfer"
+iteration = 2
+status = "failed_resource"
+hypothesis = "A chemical may share an indication with a known treatment when both selectively decrease the activity or abundance of multiple identical genes."
+body = "anchor chemical -treats-> disease; anchor and candidate chemicals each decrease activity_or_abundance of >=2 shared genes; each qualified gene degree <=50; shared/min(degrees) >=0.5"
+mechanism_score = "medium"
+mechanism_rationale = "Transfers an indication through a directional molecular signature, but still depends on an existing treatment and does not prove that the shared targets drive the disease."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The shared-target motif and qualifiers are TRAPI-expressible; overlap, degree, and source constraints require post-processing or Cypher."
+cypher = """
+MATCH (anchor:ChemicalEntity)-[treatment:__TARGET_RELATIONSHIPS__]->(object:Disease)
+WHERE any(
+  source IN coalesce(treatment.primary_knowledge_sources, [])
+  WHERE NOT source IN [$validation_source, $blind_source]
+)
+  AND anchor._miner_affects_aa_decreased_gene_degree >= 2
+  AND anchor._miner_affects_aa_decreased_gene_degree <= 50
+MATCH (anchor)-[anchor_effect:AFFECTS]->(gene:Gene)<-[candidate_effect:AFFECTS]-(subject:ChemicalEntity)
+WHERE subject <> anchor
+  AND anchor_effect.qualified_predicate = 'biolink:causes'
+  AND anchor_effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND anchor_effect.object_direction_qualifier = 'decreased'
+  AND candidate_effect.qualified_predicate = 'biolink:causes'
+  AND candidate_effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND candidate_effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree >= 2
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+WITH subject, anchor, object, count(DISTINCT gene) AS shared_genes,
+     subject._miner_affects_aa_decreased_gene_degree AS subject_genes,
+     anchor._miner_affects_aa_decreased_gene_degree AS anchor_genes
+WHERE shared_genes >= 2
+  AND toFloat(shared_genes) /
+      CASE WHEN subject_genes < anchor_genes THEN subject_genes ELSE anchor_genes END >= 0.5
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R015"
+name = "Direct binding plus inhibition of a causal gene"
+iteration = 2
+parent_rule = "TREAT-I02-R006"
+status = "candidate"
+hypothesis = "A chemical may treat a disease when it both directly binds and decreases the activity or abundance of a causal disease gene."
+body = "chemical -directly_physically_interacts_with-> causal gene -causes-> disease; same chemical -affects[causes, activity_or_abundance, decreased]-> same gene; qualified gene degree <=50"
+mechanism_score = "medium"
+mechanism_rationale = "Requires target engagement, directional perturbation, and a causal disease link on the same gene, but lacks disease-mechanism direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The parallel-edge motif and qualifiers are TRAPI-expressible; the degree constraint requires Cypher or post-processing."
+cypher = """
+MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R017"
+name = "Specific drug binding and inhibition without adverse evidence"
+iteration = 3
+parent_rule = "TREAT-I02-R015"
+status = "candidate"
+hypothesis = "Precision improves when the direct-binding and inhibition rule is restricted to drugs, specific MONDO diseases, and pairs without explicit adverse relations."
+body = "drug binds and decreases causal gene; qualified gene degree <=50; MONDO disease with 1-500 descendants; no has_side_effect, contraindicated_in, exacerbates_condition, or causes edge from drug to disease"
+mechanism_score = "medium"
+mechanism_rationale = "Retains the same target-level evidence while excluding broad disease hubs and explicit adverse relations, but causal direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse graph patterns are TRAPI-expressible; degree and absence constraints require Cypher or post-processing."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R018"
+name = "Curated-effect specific drug mechanism"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "candidate"
+hypothesis = "Requiring a curated SIGNOR perturbation edge further enriches the specific drug binding-and-inhibition rule."
+body = "R017 plus affects primary source infores:signor"
+mechanism_score = "medium"
+mechanism_rationale = "Uses curated directional perturbation, direct binding, disease causality, specificity, and adverse-edge exclusion, but not disease-mechanism direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "Positive, adverse, and provenance constraints can be represented in TRAPI only partly; degree and absence handling are easier in Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R019"
+name = "Low-fanout causal target mechanism"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "retained"
+hypothesis = "Restricting the causal target to genes linked to at most 12 diseases removes literature-derived disease hubs while retaining specific causal mechanisms."
+body = "R017 plus causal gene disease degree <=12"
+mechanism_score = "medium"
+mechanism_rationale = "Retains direct target engagement and directional perturbation with a specific causal gene-disease link, but cannot distinguish therapeutic inhibition from disease-producing loss of function."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse patterns are TRAPI-expressible; causal-gene degree and absence constraints require Cypher or post-processing."
+trapi_template = "trapi/direct-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R020"
+name = "Causal target with disease-process corroboration"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "needs_refinement"
+hypothesis = "A direct inhibitory causal-target mechanism is more reliable when the same gene participates in a process independently supported by the disease's associated genes."
+body = "R017 plus disease -process support-> process <-involved_in- same causal target gene"
+mechanism_score = "medium"
+mechanism_rationale = "Adds nonlinear systems-level corroboration around the directly engaged target, but does not resolve whether the perturbation direction is therapeutic."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph motif is TRAPI-expressible; the derived process-support cardinality, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)<-[:INVOLVED_IN]-(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND support.gene_count >= 2
+  AND support.gene_count <= 20
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R021"
+name = "Independently associated causal target mechanism"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "candidate"
+hypothesis = "A causal-target mechanism is more reliable when the same gene-disease pair also has a dedicated gene-associated-with-condition assertion."
+body = "R017 plus same gene -gene_associated_with_condition-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Adds an independent relation family supporting the exact target-disease pair, but does not resolve therapeutic direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R022"
+name = "Clinical-stage causal target mechanism"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "candidate"
+hypothesis = "A specific causal-target mechanism with matching clinical-trial evidence should strongly enrich for treatment relationships."
+body = "R017 plus drug -in_clinical_trials_for-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Combines target-level evidence with graph-internal translational evidence, but the molecular perturbation is not proven corrective."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (subject)-[:IN_CLINICAL_TRIALS_FOR]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I03-R023"
+name = "Applied causal target mechanism"
+iteration = 3
+parent_rule = "TREAT-I03-R017"
+status = "candidate"
+hypothesis = "A specific causal-target mechanism with matching applied-to-treat evidence should be a high-precision treatment rule."
+body = "R017 plus drug -applied_to_treat-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Combines target-level evidence with graph-internal treatment-use evidence, but the latter is target-adjacent and molecular direction is unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I04-R024"
+name = "Low-fanout process-corroborated mechanism"
+iteration = 4
+parent_rule = "TREAT-I03-R019"
+status = "candidate"
+hypothesis = "Combining causal-target specificity with same-gene disease-process corroboration may remove both literature hubs and isolated causal assertions."
+body = "R019 plus disease -process support-> process <-involved_in- same causal target gene"
+mechanism_score = "medium"
+mechanism_rationale = "Uses two independent biological branches around the same directly engaged gene without treatment evidence, but therapeutic direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph motif is TRAPI-expressible; process-support cardinality, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)<-[:INVOLVED_IN]-(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12
+  AND support.gene_count >= 2
+  AND support.gene_count <= 20
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I04-R025"
+name = "Low-fanout independently associated mechanism"
+iteration = 4
+parent_rule = "TREAT-I03-R019"
+status = "diagnostic_failure"
+hypothesis = "Combining causal-target specificity with a dedicated gene-condition association should isolate highly supported mechanisms."
+body = "R019 plus same gene -gene_associated_with_condition-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "The graph pattern is highly specific, but its novel indapamide-long QT prediction exposes the missing gain-of-function versus loss-of-function constraint."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif is TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I04-R026"
+name = "Independent clinical low-fanout mechanism"
+iteration = 4
+parent_rule = "TREAT-I03-R022"
+status = "retained"
+hypothesis = "A specific causal-target mechanism plus an independently sourced clinical-trial assertion should retain validation hits while excluding disease-gene hubs and target-source leakage."
+body = "R022 plus causal gene disease degree <=12 and clinical-trial source infores:multiomics-clinicaltrials"
+mechanism_score = "medium"
+mechanism_rationale = "Combines specific target-level evidence with independent translational evidence, but still uses treatment-oriented evidence and lacks disease-mechanism direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif and provenance are partly TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12
+  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I04-R027"
+name = "Curated independent clinical mechanism"
+iteration = 4
+parent_rule = "TREAT-I04-R026"
+status = "needs_refinement"
+hypothesis = "Requiring curated SIGNOR perturbation evidence within the independent clinical low-fanout rule may further improve precision."
+body = "R026 plus affects primary source infores:signor"
+mechanism_score = "medium"
+mechanism_rationale = "Combines curated target perturbation, causal specificity, and independent clinical evidence, but remains tiny and lacks disease-mechanism direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive motif and provenance are partly TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12
+  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I05-R028"
+name = "Disease-relative literature rescue"
+iteration = 5
+parent_rule = "TREAT-I03-R019"
+status = "superseded"
+hypothesis = "High-fanout causal genes can be rescued when their causal literature is disproportionately concentrated on the candidate disease and they rank among that disease's strongest genes."
+body = "R017 plus causal fanout <=12 OR causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3"
+mechanism_score = "medium"
+mechanism_rationale = "Replaces a hard pleiotropy exclusion with disease-relative literature and graph-evidence relevance, but still lacks gain-of-function versus loss-of-function direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological motif is TRAPI-expressible; NPMI, disease-relative rank, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 3
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I05-R029"
+name = "High-fanout literature rescue cohort"
+iteration = 5
+parent_rule = "TREAT-I05-R028"
+status = "diagnostic_cohort"
+hypothesis = "The incremental high-fanout genes admitted by disease-relative literature concentration should be enriched for treatment relationships."
+body = "R017 plus causal fanout >12, causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3"
+mechanism_score = "medium"
+mechanism_rationale = "Directly measures the rescued pleiotropic-gene cohort without treatment evidence, but therapeutic direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological motif is TRAPI-expressible; NPMI, disease-relative rank, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND evidence._miner_gene_causal_disease_degree > 12
+  AND evidence._miner_causal_publication_count >= 3
+  AND evidence._miner_causal_publication_npmi >= 0.5
+  AND evidence._miner_disease_rank <= 3
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I05-R030"
+name = "Independent clinical disease-relative rescue"
+iteration = 5
+parent_rule = "TREAT-I04-R026"
+status = "retained"
+hypothesis = "Disease-relative literature relevance can extend the independent clinical rule to strong pleiotropic targets without restoring general hub noise."
+body = "R022 with independent clinical source plus causal fanout <=12 OR causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3"
+mechanism_score = "medium"
+mechanism_rationale = "Combines disease-relative target evidence with independent clinical evidence, but remains treatment-oriented and lacks disease-mechanism direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The biological and clinical motifs are TRAPI-expressible; NPMI, disease-relative rank, provenance, degree, and absence constraints require post-processing or Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 3
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+    )
+  )
+  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I05-R031"
+name = "Multi-evidence disease-relative rescue"
+iteration = 5
+parent_rule = "TREAT-I05-R028"
+status = "retained"
+hypothesis = "A stricter rescue requiring concentrated literature plus relation diversity or a non-SemMed source may improve precision for pleiotropic genes."
+body = "R017 plus causal fanout <=12 OR top-three disease-relative NPMI rescue with publications >=5 and either non-SemMed source support or >=4 direct relation types"
+mechanism_score = "medium"
+mechanism_rationale = "Adds provenance or relation-family corroboration to disease-relative literature relevance, but still lacks therapeutic direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological motif is TRAPI-expressible; NPMI, evidence diversity, disease-relative rank, degree, and absence constraints require post-processing or Cypher."
+trapi_template = "trapi/direct-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R032"
+name = "Tissue-specific causal target mechanism"
+iteration = 6
+parent_rule = "TREAT-I05-R031"
+status = "superseded"
+hypothesis = "A causal target is more likely to be therapeutically relevant when Bgee places the human gene in a relatively disease-specific anatomy linked to the disease."
+body = "R031 plus human causal gene -expressed_in[Bgee]-> anatomy <-located_in|occurs_in- disease; anatomy disease degree <=200"
+mechanism_score = "medium"
+mechanism_rationale = "Adds independently sourced target-expression context and an anatomy-specificity constraint, but the disease-anatomy assertion is literature-derived and disease gain/loss direction remains absent."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological cycle is TRAPI-expressible; evidence provenance, anatomy degree, NPMI, target degree, and adverse-edge absence require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R037"
+name = "Tissue mechanism without shared adverse phenotype"
+iteration = 6
+parent_rule = "TREAT-I06-R032"
+status = "retained"
+hypothesis = "A tissue-specific causal-target prediction is more credible when none of the drug's recorded side-effect phenotypes exactly matches a phenotype of the candidate disease."
+body = "R032 plus no drug -has_side_effect-> phenotype <-has_phenotype- disease"
+mechanism_score = "medium"
+mechanism_rationale = "Adds a graph-internal counter-mechanism filter that removes candidates whose known adverse phenotype reproduces part of the disease presentation, while retaining the target, anatomy, and causal branches."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse phenotype motifs are TRAPI-expressible; exact absence, provenance, anatomy specificity, NPMI, and degree constraints require post-processing or Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(side_effect:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R038"
+name = "Compact causal-module tissue mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "diagnostic_no_gain"
+hypothesis = "A tissue-localized causal target is more credible when it shares a compact GOA process with a second gene that causes the same disease."
+body = "R037 plus causal target -involved_in-> process[<=100 genes] <-involved_in- second causal gene -causes-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Adds an independently annotated, nonlinear disease module around the inhibited target, but shared process membership still does not establish whether inhibition corrects the disease mechanism."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The target, anatomy, shared-process, and second-causal-gene motifs are TRAPI-expressible; process cardinality, exact absence, provenance, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(other_gene:Gene)
+      -[:CAUSES]->(object)
+WHERE other_gene <> gene
+  AND process._miner_gene_member_degree <= 100
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R039"
+name = "Multi-driver causal-module tissue mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "diagnostic_no_gain"
+hypothesis = "A tissue-localized causal target is more credible when at least two other causal disease genes share one or more GOA processes with it."
+body = "R037 plus causal target shares GOA process membership with >=2 other genes that cause the disease"
+mechanism_score = "medium"
+mechanism_rationale = "Uses repeated causal-gene support to form a nonlinear disease module around the inhibited target, but process co-membership and causal assertions still lack corrective direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological motifs are TRAPI-expressible; distinct-neighbor cardinality, exact absence, provenance, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(other_gene:Gene)
+      -[:CAUSES]->(object)
+WHERE other_gene <> gene
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+WITH subject, object, count(DISTINCT other_gene) AS other_causal_gene_count
+WHERE other_causal_gene_count >= 2
+RETURN subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R040"
+name = "Compact multi-driver causal-module mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R038"
+status = "diagnostic_no_gain"
+hypothesis = "The strongest shared-process signal should require at least two other causal genes connected to the inhibited target through compact GOA processes."
+body = "R037 plus causal target shares process[<=100 genes] with >=2 other causal genes for the disease"
+mechanism_score = "medium"
+mechanism_rationale = "Combines tissue localization, target causality, compact process membership, and repeated independent causal genes, but the disease activity direction remains missing."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological motifs are TRAPI-expressible; process and neighbor cardinality, exact absence, provenance, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(other_gene:Gene)
+      -[:CAUSES]->(object)
+WHERE other_gene <> gene
+  AND process._miner_gene_member_degree <= 100
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+WITH subject, object, count(DISTINCT other_gene) AS other_causal_gene_count
+WHERE other_causal_gene_count >= 2
+RETURN subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R041"
+name = "Tissue-localized physical-neighbor intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "diagnostic_low_precision"
+hypothesis = "A drug may treat a disease by inhibiting a tissue-localized protein that directly physically interacts with a disease-causal driver."
+body = "drug binds and decreases target -directly_physically_interacts_with[SIGNOR]- causal driver -causes-> disease; target expressed in disease anatomy"
+mechanism_score = "medium"
+mechanism_rationale = "Extends target selection beyond directly causal genes using a curated physical interaction and tissue localization, but an unsigned interaction does not establish propagation direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The drug-target, physical-interaction, causal-driver, and anatomy motifs are TRAPI-expressible; provenance, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND 'infores:signor' IN coalesce(interaction.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R042"
+name = "Compact physical-neighbor pathway intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R041"
+status = "diagnostic_low_precision"
+hypothesis = "The physical-neighbor rule should become more specific when the inhibited target and causal driver also share a compact GOA process."
+body = "R041 plus target and causal driver share process[<=100 genes]"
+mechanism_score = "medium"
+mechanism_rationale = "Combines physical interaction, compact pathway coherence, causal-driver evidence, and tissue localization, but still lacks signed propagation through the interaction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The biological graph is TRAPI-expressible; process cardinality, provenance, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)
+MATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND 'infores:signor' IN coalesce(interaction.primary_knowledge_sources, [])
+  AND process._miner_gene_member_degree <= 100
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R043"
+name = "Signed tissue-localized regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R041"
+status = "diagnostic_low_precision"
+hypothesis = "A drug may treat a disease when it inhibits a tissue-localized target that SIGNOR says positively regulates a disease-causal driver."
+body = "drug binds and decreases target -regulates[upregulated,SIGNOR]-> causal driver -causes-> disease; target expressed in disease anatomy"
+mechanism_score = "medium"
+mechanism_rationale = "Provides a signed molecular propagation path from drug inhibition to reduced driver activity, with tissue localization and disease-relative driver evidence; the remaining missing direction is whether reduced driver activity is corrective."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The molecular and anatomy motifs are TRAPI-expressible; signed properties, provenance, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R044"
+name = "Signed compact-pathway regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R043"
+status = "diagnostic_prediction_cohort"
+hypothesis = "The signed regulatory intervention should become more specific when target and causal driver also share a compact GOA process."
+body = "R043 plus target and causal driver share process[<=100 genes]"
+mechanism_score = "medium"
+mechanism_rationale = "Combines signed propagation, compact pathway coherence, causal-driver relevance, and tissue localization, leaving only disease gain-versus-loss direction unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph is TRAPI-expressible; signed properties, process cardinality, provenance, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+trapi_template = "trapi/signed-regulatory-core.json"
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND process._miner_gene_member_degree <= 100
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R045"
+name = "Curated signed regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R043"
+status = "diagnostic_prediction_cohort"
+hypothesis = "Requiring SIGNOR provenance for both drug inhibition and target-to-driver positive regulation should isolate a small, highly mechanistic prediction cohort."
+body = "R043 plus drug-target decreased activity_or_abundance effect source infores:signor"
+mechanism_score = "medium"
+mechanism_rationale = "Uses curated signed perturbation at both molecular steps plus tissue localization and a causal disease driver, but the graph still does not state whether reducing that driver reverses disease."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The molecular and anatomy motifs are TRAPI-expressible; signed edge properties, dual provenance, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R046"
+name = "Causal-target indication transfer"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "superseded"
+hypothesis = "A known non-blind indication can support a new indication when the drug inhibits the same tissue-localized causal gene for both diseases."
+body = "drug treats training anchor disease and binds/decreases gene; same gene causes anchor and candidate disease; candidate satisfies R037 tissue and adverse constraints"
+mechanism_score = "medium"
+mechanism_rationale = "Transfers efficacy through an explicit shared inhibited causal target and candidate-disease tissue context rather than generic disease similarity, but it depends on an existing treatment edge and still lacks disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The shared-target and treatment-anchor motifs are TRAPI-expressible; source exclusion, derived anatomy context, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+MATCH (gene)-[:CAUSES]->(anchor)
+WHERE anchor <> object
+  AND any(
+    source IN coalesce(treatment.primary_knowledge_sources, [])
+    WHERE NOT source IN [$validation_source, $blind_source]
+  )
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R047"
+name = "Anatomy-corroborated causal-target transfer"
+iteration = 6
+parent_rule = "TREAT-I06-R046"
+status = "diagnostic_no_gain"
+hypothesis = "Causal-target indication transfer should become more specific when the known anchor and candidate diseases also share a relatively specific anatomy."
+body = "R046 plus anchor and candidate disease share located_in|occurs_in anatomy with disease degree <=200"
+mechanism_score = "medium"
+mechanism_rationale = "Combines a known indication, shared inhibited causal target, target expression context, and shared disease anatomy; treatment dependence and disease activity direction remain limitations."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The branched graph motif is TRAPI-expressible; source exclusion, anatomy specificity, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+MATCH (gene)-[:CAUSES]->(anchor)
+WHERE anchor <> object
+  AND any(
+    source IN coalesce(treatment.primary_knowledge_sources, [])
+    WHERE NOT source IN [$validation_source, $blind_source]
+  )
+  AND EXISTS {
+    MATCH (anchor)-[:LOCATED_IN|OCCURS_IN]->
+          (shared_anatomy:AnatomicalEntity)
+          <-[:LOCATED_IN|OCCURS_IN]-(object)
+    WHERE shared_anatomy._miner_disease_location_degree <= 200
+  }
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R048"
+name = "Ontology-local causal-target indication transfer"
+iteration = 6
+parent_rule = "TREAT-I06-R046"
+status = "retained"
+hypothesis = "Causal-target indication transfer should be most reliable when the known anchor and candidate are within three directed MONDO subclass steps."
+body = "R046 plus anchor subclass_of[1..3] candidate OR candidate subclass_of[1..3] anchor"
+mechanism_score = "medium"
+mechanism_rationale = "Combines known efficacy, the same inhibited causal target, candidate tissue context, and explicit disease-family proximity; it remains treatment-dependent and lacks disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The shared-target and bounded ontology paths are TRAPI-expressible as expanded motifs; source exclusion, path bounds, exact absence, NPMI, and degree constraints require post-processing or Cypher."
+trapi_template = "trapi/causal-anchor-transfer.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[treatment:__TARGET_RELATIONSHIPS__]->(anchor:Disease)
+MATCH (gene)-[:CAUSES]->(anchor)
+WHERE anchor <> object
+  AND any(
+    source IN coalesce(treatment.primary_knowledge_sources, [])
+    WHERE NOT source IN [$validation_source, $blind_source]
+  )
+  AND (
+    EXISTS {
+      MATCH (anchor)-[:SUBCLASS_OF*1..3]->(object)
+    }
+    OR EXISTS {
+      MATCH (object)-[:SUBCLASS_OF*1..3]->(anchor)
+    }
+  )
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND evidence._miner_min_anatomy_disease_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R049"
+name = "Adverse-filtered phenotype-anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "retained"
+hypothesis = "The tissue mechanism is stronger when a disease phenotype localizes to the same anatomy in which Bgee expresses the inhibited causal gene."
+body = "R037 plus disease -has_phenotype-> phenotype -located_in|occurs_in-> same target-expression anatomy"
+mechanism_score = "medium"
+mechanism_rationale = "Forms a nonlinear target-expression, disease-location, phenotype-location, and adverse-phenotype graph, but the localization branches are literature-derived and disease direction remains absent."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The nonlinear positive and adverse motifs are TRAPI-expressible; exact absence, provenance, anatomy specificity, NPMI, and degree constraints require post-processing or Cypher."
+trapi_template = "trapi/phenotype-anatomy.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+MATCH (object)-[:HAS_PHENOTYPE]->(:PhenotypicFeature)
+      -[:LOCATED_IN|OCCURS_IN]->(anatomy)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R050"
+name = "Disease-specific anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R037"
+status = "superseded"
+hypothesis = "Reducing the maximum disease fanout of the shared target-expression anatomy from 200 to 50 should suppress ubiquitous tissue matches."
+body = "R037 with shared anatomy disease-location degree <=50"
+mechanism_score = "medium"
+mechanism_rationale = "Tightens the anatomical context of an inhibited causal target, but anatomy specificity cannot resolve disease gain-versus-loss direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse motifs are TRAPI-expressible; anatomy degree, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R051"
+name = "Highly disease-specific anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R050"
+status = "superseded"
+hypothesis = "An anatomy connected to at most 20 diseases should provide a still cleaner tissue context for causal-target inhibition."
+body = "R037 with shared anatomy disease-location degree <=20"
+mechanism_score = "medium"
+mechanism_rationale = "Uses a highly disease-specific target-expression anatomy but still cannot infer whether inhibition reverses the causal disease state."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse motifs are TRAPI-expressible; anatomy degree, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 20
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R052"
+name = "Joint disease-and-expression-specific anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R050"
+status = "retained"
+hypothesis = "The shared anatomy should be more informative when it is linked to at most 50 diseases and expresses at most 6,000 human genes in Bgee."
+body = "R037 with same shared anatomy disease degree <=50 and human Bgee gene-expression degree <=6000"
+mechanism_score = "medium"
+mechanism_rationale = "Constrains both disease and expression fanout of the anatomical bridge, but disease activity direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse motifs are TRAPI-expressible; two anatomy degrees, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 6000
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R053"
+name = "Moderate expression-specific anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R052"
+status = "superseded"
+hypothesis = "Relaxing the Bgee anatomy expression degree from 6,000 to 7,000 may add coverage without materially reducing precision."
+body = "R037 with same shared anatomy disease degree <=50 and human Bgee gene-expression degree <=7000"
+mechanism_score = "medium"
+mechanism_rationale = "Constrains both disease and expression fanout of the anatomical bridge, but disease activity direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse motifs are TRAPI-expressible; two anatomy degrees, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 7000
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R054"
+name = "Loose expression-specific anatomy mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R053"
+status = "retained"
+hypothesis = "A Bgee anatomy expression degree ceiling of 8,000 may provide a higher-coverage point on the tissue-specific precision-recall frontier."
+body = "R037 with same shared anatomy disease degree <=50 and human Bgee gene-expression degree <=8000"
+mechanism_score = "medium"
+mechanism_rationale = "Constrains both disease and expression fanout of the anatomical bridge more loosely, while disease activity direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The positive and adverse motifs are TRAPI-expressible; two anatomy degrees, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 8000
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R055"
+name = "Anatomy-specific signed regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R043"
+status = "diagnostic_prediction_cohort"
+hypothesis = "Signed target-to-driver propagation should become more predictive when the target is expressed in an anatomy with both low disease and moderate expression fanout."
+body = "R043 plus same target-expression anatomy disease degree <=50 and human Bgee gene-expression degree <=6000"
+mechanism_score = "medium"
+mechanism_rationale = "Combines signed molecular propagation, causal-driver evidence, and jointly specific tissue context; only the disease gain-versus-loss direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The signed molecular and anatomy motifs are TRAPI-expressible; two anatomy degrees, signed properties, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 6000
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R056"
+name = "Top-driver signed regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R055"
+status = "diagnostic_prediction_cohort"
+hypothesis = "The anatomy-specific signed rule should improve when the regulated causal driver ranks first among the disease's graph-supported genes."
+body = "R055 plus causal driver disease relevance rank =1"
+mechanism_score = "medium"
+mechanism_rationale = "Adds disease-relative driver priority to signed propagation and tissue context, while disease gain-versus-loss direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph is TRAPI-expressible; driver rank, two anatomy degrees, signed properties, exact absence, provenance, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 6000
+  AND evidence._miner_disease_rank = 1
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R057"
+name = "Diverse-evidence signed regulatory intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R055"
+status = "diagnostic_prediction_cohort"
+hypothesis = "The anatomy-specific signed rule should improve when the causal driver-disease pair has a non-SemMed source or at least four direct relation types."
+body = "R055 plus driver-disease non-SemMed source count >=1 OR direct relation type count >=4"
+mechanism_score = "medium"
+mechanism_rationale = "Adds independent or relation-diverse driver evidence to signed propagation and tissue context, while disease activity direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph is TRAPI-expressible; evidence diversity, two anatomy degrees, signed properties, exact absence, provenance, and target degree require post-processing or Cypher."
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 6000
+  AND (
+    evidence._miner_non_semmed_primary_source_count >= 1
+    OR evidence._miner_direct_relation_type_count >= 4
+  )
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R058"
+name = "Anatomy-specific signed compact-pathway intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R055"
+status = "diagnostic_prediction_cohort"
+hypothesis = "The anatomy-specific signed rule should improve when target and driver also share a compact GOA process."
+body = "R055 plus target and causal driver share process[<=100 genes]"
+mechanism_score = "medium"
+mechanism_rationale = "Combines signed propagation, compact pathway coherence, causal-driver evidence, and jointly specific tissue context, leaving disease activity direction unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The source graph is TRAPI-expressible; process cardinality, two anatomy degrees, signed properties, exact absence, provenance, NPMI, and target degree require post-processing or Cypher."
+trapi_template = "trapi/signed-regulatory-core.json"
+cypher = """
+MATCH (driver:Gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)
+MATCH (target:Gene)-[regulation:REGULATES]->(driver)
+MATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)
+MATCH (subject)-[effect:AFFECTS]->(target)
+MATCH (target)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+WHERE target <> driver
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND process._miner_gene_member_degree <= 100
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(target.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 50
+  AND anatomy._miner_human_gene_expression_degree <= 6000
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)
+          <-[:HAS_PHENOTYPE]-(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R033"
+name = "Phenotype-corroborated tissue mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R032"
+status = "superseded"
+hypothesis = "An anatomical target match is stronger when a disease phenotype independently localizes to the same anatomy."
+body = "R032 plus disease -has_phenotype-> phenotype -located_in|occurs_in-> same anatomy"
+mechanism_score = "medium"
+mechanism_rationale = "Forms a nonlinear target-expression, disease-location, and phenotype-location cycle, but both disease anatomy branches are currently SemMed-derived and therapeutic direction remains unresolved."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The nonlinear biological graph is TRAPI-expressible; cardinality, provenance, specificity, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+MATCH (object)-[:HAS_PHENOTYPE]->(:PhenotypicFeature)
+      -[:LOCATED_IN|OCCURS_IN]->(anatomy)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R034"
+name = "Independent clinical tissue mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R032"
+status = "superseded"
+hypothesis = "A tissue-specific causal mechanism plus independently sourced clinical-trial evidence should improve precision while retaining common-disease targets."
+body = "R032 plus drug -in_clinical_trials_for[multiomics-clinicaltrials]-> disease"
+mechanism_score = "medium"
+mechanism_rationale = "Combines target, causal, expression, anatomical, and independent clinical evidence, but the clinical branch is treatment-oriented and disease-mechanism direction remains absent."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The biological and clinical graph motifs are TRAPI-expressible; provenance, specificity, NPMI, degree, and absence constraints require post-processing or Cypher."
+trapi_template = "trapi/clinical-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 3
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R035"
+name = "Tissue-localized compact pathway mechanism"
+iteration = 6
+parent_rule = "TREAT-I06-R032"
+status = "diagnostic_no_novel"
+hypothesis = "A tissue-specific causal target is more credible when it participates in a compact process supported by multiple genes associated with the disease."
+body = "R032 plus disease -process support[2-20 genes]-> process <-involved_in- causal target; process gene degree <=100"
+mechanism_score = "medium"
+mechanism_rationale = "Adds a compact disease-supported process to the target, causal, and anatomical branches, but pathway membership and disease localization do not establish corrective direction."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The nonlinear source graph is TRAPI-expressible; derived support cardinality, provenance, anatomy specificity, NPMI, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+MATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)
+      <-[:INVOLVED_IN]-(gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND 'NCBITaxon:9606' IN coalesce(gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND support.gene_count >= 2
+  AND support.gene_count <= 20
+  AND process._miner_gene_member_degree <= 100
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I06-R036"
+name = "Signed regulatory pathway intervention"
+iteration = 6
+parent_rule = "TREAT-I06-R035"
+status = "diagnostic_prediction_cohort"
+hypothesis = "A selective drug may treat a disease when it inhibits a tissue-localized target that positively regulates a causal disease gene within the same compact disease-supported process."
+body = "drug binds and decreases target -regulates[upregulated, SIGNOR]-> causal driver -causes-> disease; target and driver share compact disease process; target expressed in specific disease anatomy"
+mechanism_score = "medium"
+mechanism_rationale = "Uses a signed three-hop molecular propagation path with independent pathway and anatomy branches, but the graph still does not establish whether reducing the causal driver is corrective for the disease."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The molecular, pathway, and anatomy graph is TRAPI-expressible; signed edge properties, provenance, support cardinality, specificity, relevance, degree, and absence constraints require post-processing or Cypher."
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target_gene:Gene)
+      -[regulation:REGULATES]->(driver_gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(target_gene)
+MATCH (driver_gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (target_gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)
+      <-[:LOCATED_IN|OCCURS_IN]-(object)
+MATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)
+      <-[:INVOLVED_IN]-(target_gene)
+MATCH (driver_gene)-[:INVOLVED_IN]->(process)
+WHERE target_gene <> driver_gene
+  AND effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND regulation.qualified_predicate = 'biolink:causes'
+  AND regulation.object_direction_qualifier = 'upregulated'
+  AND 'infores:signor' IN coalesce(regulation.primary_knowledge_sources, [])
+  AND 'NCBITaxon:9606' IN coalesce(target_gene.in_taxon, [])
+  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])
+  AND anatomy._miner_disease_location_degree <= 200
+  AND support.gene_count >= 2
+  AND support.gene_count <= 20
+  AND process._miner_gene_member_degree <= 100
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 5
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+      AND (
+        evidence._miner_non_semmed_primary_source_count >= 1
+        OR evidence._miner_direct_relation_type_count >= 4
+      )
+    )
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I02-R016"
+name = "Tight multi-gene inhibition in a compact disease process"
+iteration = 2
+parent_rule = "TREAT-I02-R007"
+status = "candidate"
+hypothesis = "Precision improves when a selective chemical decreases at least three disease-associated genes in a compact process."
+body = "disease has 3-10 associated genes in a process; chemical decreases activity_or_abundance of >=3; chemical qualified gene degree <=50"
+mechanism_score = "medium"
+mechanism_rationale = "This is a stricter, hub-resistant multi-target pathway perturbation, but the graph does not establish that decreasing the genes is corrective."
+uses_treatment_edges = false
+trapi_expressibility = "partial"
+trapi_notes = "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing."
+cypher = """
+MATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)
+WHERE support.gene_count >= 3 AND support.gene_count <= 10
+MATCH (targeted_gene:Gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)
+MATCH (targeted_gene)-[:INVOLVED_IN]->(process)
+MATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(targeted_gene)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+WITH subject, object, count(DISTINCT targeted_gene) AS targeted_disease_genes
+WHERE targeted_disease_genes >= 3
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I07-R059"
+name = "Dual translational assertion causal-target mechanism"
+iteration = 7
+parent_rule = "TREAT-I05-R030"
+status = "retained"
+hypothesis = "A causal-target prediction supported independently by both clinical-trial and applied-treatment assertions should form a high-precision discovery rule while retaining an unlabeled prediction."
+body = "R030 plus applied_to_treat for the same drug-disease pair"
+mechanism_score = "medium"
+mechanism_rationale = "Combines directional target perturbation and causal disease genetics with two distinct treatment-oriented assertions, but those assertions are not independent of therapeutic knowledge and disease activity direction remains absent."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The causal-target, clinical-trial, and applied-treatment motifs are TRAPI-expressible; provenance, evidence rescue, degree, ontology, and negative-existence constraints require Cypher or post-processing."
+trapi_template = "trapi/clinical-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 50
+  AND (
+    evidence._miner_gene_causal_disease_degree <= 12
+    OR (
+      evidence._miner_causal_publication_count >= 3
+      AND evidence._miner_causal_publication_npmi >= 0.5
+      AND evidence._miner_disease_rank <= 3
+    )
+  )
+  AND 'infores:multiomics-clinicaltrials'
+      IN coalesce(trial.primary_knowledge_sources, [])
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I07-R060"
+name = "Applied-treatment clinical-or-anatomy rescue, selective"
+iteration = 7
+parent_rule = "TREAT-I03-R023"
+status = "retained"
+hypothesis = "An applied-treatment assertion is more predictive when a selective drug also has either independent clinical-trial support or repeated Bgee and disease-anatomy concordance."
+body = "R023 with qualified target degree <=32 and either multiomics clinical-trial evidence or >=3 shared Bgee disease anatomies"
+mechanism_score = "medium"
+mechanism_rationale = "Uses a direct causal-target mechanism, selective perturbation, and either independent translational evidence or repeated anatomical concordance; the applied-treatment edge remains treatment-oriented and disease activity direction is missing."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive causal-target, applied-treatment, clinical, and anatomy motifs are separately TRAPI-expressible; the OR branch, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 32
+  AND (
+    evidence._miner_bgee_anatomy_count >= 3
+    OR EXISTS {
+      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+      WHERE 'infores:multiomics-clinicaltrials'
+            IN coalesce(trial.primary_knowledge_sources, [])
+    }
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I07-R061"
+name = "Applied-treatment clinical-or-anatomy rescue, broad"
+iteration = 7
+parent_rule = "TREAT-I07-R060"
+status = "retained"
+hypothesis = "Relaxing the selective drug threshold from 32 to 44 qualified targets should add one visible target while remaining on the high-precision frontier."
+body = "R060 with qualified target degree <=44"
+mechanism_score = "medium"
+mechanism_rationale = "Retains the direct target, applied-treatment, and clinical-or-anatomy evidence branches at a broader target-selectivity point, but still depends on treatment-oriented evidence and lacks disease activity direction."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "The positive motifs are separately TRAPI-expressible; the OR branch, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 44
+  AND (
+    evidence._miner_bgee_anatomy_count >= 3
+    OR EXISTS {
+      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+      WHERE 'infores:multiomics-clinicaltrials'
+            IN coalesce(trial.primary_knowledge_sources, [])
+    }
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I07-R062"
+name = "Anatomy-supported translational evidence union, selective"
+iteration = 7
+parent_rule = "TREAT-I07-R060"
+status = "retained"
+hypothesis = "Repeated anatomical concordance can support a causal-target prediction when either applied-treatment or independent clinical-trial evidence is present, increasing recall without returning to the broad evidence-only rules."
+body = "causal-target mechanism with >=3 shared Bgee disease anatomies, qualified target degree <=30, and applied_to_treat OR multiomics clinical-trial evidence"
+mechanism_score = "medium"
+mechanism_rationale = "Requires repeated graph-internal anatomical concordance around the causal target and at least one translational evidence branch, but the evidence disjunction remains treatment-oriented and disease activity direction is unresolved."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Each positive branch is TRAPI-expressible separately; the evidence OR, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 30
+  AND evidence._miner_bgee_anatomy_count >= 3
+  AND (
+    EXISTS {
+      MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+    }
+    OR EXISTS {
+      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+      WHERE 'infores:multiomics-clinicaltrials'
+            IN coalesce(trial.primary_knowledge_sources, [])
+    }
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""
+
+[[rules]]
+id = "TREAT-I07-R063"
+name = "Anatomy-supported translational evidence union, broad"
+iteration = 7
+parent_rule = "TREAT-I07-R062"
+status = "retained"
+hypothesis = "Relaxing the target threshold from 30 to 45 should add one visible target and preserve a precision advantage over the older independent-clinical frontier."
+body = "R062 with qualified target degree <=45"
+mechanism_score = "medium"
+mechanism_rationale = "Retains repeated anatomical concordance and either applied-treatment or clinical evidence at a broader target-selectivity point; treatment dependence and missing disease activity direction prevent a high mechanism score."
+uses_treatment_edges = true
+trapi_expressibility = "partial"
+trapi_notes = "Each positive branch is TRAPI-expressible separately; the evidence OR, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher."
+trapi_template = "trapi/tissue-causal-target.json"
+cypher = """
+MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)
+      -[:CAUSES]->(object:Disease)
+MATCH (subject)-[effect:AFFECTS]->(gene)
+MATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)
+WHERE effect.qualified_predicate = 'biolink:causes'
+  AND effect.object_aspect_qualifier = 'activity_or_abundance'
+  AND effect.object_direction_qualifier = 'decreased'
+  AND subject._miner_affects_aa_decreased_gene_degree <= 45
+  AND evidence._miner_bgee_anatomy_count >= 3
+  AND (
+    EXISTS {
+      MATCH (subject)-[:APPLIED_TO_TREAT]->(object)
+    }
+    OR EXISTS {
+      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)
+      WHERE 'infores:multiomics-clinicaltrials'
+            IN coalesce(trial.primary_knowledge_sources, [])
+    }
+  )
+  AND object.id STARTS WITH 'MONDO:'
+  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500
+  AND object._miner_disease_superclass_degree >= 1
+  AND NOT EXISTS {
+    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)
+  }
+RETURN DISTINCT subject.id AS subject_id, object.id AS object_id
+"""

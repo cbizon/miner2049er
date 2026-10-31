@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T02:12:00.784283+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R141",
+      "name": "Dual-target non-SemMed genetic consensus",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R095",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A compact dual-target mechanism is more credible when both causal gene-disease paths have primary support outside SemMedDB.",
+      "body": "R095 with ontology-specific disease and non-SemMed genetic support for both targets",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Two independently supported causal genes converge in a compact process under directional drug inhibition, but disease-driving activity direction is absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological paths are TRAPI-expressible; source provenance, two-target identity, compactness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND process._miner_gene_member_degree <= 100\n  AND evidence1._miner_non_semmed_primary_source_count >= 1\n  AND evidence2._miner_non_semmed_primary_source_count >= 1\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 22,
+        "validation_hits": 1,
+        "training_hits": 4,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.22727272727272727,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009057971014492753,
+        "validation_precision_lower_bound": 0.05555555555555555,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.002063557573256294
+      },
+      "runtime_seconds": 0.5542102920007892
+    },
+    {
+      "id": "TREAT-I09-R142",
+      "name": "Cross-agent dual-target provenance topology",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R141",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A dual-target module is more credible when its binding evidence spans manual and automated agents in addition to independent genetics.",
+      "body": "R141 with both manual-agent and automated-agent binding evidence somewhere across the two targets",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule requires independent genetic evidence and heterogeneous molecular evidence across a nonlinear target module, reducing single-pipeline artifacts.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological paths are TRAPI-expressible; agent-type existence, source provenance, cardinality, compactness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND process._miner_gene_member_degree <= 100\n  AND evidence1._miner_non_semmed_primary_source_count >= 1\n  AND evidence2._miner_non_semmed_primary_source_count >= 1\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND EXISTS {\n    MATCH (subject)-[manual:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(manual_gene)\n    WHERE manual_gene IN [gene1, gene2]\n      AND manual.agent_type = 'manual_agent'\n  }\n  AND EXISTS {\n    MATCH (subject)-[automated:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n          (automated_gene)\n    WHERE automated_gene IN [gene1, gene2]\n      AND automated.agent_type = 'automated_agent'\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 13,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.07692307692307693,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018139602379915832,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.603724249987863
+    },
+    {
+      "id": "TREAT-I09-R143",
+      "name": "Per-target manual and automated provenance consensus",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R142",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The strongest dual-target provenance topology requires each causal target independently to have both manual and automated binding evidence.",
+      "body": "R141 with manual-agent and automated-agent binding evidence for each target separately",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Every molecular and genetic arm of the two-target module has independent provenance classes, yielding a highly corroborated mechanism despite missing disease-direction evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological paths are TRAPI-expressible; four agent-type existence checks, provenance, cardinality, compactness, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[evidence1:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[evidence2:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND process._miner_gene_member_degree <= 100\n  AND evidence1._miner_non_semmed_primary_source_count >= 1\n  AND evidence2._miner_non_semmed_primary_source_count >= 1\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND EXISTS {\n    MATCH (subject)-[manual1:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1)\n    WHERE manual1.agent_type = 'manual_agent'\n  }\n  AND EXISTS {\n    MATCH (subject)-[automated1:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1)\n    WHERE automated1.agent_type = 'automated_agent'\n  }\n  AND EXISTS {\n    MATCH (subject)-[manual2:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2)\n    WHERE manual2.agent_type = 'manual_agent'\n  }\n  AND EXISTS {\n    MATCH (subject)-[automated2:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2)\n    WHERE automated2.agent_type = 'automated_agent'\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 6,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 6
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.5903927920153365
+    }
+  ]
+}

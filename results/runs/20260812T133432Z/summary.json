@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T13:34:32.654498+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R220",
+      "name": "Dual-arm positive-feedback GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R200",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can robustly break a GOF positive-feedback loop when it directly decreases both the upstream target and disease driver.",
+      "body": "R200 plus direct binding and decreased activity/abundance of the GOF driver",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two direct drug effects suppress both arms of a reciprocal activating loop around an explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The dual target and loop paths are TRAPI-expressible; repeated drug identity, reciprocal endpoints, SIGNOR source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver)\nMATCH (subject)-[driver_effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'upregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND driver_effect.qualified_predicate = 'biolink:causes'\n  AND driver_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND driver_effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 88,
+        "validation_hits": 0,
+        "training_hits": 7,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 81
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.07954545454545454,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.0012561010623026126,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9794941250002012
+    },
+    {
+      "id": "TREAT-I09-R221",
+      "name": "Localized dual-arm positive-feedback GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R220",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-arm GOF feedback suppression is most credible when both loop genes share a compact process and affected anatomy.",
+      "body": "R220 plus shared compact process and Bgee expression in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The drug suppresses both arms of the positive loop, and the complete module is localized by process and affected tissue.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; repeated drug identity, shared process/anatomy, Bgee provenance, source, and variant form require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[forward:REGULATES]->(driver:Gene)\nMATCH (driver)-[back:REGULATES]->(target)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(driver)\nMATCH (subject)-[driver_effect:AFFECTS]->(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE target <> driver\n  AND 'infores:signor' IN coalesce(forward.primary_knowledge_sources, [])\n  AND 'infores:signor' IN coalesce(back.primary_knowledge_sources, [])\n  AND forward.qualified_predicate = 'biolink:causes'\n  AND back.qualified_predicate = 'biolink:causes'\n  AND forward.object_direction_qualifier = 'upregulated'\n  AND back.object_direction_qualifier = forward.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND driver_effect.qualified_predicate = 'biolink:causes'\n  AND driver_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND driver_effect.object_direction_qualifier = 'decreased'\n  AND EXISTS {\n  MATCH (target)-[:INVOLVED_IN]->(process:BiologicalProcess)\n        <-[:INVOLVED_IN]-(driver)\n  WHERE process._miner_gene_member_degree <= 100\n}\n  AND EXISTS {\n  MATCH (target)-[target_expression:EXPRESSED_IN]->\n        (anatomy:AnatomicalEntity)\n        <-[driver_expression:EXPRESSED_IN]-(driver)\n  MATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\n  WHERE 'infores:bgee' IN\n        coalesce(target_expression.primary_knowledge_sources, [])\n    AND 'infores:bgee' IN\n        coalesce(driver_expression.primary_knowledge_sources, [])\n}\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 17,
+        "validation_hits": 0,
+        "training_hits": 6,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.35294117647058826,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0010877447425670778,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 22.784684417012613
+    }
+  ]
+}

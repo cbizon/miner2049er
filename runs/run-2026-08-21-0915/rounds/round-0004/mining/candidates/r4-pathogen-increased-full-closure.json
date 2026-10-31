@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-pathogen-increased-full-closure",
+  "family_id": "pathogen-directed-disease-intervention",
+  "name": "Causal Organism Increased (Full Descendant Control)",
+  "status": "baseline",
+  "plain_language_rule": "Predict treatment when Chemical causally affects organism in the increased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.; The organism is asserted to cause the disease The pinned descendant closure is biolink:causes. No predicate descendants are excluded in this control. ",
+  "hypothesis": "Decreasing a disease-causing organism is compatible with anti-infective therapy, unlike unsigned association.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "organism",
+        "role": "Organism asserted to cause the disease",
+        "categories": [
+          "biolink:OrganismTaxon"
+        ],
+        "explanation": "Organism asserted to cause the disease."
+      }
+    ],
+    "edges": [
+      {
+        "id": "organism_effect",
+        "subject": "chemical",
+        "object": "organism",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects organism in the increased direction for activity, activity_or_abundance The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. No predicate descendants are excluded in this control.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes",
+          "object_direction_qualifier": "increased",
+          "object_aspect_qualifier": [
+            "activity",
+            "activity_or_abundance"
+          ]
+        }
+      },
+      {
+        "id": "infection",
+        "subject": "organism",
+        "object": "disease",
+        "predicates": [
+          "biolink:causes"
+        ],
+        "direction": "forward",
+        "explanation": "The organism is asserted to cause the disease The pinned descendant closure is biolink:causes. No predicate descendants are excluded in this control."
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Decreasing a disease-causing organism is compatible with anti-infective therapy, unlike unsigned association. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[organism_effect:{{relationship_types:organism_effect}}]->(organism:OrganismTaxon) WHERE organism_effect.predicate IN {{predicates:organism_effect}} AND organism_effect.qualified_predicate = \"biolink:causes\" AND organism_effect.object_direction_qualifier = \"increased\" AND organism_effect.object_aspect_qualifier IN [\"activity\",\"activity_or_abundance\"] MATCH (organism:OrganismTaxon)-[infection:{{relationship_types:infection}}]->(disease:Disease) WHERE infection.predicate IN {{predicates:infection}} RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT organism) AS support_count",
+    "trapi": {
+      "expressibility": "full",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "organism": {
+                "categories": [
+                  "biolink:OrganismTaxon"
+                ]
+              }
+            },
+            "edges": {
+              "organism_effect": {
+                "subject": "chemical",
+                "object": "organism",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity"
+                      }
+                    ]
+                  },
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_direction_qualifier",
+                        "qualifier_value": "increased"
+                      },
+                      {
+                        "qualifier_type_id": "biolink:object_aspect_qualifier",
+                        "qualifier_value": "activity_or_abundance"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "infection": {
+                "subject": "organism",
+                "object": "disease",
+                "predicates": [
+                  "biolink:causes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": ""
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation.",
+    "The full affects closure includes ameliorates_condition and is classified as treatment-using even if no such edge satisfies the other constraints in this graph."
+  ],
+  "parent_rule_id": "r4-pathogen-increased"
+}

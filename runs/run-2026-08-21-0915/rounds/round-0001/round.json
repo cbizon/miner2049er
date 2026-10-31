@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915",
+  "round_id": "round-0001",
+  "round_number": 1,
+  "parent_round_id": null,
+  "status": "completed",
+  "started_at": "2026-08-20T19:33:15.055647+00:00",
+  "deadline": "2026-08-21T09:15:00-04:00",
+  "completed_at": "2026-08-21T13:21:37.420099+00:00",
+  "instruction_path": "rounds/round-0001/instructions.md",
+  "instruction_sha256": "b3584919576d27cf42f58ef4dfa36edf1d5236db5748560fe754d8edf7f225be",
+  "agent_prompt_path": "rounds/round-0001/agent-prompt.md",
+  "agent_prompt_sha256": "1f9e63ef5a7eb4f5865b9fc0b6282cb5cb237d0f22b79f1164526a41d18dd505",
+  "starting_artifacts": {
+    "neo4j_artifacts": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rules": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictions": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "research_log": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evaluations": {
+      "records": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "ending_artifacts": {
+    "neo4j_artifacts": {
+      "records": 2,
+      "bytes": 10466,
+      "sha256": "aa4e860137318b686727a76663bf6d90721ce7824b72edc8db6add5a0fb0b781"
+    },
+    "rules": {
+      "records": 32,
+      "bytes": 160886,
+      "sha256": "81d872c1a63dd9845db32c9cf2fea9260acc14ea6ec51982d7048c983bd13078"
+    },
+    "predictions": {
+      "records": 778471,
+      "bytes": 238625927,
+      "sha256": "dad1075b8079cdddb8c654d997ed1980018ba76f6f35c40a23e22ca25dd10ec0"
+    },
+    "research_log": {
+      "records": 55,
+      "bytes": 92804,
+      "sha256": "960e16dafd46039ce6dff089f7bf1e327f8b9137f7ba6df38d90e089a249166b"
+    },
+    "evaluations": {
+      "records": 29,
+      "bytes": 15841,
+      "sha256": "5f63a0d96ad7fe0f0474c2769e075386a93319d4ec166e5f810423c8a981aa9e"
+    }
+  }
+}

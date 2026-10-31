@@ -1,0 +1,403 @@
+{
+  "created_at": "2026-08-10T12:29:41.167367+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I01-R001",
+      "name": "Affected disease-associated gene baseline",
+      "iteration": 1,
+      "parent_rule": null,
+      "library_status": "baseline",
+      "status": "completed",
+      "hypothesis": "A chemical that affects a gene associated with a disease may treat that disease.",
+      "body": "chemical -affects-> gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Connects a chemical to a disease-linked gene, but does not require a therapeutically corrective direction or corroborating mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A two-edge TRAPI query can express the graph pattern; edge-property refinements would require constraints.",
+      "counts": {
+        "candidate_pairs": 799762,
+        "validation_hits": 181,
+        "training_hits": 1799,
+        "contraindicated_pairs": 1823,
+        "unresolved_or_blind_pairs": 797782
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0024757365316181563,
+        "visible_target_recall": 0.07196859552195406,
+        "visible_target_f0_5": 0.003068283249033026,
+        "validation_precision_lower_bound": 0.00022682755967381947,
+        "validation_recall": 0.07698851552530837,
+        "validation_f0_5": 0.0002833257623263143
+      },
+      "runtime_seconds": 25.84796116600046
+    },
+    {
+      "id": "TREAT-I01-R002",
+      "name": "Direct target with disease-gene association baseline",
+      "iteration": 1,
+      "parent_rule": null,
+      "library_status": "baseline",
+      "status": "completed",
+      "hypothesis": "A chemical that directly physically interacts with a disease-associated gene may treat the disease.",
+      "body": "chemical -directly_physically_interacts_with-> gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Direct molecular interaction is stronger than generic affects, but the rule lacks direction, functional consequence, and pathway corroboration.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "The two-edge path is directly expressible in TRAPI.",
+      "counts": {
+        "candidate_pairs": 2372676,
+        "validation_hits": 38,
+        "training_hits": 621,
+        "contraindicated_pairs": 561,
+        "unresolved_or_blind_pairs": 2372017
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00027774546545756776,
+        "visible_target_recall": 0.023953184065135212,
+        "visible_target_f0_5": 0.0003461783174494044,
+        "validation_precision_lower_bound": 1.6019864632143857e-05,
+        "validation_recall": 0.016163334751169715,
+        "validation_f0_5": 2.0019870248059886e-05
+      },
+      "runtime_seconds": 30.951173625013325
+    },
+    {
+      "id": "TREAT-I02-R006",
+      "name": "Selective inhibition of a causal disease gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R001",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it selectively decreases the activity or abundance of a gene asserted to cause the disease.",
+      "body": "chemical -affects[causes, activity_or_abundance, decreased]-> causal gene -causes-> disease; chemical qualified gene degree <=50",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The chemical perturbation direction opposes a causal disease gene, and the degree constraint removes broad perturbagens.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The path and edge qualifiers are TRAPI-expressible; the chemical degree constraint requires Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 170439,
+        "validation_hits": 38,
+        "training_hits": 429,
+        "contraindicated_pairs": 552,
+        "unresolved_or_blind_pairs": 169972
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0027399832198029793,
+        "visible_target_recall": 0.016974411166036638,
+        "visible_target_f0_5": 0.003292126530451113,
+        "validation_precision_lower_bound": 0.00022351626374919124,
+        "validation_recall": 0.016163334751169715,
+        "validation_f0_5": 0.0002784327460356306
+      },
+      "runtime_seconds": 5.498424291028641
+    },
+    {
+      "id": "TREAT-I02-R007",
+      "name": "Multi-gene inhibition within a disease-supported process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R003",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A selective chemical may treat a disease when it decreases multiple disease-associated genes participating in the same bounded-size biological process.",
+      "body": "disease has 3-20 associated genes in a process; chemical decreases activity_or_abundance of >=2 of those genes; chemical qualified gene degree <=100",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Requires directional perturbation of multiple disease genes in a coherent process and explicitly suppresses chemical and process hubs.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 50623,
+        "validation_hits": 23,
+        "training_hits": 435,
+        "contraindicated_pairs": 466,
+        "unresolved_or_blind_pairs": 50165
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.009047271003298895,
+        "visible_target_recall": 0.016647281186391392,
+        "visible_target_f0_5": 0.009956348585241996,
+        "validation_precision_lower_bound": 0.0004582768789352036,
+        "validation_recall": 0.009783071033602722,
+        "validation_f0_5": 0.000566215171612433
+      },
+      "runtime_seconds": 14.325852125009988
+    },
+    {
+      "id": "TREAT-I02-R009",
+      "name": "Normalized phenotype indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when at least half of the smaller disease phenotype profile is shared and both profiles are bounded.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=3 phenotypes; shared/min(phenotype degrees) >=0.5; each phenotype degree 3-50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Phenotypic similarity supports indication transfer but does not identify the drug mechanism responsible for efficacy.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 15562,
+        "validation_hits": 0,
+        "training_hits": 211,
+        "contraindicated_pairs": 4,
+        "unresolved_or_blind_pairs": 15351
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013558668551600052,
+        "visible_target_recall": 0.007669380633905205,
+        "visible_target_f0_5": 0.011753565062388591,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 10.080775332986377
+    },
+    {
+      "id": "TREAT-I02-R010",
+      "name": "Normalized genetic indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when the diseases share multiple associated genes and at least half of the smaller gene profile.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=2 associated genes; shared/min(gene degrees) >=0.5; each gene degree 2-100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Genetic similarity provides a disease-mechanism bridge, but efficacy is still transferred from an existing indication.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 46,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 44
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.043478260869565216,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036106296938186015,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.14321175002260134
+    },
+    {
+      "id": "TREAT-I02-R011",
+      "name": "Clinical-trial evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical tested in clinical trials for a disease is enriched for exact treats assertions.",
+      "body": "chemical -in_clinical_trials_for-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is direct treatment-development evidence rather than an explanatory biological mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 310701,
+        "validation_hits": 208,
+        "training_hits": 11972,
+        "contraindicated_pairs": 852,
+        "unresolved_or_blind_pairs": 298521
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.039201676209603444,
+        "visible_target_recall": 0.4427159057865659,
+        "visible_target_f0_5": 0.04794082732170578,
+        "validation_precision_lower_bound": 0.0006962832533835015,
+        "validation_recall": 0.08847299021692896,
+        "validation_f0_5": 0.0008686450056670734
+      },
+      "runtime_seconds": 6.050702208012808
+    },
+    {
+      "id": "TREAT-I02-R012",
+      "name": "Studied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical studied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -studied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The rule restates treatment study evidence and does not explain efficacy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 1308,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 1291
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012996941896024464,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0025958954312240413,
+        "validation_precision_lower_bound": 0.0007739938080495357,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0006649820454847719
+      },
+      "runtime_seconds": 0.025698208017274737
+    },
+    {
+      "id": "TREAT-I02-R013",
+      "name": "Applied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical applied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -applied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is treatment-use evidence rather than a mechanistic explanation.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 55583,
+        "validation_hits": 65,
+        "training_hits": 6499,
+        "contraindicated_pairs": 1275,
+        "unresolved_or_blind_pairs": 49019
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11809366173110483,
+        "visible_target_recall": 0.23858679848793254,
+        "visible_target_f0_5": 0.13136196986919835,
+        "validation_precision_lower_bound": 0.0013242604514709477,
+        "validation_recall": 0.027647809442790303,
+        "validation_f0_5": 0.001635738624067
+      },
+      "runtime_seconds": 1.1613570000045002
+    },
+    {
+      "id": "TREAT-I02-R015",
+      "name": "Direct binding plus inhibition of a causal gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R006",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it both directly binds and decreases the activity or abundance of a causal disease gene.",
+      "body": "chemical -directly_physically_interacts_with-> causal gene -causes-> disease; same chemical -affects[causes, activity_or_abundance, decreased]-> same gene; qualified gene degree <=50",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Requires target engagement, a directionally corrective perturbation, and a causal disease link on the same gene.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The parallel-edge motif and qualifiers are TRAPI-expressible; the degree constraint requires Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 2134,
+        "validation_hits": 5,
+        "training_hits": 35,
+        "contraindicated_pairs": 19,
+        "unresolved_or_blind_pairs": 2094
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.01874414245548266,
+        "visible_target_recall": 0.0014539110206455365,
+        "visible_target_f0_5": 0.005548158011540168,
+        "validation_precision_lower_bound": 0.0023820867079561697,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.0023262305759746906
+      },
+      "runtime_seconds": 0.1967773750075139
+    },
+    {
+      "id": "TREAT-I02-R016",
+      "name": "Tight multi-gene inhibition in a compact disease process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R007",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when a selective chemical decreases at least three disease-associated genes in a compact process.",
+      "body": "disease has 3-10 associated genes in a process; chemical decreases activity_or_abundance of >=3; chemical qualified gene degree <=50",
+      "mechanism_score": "high",
+      "mechanism_rationale": "This is a stricter, hub-resistant form of multi-target pathway correction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "counts": {
+        "candidate_pairs": 17246,
+        "validation_hits": 8,
+        "training_hits": 159,
+        "contraindicated_pairs": 177,
+        "unresolved_or_blind_pairs": 17079
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00968340484750087,
+        "visible_target_recall": 0.0060700785111951145,
+        "visible_target_f0_5": 0.008653208423147074,
+        "validation_precision_lower_bound": 0.0004681921928951835,
+        "validation_recall": 0.0034028073160357296,
+        "validation_f0_5": 0.0005657788653304856
+      },
+      "runtime_seconds": 10.199778750014957
+    }
+  ]
+}

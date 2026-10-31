@@ -1,0 +1,425 @@
+{
+  "created_at": "2026-08-12T01:24:39.866977+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R106",
+      "name": "Disease-anchored compact dual-target module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R095",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-target convergence is more credible when the shared compact process is independently associated with the disease.",
+      "body": "R095 plus disease genetic association to the same compact process",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule establishes two inhibited causal targets in a disease-anchored molecular module, but disease-driving activity direction remains absent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; two-target cardinality, shared-node identity, and process degree require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nMATCH (object)-[:GENETIC_ASSOCIATION]-(process)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 7,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.46065045800060034
+    },
+    {
+      "id": "TREAT-I09-R107",
+      "name": "Ontology-specific interacting dual-target module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R096",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Removing broad ontology hubs will preserve the predictive interacting dual-target mechanism while eliminating non-actionable disease-class outputs.",
+      "body": "R096 restricted to MONDO diseases with <=500 direct descendants and at least one parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule retains convergent perturbation of an interacting causal pair and adds a graph-structural disease-specificity constraint.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph motif is TRAPI-expressible; two-target cardinality and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(gene2)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 18,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 16
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.1111111111111111,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036252900232018565,
+        "validation_precision_lower_bound": 0.058823529411764705,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020669698222405956
+      },
+      "runtime_seconds": 0.32244016701588407
+    },
+    {
+      "id": "TREAT-I09-R108",
+      "name": "Ontology-specific signed tissue pathway propagation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R098",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Signed regulatory propagation becomes more useful when broad disease ontology hubs are excluded.",
+      "body": "R098 restricted to MONDO diseases with <=500 direct descendants and at least one parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines corrective signed propagation, pathway and tissue context, causal genetics, and disease specificity; disease-driver activity direction is still incomplete.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The signed positive motif is TRAPI-expressible; shared tissue, compactness, provenance, and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[regulation:REGULATES]->(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)\nMATCH (target)-[target_expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (driver)-[driver_expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND 'infores:bgee' IN coalesce(target_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(driver_expression.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 372,
+        "validation_hits": 3,
+        "training_hits": 18,
+        "contraindicated_pairs": 7,
+        "unresolved_or_blind_pairs": 351
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.056451612903225805,
+        "visible_target_recall": 0.0007633032858389067,
+        "visible_target_f0_5": 0.003620689655172414,
+        "validation_precision_lower_bound": 0.00847457627118644,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.003981948500132731
+      },
+      "runtime_seconds": 2.8368855830049142
+    },
+    {
+      "id": "TREAT-I09-R109",
+      "name": "Top-driver ontology-specific signed propagation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R108",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Signed tissue propagation should be more predictive when the downstream driver is among the three strongest graph-supported causal genes for the disease.",
+      "body": "R108 with downstream causal driver disease rank <=3",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule keeps the signed tissue-pathway mechanism and prioritizes disease-relative driver relevance; the rank is evidence prioritization rather than activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The signed motif is TRAPI-expressible; rank, shared tissue, provenance, and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[regulation:REGULATES]->(driver:Gene)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)\nMATCH (target)-[target_expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (driver)-[driver_expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND evidence._miner_disease_rank <= 3\n  AND 'infores:bgee' IN coalesce(target_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(driver_expression.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 264,
+        "validation_hits": 3,
+        "training_hits": 11,
+        "contraindicated_pairs": 6,
+        "unresolved_or_blind_pairs": 250
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.05303030303030303,
+        "visible_target_recall": 0.0005088688572259378,
+        "visible_target_f0_5": 0.002450294035284234,
+        "validation_precision_lower_bound": 0.011857707509881422,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0044603033006244425
+      },
+      "runtime_seconds": 1.3320186670171097
+    },
+    {
+      "id": "TREAT-I09-R110",
+      "name": "Ontology-specific independent provenance architecture",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R100",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Independent molecular and genetic provenance should become more actionable after excluding broad disease ontology hubs.",
+      "body": "R100 restricted to MONDO diseases with <=500 direct descendants and at least one parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines a direct causal-target mechanism, independent evidence channels, and disease specificity, but lacks disease activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive causal-target motif is TRAPI-expressible; source-union cardinality, derived evidence, and ontology-degree constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, evidence, collect(DISTINCT binding) AS bindings\nWITH subject, object, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 3\n  AND evidence._miner_non_semmed_primary_source_count >= 1\n  AND evidence._miner_direct_relation_type_count >= 3\n  AND evidence._miner_causal_publication_count >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 186,
+        "validation_hits": 1,
+        "training_hits": 39,
+        "contraindicated_pairs": 8,
+        "unresolved_or_blind_pairs": 146
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.21505376344086022,
+        "visible_target_recall": 0.0014539110206455365,
+        "visible_target_f0_5": 0.007078142695356738,
+        "validation_precision_lower_bound": 0.006802721088435374,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0017012589316093912
+      },
+      "runtime_seconds": 0.4013490829966031
+    },
+    {
+      "id": "TREAT-I09-R111",
+      "name": "Ontology-specific direct-lineage indication transfer",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R104",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Bounded indication transfer should improve when the predicted disease is specific even if the treated anchor is broad.",
+      "body": "R104 with candidate disease <=500 direct descendants and at least one parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule transfers a target mechanism only to ontology-specific candidate diseases, but a broad treated anchor can still overgeneralize.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; source exclusion, bidirectional lineage, and ontology-degree constraints require Cypher or post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(anchor)\nMATCH (gene)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE object <> anchor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND (\n    EXISTS {\n      MATCH (anchor)-[:SUBCLASS_OF*1..2]->(object)\n    }\n    OR EXISTS {\n      MATCH (object)-[:SUBCLASS_OF*1..2]->(anchor)\n    }\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 131,
+        "validation_hits": 1,
+        "training_hits": 52,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 78
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.40458015267175573,
+        "visible_target_recall": 0.0019264321023553359,
+        "visible_target_f0_5": 0.009452132971893281,
+        "validation_precision_lower_bound": 0.012658227848101266,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0018747656542932136
+      },
+      "runtime_seconds": 7.138591625029221
+    },
+    {
+      "id": "TREAT-I09-R112",
+      "name": "Disease-anchored interacting dual-target module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R106",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The highest-confidence multi-target module requires two interacting causal targets in the same compact process that is independently associated with the disease.",
+      "body": "R106 plus direct physical interaction between the two inhibited causal genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule triangulates two targets with interaction, pathway, and disease association, but still lacks disease-driving activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; two-target cardinality, process identity, and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(gene2)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nMATCH (object)-[:GENETIC_ASSOCIATION]-(process)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND process._miner_gene_member_degree <= 100\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.8471503329928964
+    },
+    {
+      "id": "TREAT-I09-R113",
+      "name": "Anatomy-localized dual-target causal module",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R095",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A dual-target causal module is more credible when both inhibited genes are expressed in the same specific disease anatomy.",
+      "body": "two directly inhibited causal genes share a compact process and Bgee expression in one disease anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines multi-target convergence, pathway coherence, and tissue colocalization, but lacks disease-driving activity direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; cardinality, shared anatomy identity, provenance, and degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (gene1)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(gene2)\nMATCH (gene1)-[expression1:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (gene2)-[expression2:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE gene1.id < gene2.id\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression1.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(expression2.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 30,
+        "validation_hits": 2,
+        "training_hits": 5,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 23
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.23333333333333334,
+        "visible_target_recall": 0.0002544344286129689,
+        "visible_target_f0_5": 0.00126664736537348,
+        "validation_precision_lower_bound": 0.08,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004079967360261118
+      },
+      "runtime_seconds": 3.9896322500426322
+    },
+    {
+      "id": "TREAT-I09-R114",
+      "name": "Contradiction-gated signed tissue propagation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R108",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Explicit adverse and opposite-direction evidence can remove false positives from the ontology-specific signed propagation mechanism.",
+      "body": "R108 excluding direct adverse disease edges, shared side-effect phenotypes, and opposite target-increase assertions",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The positive signed tissue-pathway mechanism is retained while graph-native contradictions are used as exclusion evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; NOT EXISTS gates, shared tissue, and derived constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[regulation:REGULATES]->(driver:Gene)\nMATCH (driver)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)\nMATCH (target)-[target_expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (driver)-[driver_expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND 'infores:bgee' IN coalesce(target_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(driver_expression.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT]->(:PhenotypicFeature)\n          <-[:HAS_PHENOTYPE]-(object)\n  }\n  AND NOT EXISTS {\n    MATCH (subject)-[opposite:AFFECTS]->(target)\n    WHERE opposite.qualified_predicate = 'biolink:causes'\n      AND opposite.object_aspect_qualifier = 'activity_or_abundance'\n      AND opposite.object_direction_qualifier = 'increased'\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 317,
+        "validation_hits": 3,
+        "training_hits": 10,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 304
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.04100946372239748,
+        "visible_target_recall": 0.00047252108170979935,
+        "visible_target_f0_5": 0.002258512856150104,
+        "validation_precision_lower_bound": 0.009771986970684038,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004191114836546521
+      },
+      "runtime_seconds": 161.09555933298543
+    },
+    {
+      "id": "TREAT-I09-R115",
+      "name": "Cross-channel provenance, pathway, and anatomy consensus",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R110",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Independent molecular and genetic provenance is most predictive when the same target also has disease-process and disease-anatomy support.",
+      "body": "R110 plus direct disease-process support and at least one Bgee disease anatomy",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines independent provenance with pathway and tissue concordance around a direct causal target, but disease activity direction remains missing.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph paths are TRAPI-expressible; source cardinality, derived evidence, and ontology constraints require Cypher.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_direct_process_count > 0\n  AND evidence._miner_bgee_anatomy_count >= 1\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, evidence, collect(DISTINCT binding) AS bindings\nWITH subject, object, evidence,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 3\n  AND evidence._miner_non_semmed_primary_source_count >= 1\n  AND evidence._miner_direct_relation_type_count >= 3\n  AND evidence._miner_causal_publication_count >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018165964249382356,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.09842925000702962
+    },
+    {
+      "id": "TREAT-I09-R116",
+      "name": "Disease-anchored signed tissue propagation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R108",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Signed propagation is more credible when the shared target-driver process is independently associated with the disease.",
+      "body": "R108 plus disease genetic association to the same target-driver process",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule integrates signed propagation, a disease-anchored pathway, tissue colocalization, causal genetics, and disease specificity; driver activity direction remains incomplete.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; shared process and anatomy identity, provenance, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[regulation:REGULATES]->(driver:Gene)\nMATCH (driver)-[:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (target)-[:INVOLVED_IN]->(process)<-[:INVOLVED_IN]-(driver)\nMATCH (object)-[:GENETIC_ASSOCIATION]-(process)\nMATCH (target)-[target_expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (driver)-[driver_expression:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND 'infores:bgee' IN coalesce(target_expression.primary_knowledge_sources, [])\n  AND 'infores:bgee' IN coalesce(driver_expression.primary_knowledge_sources, [])\n  AND process._miner_gene_member_degree <= 100\n  AND anatomy._miner_disease_location_degree <= 50\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 9,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 8
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.1111111111111111,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018150137941048354,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6534362909733318
+    }
+  ]
+}

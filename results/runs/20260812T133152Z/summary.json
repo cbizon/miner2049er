@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T13:31:52.751529+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R207",
+      "name": "Interacting dual-upstream GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R206",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-upstream GOF suppression is more credible when the two drug targets physically interact.",
+      "body": "R206 plus direct physical interaction between the two upstream targets",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Interaction connects the two corrective target arms into a molecular module around the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target ordering, cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(target2)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'upregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 68,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 64
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.058823529411764705,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007198387561186294,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 11.632766208029352
+    },
+    {
+      "id": "TREAT-I09-R210",
+      "name": "Interacting dual-upstream LOF release",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R209",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Dual-upstream LOF release is more credible when the two drug targets physically interact.",
+      "body": "R209 plus direct physical interaction between the two upstream targets",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Interaction connects the two restorative target arms into a molecular module around the LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; target ordering, cardinality, source, variant form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(target1)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(target2)\nMATCH (target1)-[regulation1:REGULATES]->(driver:Gene)\n      <-[regulation2:REGULATES]-(target2)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (target1)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(target2)\nWHERE target1.id < target2.id\n  AND target1 <> driver\n  AND target2 <> driver\n  AND 'infores:signor' IN\n      coalesce(regulation1.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(regulation2.primary_knowledge_sources, [])\n  AND regulation1.qualified_predicate = 'biolink:causes'\n  AND regulation2.qualified_predicate = 'biolink:causes'\n  AND regulation1.object_direction_qualifier = 'downregulated'\n  AND regulation2.object_direction_qualifier =\n      regulation1.object_direction_qualifier\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 28,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 28
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.8695642499951646
+    }
+  ]
+}

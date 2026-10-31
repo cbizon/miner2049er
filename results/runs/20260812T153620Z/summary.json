@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T15:36:20.809442+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R289",
+      "name": "Phenotype treatment plus causal-target inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can treat a disease when it treats one of the disease's phenotypes and independently inhibits a top-ranked causal gene.",
+      "body": "drug treats disease phenotype from non-DRH/non-TTD source; drug binds and decreases top-three causal disease gene",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines symptomatic therapeutic evidence with an independent disease-directed molecular mechanism, but phenotype treatment may not modify the underlying disease.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The phenotype-treatment, disease-phenotype, target, and causal-gene paths are TRAPI-expressible; source exclusion, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[symptom_treatment:TREATS]->\n      (phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE none(\n    source IN coalesce(symptom_treatment.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 22,
+        "validation_hits": 0,
+        "training_hits": 5,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 17
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.22727272727272727,
+        "visible_target_recall": 0.00018173887758069206,
+        "visible_target_f0_5": 0.0009057971014492753,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.4993078749976121
+    },
+    {
+      "id": "TREAT-I09-R290",
+      "name": "Specific-phenotype treatment plus causal-target inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R289",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Phenotype-level therapeutic decomposition is more predictive when the treated phenotype occurs in no more than the graph p90 of 34 diseases.",
+      "body": "R289 plus treated phenotype disease-member degree at most 34",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The disease-degree constraint reduces generic symptom transfer while preserving the independent causal-target arm.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same path expressibility as R289; phenotype-degree, source, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[symptom_treatment:TREATS]->\n      (phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE none(\n    source IN coalesce(symptom_treatment.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND phenotype._miner_disease_member_degree <= 34\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 13,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3076923076923077,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007255840951966333,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.4547770409844816
+    }
+  ]
+}

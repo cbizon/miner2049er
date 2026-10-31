@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "run_id": "run-2026-08-21-0915-sonnet-low",
+  "round_id": "round-0001",
+  "model": "sonnet",
+  "model_provider": "anthropic",
+  "reasoning_effort": "low"
+}

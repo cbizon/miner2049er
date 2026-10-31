@@ -1,0 +1,227 @@
+{
+  "created_at": "2026-08-11T13:03:45.471137+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I07-R059",
+      "name": "Dual translational assertion causal-target mechanism",
+      "iteration": 7,
+      "parent_rule": "TREAT-I05-R030",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-target prediction supported independently by both clinical-trial and applied-treatment assertions should form a high-precision discovery rule while retaining an unlabeled prediction.",
+      "body": "R030 plus applied_to_treat for the same drug-disease pair",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines directional target perturbation and causal disease genetics with two distinct treatment-oriented assertions, but those assertions are not independent of therapeutic knowledge and disease activity direction remains absent.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The causal-target, clinical-trial, and applied-treatment motifs are TRAPI-expressible; provenance, evidence rescue, degree, ontology, and negative-existence constraints require Cypher or post-processing.",
+      "trapi_template": "trapi/clinical-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nMATCH (subject)-[:APPLIED_TO_TREAT]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 3\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n    )\n  )\n  AND 'infores:multiomics-clinicaltrials'\n      IN coalesce(trial.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 14,
+        "validation_hits": 1,
+        "training_hits": 12,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.9285714285714286,
+        "visible_target_recall": 0.00047252108170979935,
+        "visible_target_f0_5": 0.0023578061520603596,
+        "validation_precision_lower_bound": 0.5,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021195421788893602
+      },
+      "runtime_seconds": 0.42339824995724484
+    },
+    {
+      "id": "TREAT-I07-R060",
+      "name": "Applied-treatment clinical-or-anatomy rescue, selective",
+      "iteration": 7,
+      "parent_rule": "TREAT-I03-R023",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An applied-treatment assertion is more predictive when a selective drug also has either independent clinical-trial support or repeated Bgee and disease-anatomy concordance.",
+      "body": "R023 with qualified target degree <=32 and either multiomics clinical-trial evidence or >=3 shared Bgee disease anatomies",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses a direct causal-target mechanism, selective perturbation, and either independent translational evidence or repeated anatomical concordance; the applied-treatment edge remains treatment-oriented and disease activity direction is missing.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive causal-target, applied-treatment, clinical, and anatomy motifs are separately TRAPI-expressible; the OR branch, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher.",
+      "trapi_template": "trapi/tissue-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[:APPLIED_TO_TREAT]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 32\n  AND (\n    evidence._miner_bgee_anatomy_count >= 3\n    OR EXISTS {\n      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n      WHERE 'infores:multiomics-clinicaltrials'\n            IN coalesce(trial.primary_knowledge_sources, [])\n    }\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 18,
+        "validation_hits": 1,
+        "training_hits": 15,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.8888888888888888,
+        "visible_target_recall": 0.0005815644082582146,
+        "visible_target_f0_5": 0.0029002320185614852,
+        "validation_precision_lower_bound": 0.3333333333333333,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021159542953872196
+      },
+      "runtime_seconds": 0.39709916699212044
+    },
+    {
+      "id": "TREAT-I07-R061",
+      "name": "Applied-treatment clinical-or-anatomy rescue, broad",
+      "iteration": 7,
+      "parent_rule": "TREAT-I07-R060",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Relaxing the selective drug threshold from 32 to 44 qualified targets should add one visible target while remaining on the high-precision frontier.",
+      "body": "R060 with qualified target degree <=44",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains the direct target, applied-treatment, and clinical-or-anatomy evidence branches at a broader target-selectivity point, but still depends on treatment-oriented evidence and lacks disease activity direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motifs are separately TRAPI-expressible; the OR branch, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher.",
+      "trapi_template": "trapi/tissue-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[:APPLIED_TO_TREAT]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 44\n  AND (\n    evidence._miner_bgee_anatomy_count >= 3\n    OR EXISTS {\n      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n      WHERE 'infores:multiomics-clinicaltrials'\n            IN coalesce(trial.primary_knowledge_sources, [])\n    }\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 20,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.85,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0030806030733545957,
+        "validation_precision_lower_bound": 0.25,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0021123785382340518
+      },
+      "runtime_seconds": 0.33493870799429715
+    },
+    {
+      "id": "TREAT-I07-R062",
+      "name": "Anatomy-supported translational evidence union, selective",
+      "iteration": 7,
+      "parent_rule": "TREAT-I07-R060",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Repeated anatomical concordance can support a causal-target prediction when either applied-treatment or independent clinical-trial evidence is present, increasing recall without returning to the broad evidence-only rules.",
+      "body": "causal-target mechanism with >=3 shared Bgee disease anatomies, qualified target degree <=30, and applied_to_treat OR multiomics clinical-trial evidence",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Requires repeated graph-internal anatomical concordance around the causal target and at least one translational evidence branch, but the evidence disjunction remains treatment-oriented and disease activity direction is unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Each positive branch is TRAPI-expressible separately; the evidence OR, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher.",
+      "trapi_template": "trapi/tissue-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 30\n  AND evidence._miner_bgee_anatomy_count >= 3\n  AND (\n    EXISTS {\n      MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n    }\n    OR EXISTS {\n      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n      WHERE 'infores:multiomics-clinicaltrials'\n            IN coalesce(trial.primary_knowledge_sources, [])\n    }\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 28,
+        "validation_hits": 3,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6785714285714286,
+        "visible_target_recall": 0.0006906077348066298,
+        "visible_target_f0_5": 0.003439038517231393,
+        "validation_precision_lower_bound": 0.25,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006252605252188411
+      },
+      "runtime_seconds": 0.25562308402732015
+    },
+    {
+      "id": "TREAT-I07-R063",
+      "name": "Anatomy-supported translational evidence union, broad",
+      "iteration": 7,
+      "parent_rule": "TREAT-I07-R062",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Relaxing the target threshold from 30 to 45 should add one visible target and preserve a precision advantage over the older independent-clinical frontier.",
+      "body": "R062 with qualified target degree <=45",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains repeated anatomical concordance and either applied-treatment or clinical evidence at a broader target-selectivity point; treatment dependence and missing disease activity direction prevent a high mechanism score.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Each positive branch is TRAPI-expressible separately; the evidence OR, repeated-anatomy cardinality, degree, provenance, ontology, and negative constraints require Cypher.",
+      "trapi_template": "trapi/tissue-causal-target.json",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 45\n  AND evidence._miner_bgee_anatomy_count >= 3\n  AND (\n    EXISTS {\n      MATCH (subject)-[:APPLIED_TO_TREAT]->(object)\n    }\n    OR EXISTS {\n      MATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\n      WHERE 'infores:multiomics-clinicaltrials'\n            IN coalesce(trial.primary_knowledge_sources, [])\n    }\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 31,
+        "validation_hits": 3,
+        "training_hits": 17,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 11
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6451612903225806,
+        "visible_target_recall": 0.0007269555103227683,
+        "visible_target_f0_5": 0.0036184686640613694,
+        "validation_precision_lower_bound": 0.21428571428571427,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006231823847112589
+      },
+      "runtime_seconds": 0.12519008398521692
+    }
+  ]
+}

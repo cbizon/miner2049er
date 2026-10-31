@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-08-12T19:13:03.781062+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R413",
+      "name": "GeneticsKP disease-activity corroborated target inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Inhibition of a top-three disease gene is more credible when GOA says the gene enables a molecular activity independently associated with the disease by GeneticsKP.",
+      "body": "Drug decreases a top-three disease gene; GOA and GeneticsKP connect its enabled molecular activity to the disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule adds an independent disease-activity-to-target bridge, but the activity association is unsigned and may reflect broad molecular functions.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph motif is TRAPI-expressible; source constraints, disease-relative rank, source exclusion, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (activity:MolecularActivity)-[activity_evidence:GENETIC_ASSOCIATION]->\n      (object:Disease)\nMATCH (target:Gene)-[enables:ENABLES]->(activity)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:geneticskp' IN\n      coalesce(activity_evidence.primary_knowledge_sources, [])\n  AND 'infores:goa' IN coalesce(enables.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 75,
+        "validation_hits": 0,
+        "training_hits": 13,
+        "contraindicated_pairs": 3,
+        "unresolved_or_blind_pairs": 62
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.17333333333333334,
+        "visible_target_recall": 0.00047252108170979935,
+        "visible_target_f0_5": 0.0023371206673378398,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.26968162500998005
+    },
+    {
+      "id": "TREAT-I09-R414",
+      "name": "GeneticsKP disease-activity target activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the same activity-corroborated top-three disease genes is a matched direction control for R413.",
+      "body": "R413 graph architecture with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The activity evidence is unchanged while the intervention direction is reversed.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R413.",
+      "trapi_template": null,
+      "cypher": "MATCH (activity:MolecularActivity)-[activity_evidence:GENETIC_ASSOCIATION]->\n      (object:Disease)\nMATCH (target:Gene)-[enables:ENABLES]->(activity)\nMATCH (target)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE 'infores:geneticskp' IN\n      coalesce(activity_evidence.primary_knowledge_sources, [])\n  AND 'infores:goa' IN coalesce(enables.primary_knowledge_sources, [])\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 10,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.1,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018147502903600462,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.17042174999369308
+    }
+  ]
+}

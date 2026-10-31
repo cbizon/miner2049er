@@ -1,0 +1,136 @@
+{
+  "created_at": "2026-08-12T01:00:42.072554+00:00",
+  "probes": [
+    {
+      "name": "direct_context_coverage",
+      "started_at": "2026-08-12T01:00:42.072809+00:00",
+      "status": "completed",
+      "runtime_seconds": 0.6698833749978803,
+      "rows": [
+        {
+          "path_rows": 1998,
+          "candidate_pairs": 1790,
+          "direct_process_rows": 295,
+          "shared_causal_process_rows": 1408,
+          "dual_process_rows": 282,
+          "multi_anatomy_rows": 997,
+          "phenotype_anatomy_rows": 183,
+          "phenotype_process_rows": 0
+        }
+      ]
+    },
+    {
+      "name": "physical_propagation_coverage",
+      "started_at": "2026-08-12T01:00:42.743573+00:00",
+      "status": "completed",
+      "runtime_seconds": 14.506674207979813,
+      "rows": [
+        {
+          "path_rows": 26786,
+          "candidate_pairs": 10478,
+          "drugs": 501,
+          "diseases": 370,
+          "signor_rows": 26786,
+          "compact_process_rows": 8165,
+          "specific_anatomy_rows": 14128
+        }
+      ]
+    },
+    {
+      "name": "signed_propagation_coverage",
+      "started_at": "2026-08-12T01:00:57.251518+00:00",
+      "status": "completed",
+      "runtime_seconds": 6.383043917012401,
+      "rows": [
+        {
+          "path_rows": 15039,
+          "candidate_pairs": 6534,
+          "drugs": 385,
+          "diseases": 304,
+          "signor_rows": 15039,
+          "top_driver_rows": 8434,
+          "compact_process_rows": 3635
+        }
+      ]
+    },
+    {
+      "name": "multi_target_convergence_coverage",
+      "started_at": "2026-08-12T01:01:03.635365+00:00",
+      "status": "completed",
+      "runtime_seconds": 5.088124541041907,
+      "rows": [
+        {
+          "gene_pair_rows": 257,
+          "candidate_pairs": 173,
+          "drugs": 71,
+          "diseases": 29,
+          "compact_process_rows": 141,
+          "interacting_gene_rows": 43
+        }
+      ]
+    },
+    {
+      "name": "phenotype_representation_inventory",
+      "started_at": "2026-08-12T01:01:08.724120+00:00",
+      "status": "completed",
+      "runtime_seconds": 1.2801288329646923,
+      "rows": [
+        {
+          "branch": "disease_has_phenotype",
+          "edge_rows": 258699,
+          "subjects": 10704,
+          "objects": 11461,
+          "object_prefixes": [
+            "HP",
+            "MONDO"
+          ]
+        },
+        {
+          "branch": "gene_condition_disease",
+          "edge_rows": 36577,
+          "subjects": 12970,
+          "objects": 79,
+          "object_prefixes": [
+            "MONDO",
+            "EFO",
+            "UMLS"
+          ]
+        },
+        {
+          "branch": "gene_condition_phenotype",
+          "edge_rows": 160818,
+          "subjects": 16001,
+          "objects": 112,
+          "object_prefixes": [
+            "EFO",
+            "HP",
+            "NCIT",
+            "UMLS"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ontology_transfer_coverage",
+      "started_at": "2026-08-12T01:01:10.029320+00:00",
+      "status": "failed",
+      "error": "CypherSyntaxError: {code: Neo.ClientError.Statement.SyntaxError} {message: Invalid input 'WHEN': expected an expression, ')' or ',' (line 29, column 25 (offset: 1483))\n\"               sum(CASE WHEN EXISTS {\"\n                         ^}"
+    },
+    {
+      "name": "negative_evidence_coverage",
+      "started_at": "2026-08-12T01:01:10.030202+00:00",
+      "status": "completed",
+      "runtime_seconds": 0.8878019580151886,
+      "rows": [
+        {
+          "path_rows": 1998,
+          "candidate_pairs": 1790,
+          "direct_adverse_rows": 128,
+          "shared_adverse_phenotype_rows": 161,
+          "bidirectional_effect_rows": 162,
+          "ontology_hub_rows": 474
+        }
+      ]
+    }
+  ]
+}

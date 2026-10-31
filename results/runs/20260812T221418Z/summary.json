@@ -1,0 +1,95 @@
+{
+  "created_at": "2026-08-12T22:14:18.961543+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R493",
+      "name": "Dual-process target activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R492",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the target reached by two positive process branches is the matched direction control for R492.",
+      "body": "R492 with increased target activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The convergent branches remain, but target activation is not corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R492.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[disruption:DISRUPTS]->\n      (broader_process:BiologicalProcess)\n      <-[ontology:SUBCLASS_OF]-(disease_process:BiologicalProcess)\n      -[path_evidence:GENETIC_ASSOCIATION]-(object:Disease)\nMATCH (partner:Gene)-[:INVOLVED_IN]->(disease_process)\nMATCH (target:Gene)-[gene_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (partner)-[bridge:REGULATES]->(target)\nMATCH (subject)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target)\nMATCH (subject)-[effect:AFFECTS]->(target)\nWHERE broader_process <> disease_process\n  AND partner <> target\n  AND 'infores:semmeddb' IN\n      coalesce(disruption.primary_knowledge_sources, [])\n  AND 'infores:geneticskp' IN\n      coalesce(path_evidence.primary_knowledge_sources, [])\n  AND 'infores:ubergraph' IN\n      coalesce(ontology.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(bridge.primary_knowledge_sources, [])\n  AND bridge.qualified_predicate = 'biolink:causes'\n  AND bridge.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND gene_evidence._miner_disease_rank <= 3\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND NOT EXISTS {\n    MATCH (subject)-[:CONTRAINDICATED_IN|EXACERBATES_CONDITION|\n                     CAUSES|CONTRIBUTES_TO|PREDISPOSES_TO_CONDITION]->\n          (object)\n  }\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, target,\n     count(DISTINCT broader_process) AS parent_process_count\nWHERE parent_process_count >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 0,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 0
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.6972357499762438
+    }
+  ]
+}

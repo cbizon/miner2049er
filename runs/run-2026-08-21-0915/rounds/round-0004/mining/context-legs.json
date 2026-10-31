@@ -1,0 +1,56 @@
+[
+  {
+    "purpose": "Profile drug-metabolite edges before testing active-metabolite intervention.",
+    "query": "MATCH (chemical:Drug)-[r:HAS_METABOLITE]->(metabolite:ChemicalEntity) WHERE r.predicate IN ['biolink:has_metabolite'] RETURN r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT chemical) AS drugs,count(DISTINCT metabolite) AS metabolites",
+    "timeout_seconds": 60,
+    "next_action": "Inspect molecular target availability on the metabolite arm and compare parent versus metabolite direction."
+  },
+  {
+    "purpose": "Inspect bounded visible drug-metabolite evidence and qualifiers.",
+    "query": "MATCH (chemical:Drug)-[r:HAS_METABOLITE]->(metabolite:ChemicalEntity) WHERE r.predicate IN ['biolink:has_metabolite'] RETURN chemical.id AS chemical_id,chemical.name AS chemical_name,metabolite.id AS metabolite_id,metabolite.name AS metabolite_name,labels(metabolite) AS metabolite_labels,r.primary_knowledge_sources AS sources,r.raw_json AS raw_json ORDER BY chemical.id,metabolite.id LIMIT 12",
+    "timeout_seconds": 60,
+    "next_action": "Use only recorded metabolic direction; do not assume every metabolite is active."
+  },
+  {
+    "purpose": "Profile directed Gene Ontology causal activity inputs rather than generic physical interactions.",
+    "query": "MATCH (a:GeneOrGeneProduct)-[r:IS_INPUT_OF|CONSUMED_BY|PRECEDES]->(b:GeneOrGeneProduct) WHERE r.predicate IN ['biolink:is_input_of','biolink:consumed_by','biolink:precedes'] RETURN r.predicate AS predicate,r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT a) AS upstream_genes,count(DISTINCT b) AS downstream_genes",
+    "timeout_seconds": 60,
+    "next_action": "Test curated drug-target intervention upstream of disease genes and reverse-direction controls."
+  },
+  {
+    "purpose": "Inspect bounded Gene Ontology activity input assertions for modeling limitations.",
+    "query": "MATCH (a:GeneOrGeneProduct)-[r:IS_INPUT_OF|CONSUMED_BY]->(b:GeneOrGeneProduct) WHERE r.predicate IN ['biolink:is_input_of','biolink:consumed_by'] RETURN a.id AS upstream_id,a.name AS upstream_name,b.id AS downstream_id,b.name AS downstream_name,r.primary_knowledge_sources AS sources,r.raw_json AS raw_json ORDER BY a.id,b.id LIMIT 10",
+    "timeout_seconds": 60,
+    "next_action": "Distinguish activity-model connectivity from evidence that the downstream gene's increased activity causes disease."
+  },
+  {
+    "purpose": "Profile cell production and cell-disease causal legs before a secreted-product mechanism.",
+    "query": "MATCH (cell:Cell)-[r:PRODUCES|CAUSES|CONTRIBUTES_TO]->(other) WHERE r.predicate IN ['biolink:produces','biolink:causes','biolink:contributes_to'] AND (other:GeneOrGeneProduct OR other:Disease) RETURN r.predicate AS predicate,CASE WHEN other:Disease THEN 'Disease' ELSE 'GeneOrGeneProduct' END AS endpoint_category,r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT cell) AS cells,count(DISTINCT other) AS endpoints",
+    "timeout_seconds": 60,
+    "next_action": "Constrain the cell context before joining curated drug engagement of its produced molecule."
+  },
+  {
+    "purpose": "Profile explicit cell context on curated drug targets using original expression and location predicates.",
+    "query": "MATCH (:Drug)-[compact:MINER_R0004_CURATED_TARGET]->(gene:GeneOrGeneProduct) WHERE compact.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT gene MATCH (gene)-[r:EXPRESSED_IN|LOCATED_IN|ACTIVE_IN]->(cell:Cell) WHERE r.predicate IN ['biolink:expressed_in','biolink:located_in','biolink:active_in'] RETURN r.predicate AS predicate,r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT gene) AS genes,count(DISTINCT cell) AS cells",
+    "timeout_seconds": 60,
+    "next_action": "Test cell-specific side context only if the graph contains explicit compatible cell nodes."
+  },
+  {
+    "purpose": "Measure shared PANTHER family specificity for curated targets without joining diseases.",
+    "query": "MATCH (:Drug)-[compact:MINER_R0004_CURATED_TARGET]->(target:GeneOrGeneProduct) WHERE compact.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT target MATCH (target)-[r:MEMBER_OF]->(family:GeneFamily) WHERE r.predicate IN ['biolink:member_of'] AND 'infores:panther' IN coalesce(r.primary_knowledge_sources,[]) WITH DISTINCT family MATCH (gene:GeneOrGeneProduct)-[r:MEMBER_OF]->(family) WHERE r.predicate IN ['biolink:member_of'] AND 'infores:panther' IN coalesce(r.primary_knowledge_sources,[]) WITH family,count(DISTINCT gene) AS degree RETURN count(family) AS families,min(degree) AS minimum,max(degree) AS maximum,avg(degree) AS mean,percentileDisc(degree,0.5) AS median,percentileDisc(degree,0.75) AS p75,percentileDisc(degree,0.9) AS p90",
+    "timeout_seconds": 60,
+    "next_action": "Compare the previously specified all-family 90th-percentile bound of fourteen members with the unfiltered family bridge, not a feedback-driven cutoff sweep."
+  },
+  {
+    "purpose": "Explain zero signed process intervention by profiling qualifiers on genetically associated processes.",
+    "query": "MATCH (process:BiologicalProcess)-[association:GENETIC_ASSOCIATION]->(:Disease) WHERE association.predicate IN ['biolink:genetic_association'] AND 'infores:geneticskp' IN coalesce(association.primary_knowledge_sources,[]) WITH DISTINCT process MATCH (chemical:Drug)-[r:AFFECTS]->(process) WHERE r.predicate IN ['biolink:affects'] RETURN r.qualified_predicate AS qualifier,r.object_direction_qualifier AS direction,r.object_aspect_qualifier AS aspect,r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT process) AS processes,count(DISTINCT chemical) AS drugs ORDER BY edges DESC LIMIT 40",
+    "timeout_seconds": 120,
+    "next_action": "Define process-specific direction semantics from actual recorded qualifiers rather than assuming gene-activity aspects transfer unchanged."
+  },
+  {
+    "purpose": "Profile signed all-source drug-target access size before engineering the no-curation ablation.",
+    "query": "MATCH (chemical:Drug)-[r:AFFECTS]->(gene:GeneOrGeneProduct) WHERE r.predicate IN ['biolink:affects'] AND r.qualified_predicate='biolink:causes' AND r.object_direction_qualifier IN ['increased','decreased'] AND r.object_aspect_qualifier IN ['activity','activity_or_abundance'] RETURN r.primary_knowledge_sources AS sources,count(r) AS edges,count(DISTINCT chemical) AS drugs,count(DISTINCT gene) AS genes",
+    "timeout_seconds": 120,
+    "next_action": "Use measured cardinality to choose a bounded per-pair formulation before any broader compact materialization."
+  }
+]

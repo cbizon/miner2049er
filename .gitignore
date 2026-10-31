@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+*.py[cod]
+
+.run/
+data/
+logs/
+runs/*/predictions.jsonl
+runs/*/.*.predictions.jsonl

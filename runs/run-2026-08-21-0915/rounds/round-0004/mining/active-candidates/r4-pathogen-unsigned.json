@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-pathogen-unsigned",
+  "family_id": "pathogen-directed-disease-intervention",
+  "name": "Causal Organism Unsigned",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The drug affects the causal organism without a direction requirement The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.; The organism is asserted to cause the disease The pinned descendant closure is biolink:causes.",
+  "hypothesis": "Decreasing a disease-causing organism is compatible with anti-infective therapy, unlike unsigned association.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "organism",
+        "role": "Organism asserted to cause the disease",
+        "categories": [
+          "biolink:OrganismTaxon"
+        ],
+        "explanation": "Organism asserted to cause the disease."
+      }
+    ],
+    "edges": [
+      {
+        "id": "organism_effect",
+        "subject": "chemical",
+        "object": "organism",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The drug affects the causal organism without a direction requirement The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning."
+      },
+      {
+        "id": "infection",
+        "subject": "organism",
+        "object": "disease",
+        "predicates": [
+          "biolink:causes"
+        ],
+        "direction": "forward",
+        "explanation": "The organism is asserted to cause the disease The pinned descendant closure is biolink:causes."
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "low",
+    "rationale": "Decreasing a disease-causing organism is compatible with anti-infective therapy, unlike unsigned association. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[organism_effect:{{relationship_types:organism_effect}}]->(organism:OrganismTaxon) WHERE organism_effect.predicate IN {{predicates:organism_effect}} MATCH (organism:OrganismTaxon)-[infection:{{relationship_types:infection}}]->(disease:Disease) WHERE infection.predicate IN {{predicates:infection}} RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT organism) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "organism": {
+                "categories": [
+                  "biolink:OrganismTaxon"
+                ]
+              }
+            },
+            "edges": {
+              "organism_effect": {
+                "subject": "chemical",
+                "object": "organism",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              },
+              "infection": {
+                "subject": "organism",
+                "object": "disease",
+                "predicates": [
+                  "biolink:causes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: organism_effect: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates"
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Source assertions lack dose, exposure, clinical context, and experimental causal validation."
+  ]
+}

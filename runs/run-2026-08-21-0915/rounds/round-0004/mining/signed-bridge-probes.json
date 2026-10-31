@@ -1,0 +1,38 @@
+[
+  {
+    "purpose": "Inspect the bounded signed regulatory bridge plan before executing the complete pattern.",
+    "query": "EXPLAIN MATCH (c:Drug)-[direct:AFFECTS]->(d:Disease) WHERE direct.predicate='biolink:affects' WITH DISTINCT c,d LIMIT 100 MATCH (c)-[a:AFFECTS]->(regulator:GeneOrGeneProduct) WHERE a.predicate='biolink:affects' AND a.qualified_predicate='biolink:causes' AND a.object_direction_qualifier IN ['increased','decreased'] AND a.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND any(s IN ['infores:chembl','infores:gtopdb','infores:drugcentral'] WHERE s IN coalesce(a.primary_knowledge_sources,[])) MATCH (regulator)-[b:AFFECTS]->(gene:GeneOrGeneProduct)-[causal:CAUSES|CONTRIBUTES_TO]->(d) WHERE b.predicate='biolink:affects' AND b.qualified_predicate='biolink:causes' AND b.object_direction_qualifier IN ['increased','decreased'] AND b.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND causal.predicate IN ['biolink:causes','biolink:contributes_to'] AND regulator<>gene RETURN a.object_direction_qualifier AS drug_direction,b.object_direction_qualifier AS bridge_direction,count(DISTINCT [c,d]) AS pairs",
+    "timeout_seconds": 20,
+    "next_action": "Execute the same bounded sample, then compare complete source- and sign-defined cohorts."
+  },
+  {
+    "purpose": "Run a 100-direct-pair sample of the two-signed-leg regulatory bridge.",
+    "query": "MATCH (c:Drug)-[direct:AFFECTS]->(d:Disease) WHERE direct.predicate='biolink:affects' WITH DISTINCT c,d ORDER BY c.id,d.id LIMIT 100 MATCH (c)-[a:AFFECTS]->(regulator:GeneOrGeneProduct) WHERE a.predicate='biolink:affects' AND a.qualified_predicate='biolink:causes' AND a.object_direction_qualifier IN ['increased','decreased'] AND a.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND any(s IN ['infores:chembl','infores:gtopdb','infores:drugcentral'] WHERE s IN coalesce(a.primary_knowledge_sources,[])) MATCH (regulator)-[b:AFFECTS]->(gene:GeneOrGeneProduct)-[causal:CAUSES|CONTRIBUTES_TO]->(d) WHERE b.predicate='biolink:affects' AND b.qualified_predicate='biolink:causes' AND b.object_direction_qualifier IN ['increased','decreased'] AND b.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND causal.predicate IN ['biolink:causes','biolink:contributes_to'] AND regulator<>gene RETURN a.object_direction_qualifier AS drug_direction,b.object_direction_qualifier AS bridge_direction,count(*) AS paths,count(DISTINCT [c,d]) AS pairs",
+    "timeout_seconds": 60,
+    "next_action": "If bounded runtime is safe, execute full direct-pair convergence with source composition."
+  },
+  {
+    "purpose": "Profile the complete direct-anchored curated signed regulatory bridge and its direction controls.",
+    "query": "MATCH (c:Drug)-[direct:AFFECTS]->(d:Disease) WHERE direct.predicate='biolink:affects' WITH DISTINCT c,d MATCH (c)-[a:AFFECTS]->(regulator:GeneOrGeneProduct) WHERE a.predicate='biolink:affects' AND a.qualified_predicate='biolink:causes' AND a.object_direction_qualifier IN ['increased','decreased'] AND a.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND any(s IN ['infores:chembl','infores:gtopdb','infores:drugcentral'] WHERE s IN coalesce(a.primary_knowledge_sources,[])) MATCH (regulator)-[b:AFFECTS]->(gene:GeneOrGeneProduct)-[causal:CAUSES|CONTRIBUTES_TO]->(d) WHERE b.predicate='biolink:affects' AND b.qualified_predicate='biolink:causes' AND b.object_direction_qualifier IN ['increased','decreased'] AND b.object_aspect_qualifier IN ['activity','activity_or_abundance'] AND causal.predicate IN ['biolink:causes','biolink:contributes_to'] AND regulator<>gene WITH a.object_direction_qualifier AS drug_direction,b.object_direction_qualifier AS bridge_direction,b.primary_knowledge_sources AS bridge_sources,c,d,count(DISTINCT gene) AS genes WITH drug_direction,bridge_direction,bridge_sources,c,d,genes,EXISTS { MATCH (c)-[t:TREATS|AMELIORATES_CONDITION|PREVENTATIVE_FOR_CONDITION]->(d) WHERE t.predicate IN ['biolink:treats','biolink:ameliorates_condition','biolink:preventative_for_condition'] } AS visible RETURN drug_direction,bridge_direction,bridge_sources,count(*) AS pairs,sum(CASE WHEN visible THEN 1 ELSE 0 END) AS visible_hits,percentileCont(genes,0.5) AS median_genes ORDER BY pairs DESC",
+    "timeout_seconds": 180,
+    "next_action": "Record sign-defined candidates and exact component removals before submitting selected complete sets."
+  },
+  {
+    "purpose": "Profile PANTHER family sizes and disease-associated family coverage without cross-product expansion.",
+    "query": "MATCH (g:GeneOrGeneProduct)-[m:MEMBER_OF]->(f:GeneFamily) WHERE m.predicate='biolink:member_of' AND 'infores:panther' IN coalesce(m.primary_knowledge_sources,[]) WITH f,count(DISTINCT g) AS degree RETURN count(*) AS families,min(degree) AS minimum,max(degree) AS maximum,avg(degree) AS mean,percentileCont(degree,0.5) AS p50,percentileCont(degree,0.75) AS p75,percentileCont(degree,0.9) AS p90",
+    "timeout_seconds": 60,
+    "next_action": "Choose at most one distributionally motivated family-specificity criterion before feedback."
+  },
+  {
+    "purpose": "Inspect visible raw source JSON for gene and pathway genetic associations.",
+    "query": "MATCH (s)-[e:GENE_ASSOCIATED_WITH_CONDITION|GENETIC_ASSOCIATION]->(d:Disease) WHERE e.predicate IN ['biolink:gene_associated_with_condition','biolink:genetic_association'] WITH e.predicate AS predicate,collect(e.raw_json)[0..2] AS raw_examples RETURN predicate,raw_examples",
+    "timeout_seconds": 60,
+    "next_action": "Use only source statistics whose meanings can be documented; do not access legacy derived scores."
+  },
+  {
+    "purpose": "Profile disease-produced molecular products as a potential overproduction-blockade mechanism.",
+    "query": "MATCH (d:Disease)-[e:PRODUCES]->(g:GeneOrGeneProduct) WHERE e.predicate='biolink:produces' RETURN e.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT d) AS diseases,count(DISTINCT g) AS products,collect(DISTINCT {disease:d.name,product:g.name})[0..12] AS examples",
+    "timeout_seconds": 30,
+    "next_action": "Test curated blockade of disease-produced molecules with causal product-to-disease corroboration and opposite-direction controls."
+  }
+]

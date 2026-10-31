@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T14:08:53.760763+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R243",
+      "name": "Disease-cell-localized causal inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-gene inhibitor is more credible when the gene is expressed in a cell type in which the disease is located.",
+      "body": "drug decreases bound causal gene; Bgee gene expression and disease location share exact cell",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule localizes a causal target to a disease-associated cell type, but cell expression and location edges are broad.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, expression, and disease-cell paths are TRAPI-expressible; shared cell identity, provenance, and ontology filters require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(cell:Cell)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(cell)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 73,
+        "validation_hits": 0,
+        "training_hits": 20,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 53
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.273972602739726,
+        "visible_target_recall": 0.0007269555103227683,
+        "visible_target_f0_5": 0.0035966048050640196,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.6241600419743918
+    },
+    {
+      "id": "TREAT-I09-R244",
+      "name": "Top-driver disease-cell-localized inhibition",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R243",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Exact cell localization is more credible for one of the disease's top three causal genes.",
+      "body": "R243 plus top-three causal disease-gene evidence rank",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines exact cell localization with a high-ranked causal target, though the cells may remain expression hubs.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The paths are TRAPI-expressible; causal rank, cell identity, provenance, and ontology filters require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(cell:Cell)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(cell)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND evidence._miner_disease_rank <= 3\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 41,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 32
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.21951219512195122,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.0016259575083104499,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.4663670409936458
+    },
+    {
+      "id": "TREAT-I09-R245",
+      "name": "Ontology-mediated cell-to-anatomy causal inhibition",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal target expressed in a moderately specific cell can support treatment when that cell is ontologically linked to an affected anatomy.",
+      "body": "drug decreases causal gene; Bgee cell expression; cell reaches disease anatomy within two ontology steps; cell expression degree at or below median",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule combines cell ontology, tissue location, and causal targeting, but Cell-to-Anatomy subclass semantics may be modeling artifacts.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The bounded ontology and positive paths are TRAPI-expressible; cell degree, provenance, and shared identities require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(cell:Cell)\nMATCH (cell)-[:SUBCLASS_OF*1..2]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\n  AND cell._miner_human_gene_expression_degree <= 5512\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 145,
+        "validation_hits": 3,
+        "training_hits": 30,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 112
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.22758620689655173,
+        "visible_target_recall": 0.0011994765920325676,
+        "visible_target_f0_5": 0.0058735583084152075,
+        "validation_precision_lower_bound": 0.02608695652173913,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.005336179295624333
+      },
+      "runtime_seconds": 1.9378383330185898
+    }
+  ]
+}

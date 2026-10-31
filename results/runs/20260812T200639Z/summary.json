@@ -1,0 +1,166 @@
+{
+  "created_at": "2026-08-12T20:06:39.275387+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R431",
+      "name": "GOF ligand-receptor axis suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "failed",
+      "hypothesis": "A drug can attenuate a GOF signaling-ligand disease mechanism by decreasing the activity or abundance of an interacting signaling receptor.",
+      "body": "G2P GOF driver has GO signaling-receptor-binding activity and SIGNOR interaction with a GO receptor; drug binds and decreases the receptor",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule composes explicit variant direction, ligand and receptor molecular functions, curated interaction, direct drug binding, and opposing receptor action.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; GO descendant closure, repeated receptor identity, source exclusions, variant qualifier, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[ligand_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005102'})\nMATCH (driver)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-\n      (receptor:Gene)\nMATCH (receptor)-[receptor_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0038023'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (receptor)\nMATCH (subject)-[effect:AFFECTS]->(receptor)\nWHERE driver <> receptor\n  AND 'infores:goa' IN\n      coalesce(ligand_function.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(interaction.primary_knowledge_sources, [])\n  AND 'infores:goa' IN\n      coalesce(receptor_function.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "error": "ClientError: {code: Neo.ClientError.Transaction.TransactionTimedOutClientConfiguration} {message: The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer timeout. }",
+      "runtime_seconds": 121.57536679197801
+    },
+    {
+      "id": "TREAT-I09-R432",
+      "name": "GOF ligand-receptor axis activation control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R431",
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing the interacting receptor in the same GOF ligand axis is a matched worsening control.",
+      "body": "R431 with increased rather than decreased receptor activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The ligand-receptor and disease architecture is retained while receptor activation nominally reinforces the GOF signal.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R431.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[ligand_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005102'})\nMATCH (driver)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-\n      (receptor:Gene)\nMATCH (receptor)-[receptor_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0038023'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (receptor)\nMATCH (subject)-[effect:AFFECTS]->(receptor)\nWHERE driver <> receptor\n  AND 'infores:goa' IN\n      coalesce(ligand_function.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(interaction.primary_knowledge_sources, [])\n  AND 'infores:goa' IN\n      coalesce(receptor_function.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 332,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 332
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 30.788901833002456
+    },
+    {
+      "id": "TREAT-I09-R433",
+      "name": "LOF ligand-receptor axis restoration",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can compensate for a LOF signaling-ligand disease mechanism by increasing the activity or abundance of an interacting signaling receptor.",
+      "body": "G2P LOF driver has GO signaling-receptor-binding activity and SIGNOR interaction with a GO receptor; drug binds and increases the receptor",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule attempts receptor-level compensation for an explicit LOF ligand using independent function, interaction, binding, and direction evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R431.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[ligand_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005102'})\nMATCH (driver)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-\n      (receptor:Gene)\nMATCH (receptor)-[receptor_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0038023'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (receptor)\nMATCH (subject)-[effect:AFFECTS]->(receptor)\nWHERE driver <> receptor\n  AND 'infores:goa' IN\n      coalesce(ligand_function.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(interaction.primary_knowledge_sources, [])\n  AND 'infores:goa' IN\n      coalesce(receptor_function.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 392,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 392
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 33.00976216699928
+    },
+    {
+      "id": "TREAT-I09-R434",
+      "name": "LOF ligand-receptor axis suppression control",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R433",
+      "library_status": "rejected",
+      "status": "failed",
+      "hypothesis": "Decreasing the interacting receptor in the same LOF ligand axis is a matched worsening control.",
+      "body": "R433 with decreased rather than increased receptor activity or abundance",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The ligand-receptor and disease architecture is retained while receptor suppression nominally further reduces signaling.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R431.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[ligand_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0005102'})\nMATCH (driver)-[interaction:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-\n      (receptor:Gene)\nMATCH (receptor)-[receptor_function:ENABLES]->\n      (:MolecularActivity)-[:SUBCLASS_OF*0..5]->\n      (:MolecularActivity {id: 'GO:0038023'})\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (receptor)\nMATCH (subject)-[effect:AFFECTS]->(receptor)\nWHERE driver <> receptor\n  AND 'infores:goa' IN\n      coalesce(ligand_function.primary_knowledge_sources, [])\n  AND 'infores:signor' IN\n      coalesce(interaction.primary_knowledge_sources, [])\n  AND 'infores:goa' IN\n      coalesce(receptor_function.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND none(\n    source IN coalesce(binding.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND none(\n    source IN coalesce(effect.primary_knowledge_sources, [])\n    WHERE source IN ['infores:drug-repurposing-hub', 'infores:ttd']\n  )\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "error": "ClientError: {code: Neo.ClientError.Transaction.TransactionTimedOutClientConfiguration} {message: The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer timeout. }",
+      "runtime_seconds": 120.20675299997674
+    }
+  ]
+}

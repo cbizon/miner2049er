@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T17:22:12.708803+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R366",
+      "name": "Interacting co-enabler LOF compensation",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Increasing an interacting co-enabler of the same compact molecular activity as a LOF disease driver can provide functional compensation.",
+      "body": "drug increases directly bound target; target physically interacts with LOF driver; both enable one compact molecular activity",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Drug direction, target-driver interaction, shared molecular function, top-ranked causal genetics, and explicit LOF direction jointly define a complex-level compensation mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "All graph paths are TRAPI-expressible; target-driver identity, disease rank, activity degree, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:ENABLES]->(activity:MolecularActivity)\n      <-[:ENABLES]-(driver:Gene)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND activity._miner_gene_enable_degree <= 58\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 20,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 20
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.3105123330024071
+    },
+    {
+      "id": "TREAT-I09-R367",
+      "name": "Interacting co-enabler LOF suppression control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Decreasing an interacting co-enabler of the same activity as a LOF driver is a matched worsening control.",
+      "body": "R366 with decreased co-enabler activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same complex-level architecture is retained, but the drug direction further suppresses rather than compensates for deficient activity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R366.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:ENABLES]->(activity:MolecularActivity)\n      <-[:ENABLES]-(driver:Gene)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND activity._miner_gene_enable_degree <= 58\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 44,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 44
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.10718387499218807
+    },
+    {
+      "id": "TREAT-I09-R368",
+      "name": "Interacting co-enabler GOF suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Decreasing an interacting co-enabler of the same compact molecular activity as a GOF disease driver can reduce excessive complex function.",
+      "body": "drug decreases directly bound target; target physically interacts with GOF driver; both enable one compact molecular activity",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule suppresses a physically coherent shared molecular function around a top-ranked explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R366.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:ENABLES]->(activity:MolecularActivity)\n      <-[:ENABLES]-(driver:Gene)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND activity._miner_gene_enable_degree <= 58\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 3
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.048331708007026464
+    },
+    {
+      "id": "TREAT-I09-R369",
+      "name": "Interacting co-enabler GOF activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing an interacting co-enabler of the same activity as a GOF driver is a matched worsening control.",
+      "body": "R368 with increased co-enabler activity",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The same shared-function architecture is retained, but the drug direction reinforces excessive activity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R366.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[:ENABLES]->(activity:MolecularActivity)\n      <-[:ENABLES]-(driver:Gene)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(driver)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (driver)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> driver\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND evidence._miner_disease_rank <= 3\n  AND activity._miner_gene_enable_degree <= 58\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.04690741701051593
+    }
+  ]
+}

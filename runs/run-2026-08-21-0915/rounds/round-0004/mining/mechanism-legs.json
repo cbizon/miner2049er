@@ -1,0 +1,44 @@
+[
+  {
+    "purpose": "Profile drug effects on disease-causing organism nodes with explicit source and signed aspect.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(:Disease) WHERE cause.predicate='biolink:causes' WITH DISTINCT organism MATCH (c:Drug)-[effect:AFFECTS|DISRUPTS|REGULATES|AMELIORATES_CONDITION|EXACERBATES_CONDITION|HAS_SIDE_EFFECT]->(organism) WHERE effect.predicate IN ['biolink:affects','biolink:disrupts','biolink:regulates','biolink:ameliorates_condition','biolink:exacerbates_condition','biolink:has_side_effect'] RETURN effect.predicate AS predicate,effect.qualified_predicate AS qualified_predicate,effect.object_direction_qualifier AS direction,effect.object_aspect_qualifier AS aspect,effect.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT c) AS drugs,count(DISTINCT organism) AS organisms ORDER BY edges DESC LIMIT 60",
+    "timeout_seconds": 90,
+    "next_action": "Formulate anti-organism rules with exact pinned closures and matched direction controls."
+  },
+  {
+    "purpose": "Inspect representative disease-causing organisms and their namespaces without hidden-label information.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(d:Disease) WHERE cause.predicate='biolink:causes' WITH organism,count(DISTINCT d) AS diseases ORDER BY diseases DESC LIMIT 20 RETURN organism.id AS id,organism.name AS name,diseases",
+    "timeout_seconds": 30,
+    "next_action": "Identify host-organism or hub artifacts and use explicit ontology context rather than undocumented exclusions."
+  },
+  {
+    "purpose": "Profile genetic pathway associations and available raw statistical properties.",
+    "query": "MATCH (p:BiologicalProcess)-[e:GENETIC_ASSOCIATION]-(d:Disease) WHERE e.predicate='biolink:genetic_association' RETURN startNode(e)=p AS process_is_subject,e.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT p) AS processes,count(DISTINCT d) AS diseases,collect(DISTINCT keys(e))[0..5] AS property_sets",
+    "timeout_seconds": 60,
+    "next_action": "Test drug perturbation of genetically associated pathways separately from the previously failed shared-pathway causal-gene bridge."
+  },
+  {
+    "purpose": "Profile family and complex membership endpoint categories before a curated target bridge.",
+    "query": "MATCH (gene:GeneOrGeneProduct)-[e:MEMBER_OF]->(group) WHERE e.predicate='biolink:member_of' RETURN labels(group) AS group_labels,e.primary_knowledge_sources AS sources,count(*) AS edges,count(DISTINCT gene) AS genes,count(DISTINCT group) AS groups ORDER BY edges DESC LIMIT 40",
+    "timeout_seconds": 60,
+    "next_action": "Distinguish gene families from protein complexes and pre-aggregate compact membership neighborhoods."
+  },
+  {
+    "purpose": "Profile biochemical substrate, input, and production legs by endpoint category.",
+    "query": "MATCH (s)-[e:HAS_SUBSTRATE|HAS_INPUT|IS_INPUT_OF|PRODUCES]->(o) WHERE e.predicate IN ['biolink:has_substrate','biolink:has_input','biolink:is_input_of','biolink:produces'] RETURN e.predicate AS predicate,labels(s) AS subject_labels,labels(o) AS object_labels,e.primary_knowledge_sources AS sources,count(*) AS edges ORDER BY edges DESC LIMIT 60",
+    "timeout_seconds": 90,
+    "next_action": "Determine whether metabolic substrate or product replacement can be represented with a causal disease leg."
+  },
+  {
+    "purpose": "Inspect raw genetic-association statistics rather than use undocumented legacy scores.",
+    "query": "MATCH (g:GeneOrGeneProduct)-[e:GENE_ASSOCIATED_WITH_CONDITION]->(d:Disease) WHERE e.predicate='biolink:gene_associated_with_condition' WITH g,e,d LIMIT 3 RETURN g.id AS gene_id,d.id AS disease_id,[k IN keys(e) WHERE NOT k STARTS WITH '_miner'] AS raw_keys,e.original_json AS original_json,e.p_value AS p_value,e.score AS score,e.primary_knowledge_sources AS sources",
+    "timeout_seconds": 20,
+    "next_action": "Use raw source statistics only if their field semantics and normalization are inspectable in the visible graph."
+  },
+  {
+    "purpose": "Find signed gene-to-gene effects omitted by the earlier exact-regulates-only analysis.",
+    "query": "MATCH (g1:GeneOrGeneProduct)-[e:AFFECTS]->(g2:GeneOrGeneProduct) WHERE e.predicate='biolink:affects' RETURN e.qualified_predicate AS qualified_predicate,e.object_direction_qualifier AS direction,e.object_aspect_qualifier AS aspect,e.primary_knowledge_sources AS sources,count(*) AS edges ORDER BY edges DESC LIMIT 50",
+    "timeout_seconds": 90,
+    "next_action": "If signed qualified affects exists, test a true net-sign bridge rather than the prior unsigned regulates substitute."
+  }
+]

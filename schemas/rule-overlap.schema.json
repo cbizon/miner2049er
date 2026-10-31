@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/rule-overlap.schema.json",
+  "title": "Rule prediction overlap analysis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "through_round_id",
+    "generated_at",
+    "rule_count",
+    "distinct_prediction_pairs",
+    "rules",
+    "relations",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "through_round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "rule_count": {"type": "integer", "minimum": 0},
+    "distinct_prediction_pairs": {"type": "integer", "minimum": 0},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule_id",
+          "round_id",
+          "family_id",
+          "uses_treatment_edges",
+          "prediction_count",
+          "feedback_eligible_predictions",
+          "training_hits",
+          "feedback_scored",
+          "feedback_precision",
+          "feedback_hits",
+          "selection_status",
+          "selection_explanation"
+        ],
+        "properties": {
+          "rule_id": {"type": "string", "minLength": 1},
+          "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+          "family_id": {"type": "string", "minLength": 1},
+          "uses_treatment_edges": {"type": "boolean"},
+          "prediction_count": {"type": "integer", "minimum": 0},
+          "feedback_eligible_predictions": {"type": "integer", "minimum": 0},
+          "training_hits": {"type": "integer", "minimum": 0},
+          "feedback_scored": {"type": "boolean"},
+          "feedback_precision": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "feedback_hits": {"type": ["integer", "null"], "minimum": 0},
+          "selection_status": {
+            "enum": [
+              "eligible",
+              "rejected",
+              "unscored",
+              "zero_precision",
+              "no_predictions"
+            ]
+          },
+          "selection_explanation": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "left_rule_id",
+          "right_rule_id",
+          "prediction_relation",
+          "logical_equivalent",
+          "intersection_count",
+          "left_only_count",
+          "right_only_count",
+          "jaccard"
+        ],
+        "properties": {
+          "left_rule_id": {"type": "string", "minLength": 1},
+          "right_rule_id": {"type": "string", "minLength": 1},
+          "prediction_relation": {
+            "enum": ["exact_duplicate", "left_strict_subset"]
+          },
+          "logical_equivalent": {"type": "boolean"},
+          "intersection_count": {"type": "integer", "minimum": 0},
+          "left_only_count": {"type": "integer", "minimum": 0},
+          "right_only_count": {"type": "integer", "minimum": 0},
+          "jaccard": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

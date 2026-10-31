@@ -1,0 +1,341 @@
+{
+  "created_at": "2026-08-10T12:43:30.905912+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I02-R011",
+      "name": "Clinical-trial evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical tested in clinical trials for a disease is enriched for exact treats assertions.",
+      "body": "chemical -in_clinical_trials_for-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is direct treatment-development evidence rather than an explanatory biological mechanism.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 310701,
+        "validation_hits": 208,
+        "training_hits": 11972,
+        "contraindicated_pairs": 852,
+        "unresolved_or_blind_pairs": 298521
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.039201676209603444,
+        "visible_target_recall": 0.4427159057865659,
+        "visible_target_f0_5": 0.04794082732170578,
+        "validation_precision_lower_bound": 0.0006962832533835015,
+        "validation_recall": 0.08847299021692896,
+        "validation_f0_5": 0.0008686450056670734
+      },
+      "runtime_seconds": 5.080873541999608
+    },
+    {
+      "id": "TREAT-I02-R012",
+      "name": "Studied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical studied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -studied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The rule restates treatment study evidence and does not explain efficacy.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 1308,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 1291
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012996941896024464,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0025958954312240413,
+        "validation_precision_lower_bound": 0.0007739938080495357,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0006649820454847719
+      },
+      "runtime_seconds": 0.06029458303237334
+    },
+    {
+      "id": "TREAT-I02-R013",
+      "name": "Applied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical applied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -applied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is treatment-use evidence rather than a mechanistic explanation.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "counts": {
+        "candidate_pairs": 55583,
+        "validation_hits": 65,
+        "training_hits": 6499,
+        "contraindicated_pairs": 1275,
+        "unresolved_or_blind_pairs": 49019
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11809366173110483,
+        "visible_target_recall": 0.23858679848793254,
+        "visible_target_f0_5": 0.13136196986919835,
+        "validation_precision_lower_bound": 0.0013242604514709477,
+        "validation_recall": 0.027647809442790303,
+        "validation_f0_5": 0.001635738624067
+      },
+      "runtime_seconds": 0.9687931250082329
+    },
+    {
+      "id": "TREAT-I03-R022",
+      "name": "Clinical-stage causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching clinical-trial evidence should strongly enrich for treatment relationships.",
+      "body": "R017 plus drug -in_clinical_trials_for-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Retains a target-level mechanism and adds graph-internal translational evidence without using a semantic treats descendant.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 47,
+        "validation_hits": 3,
+        "training_hits": 20,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 24
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.48936170212765956,
+        "visible_target_recall": 0.0008359988368711835,
+        "visible_target_f0_5": 0.004151624548736461,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0061000406669377795
+      },
+      "runtime_seconds": 0.042516041023191065
+    },
+    {
+      "id": "TREAT-I03-R023",
+      "name": "Applied causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching applied-to-treat evidence should be a high-precision treatment rule.",
+      "body": "R017 plus drug -applied_to_treat-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Combines a target-level mechanism with graph-internal treatment-use evidence, although the latter is close to the prediction target.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 24,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7083333333333334,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.003078817733990148,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020981955518254306
+      },
+      "runtime_seconds": 0.029337416985072196
+    },
+    {
+      "id": "TREAT-I04-R024",
+      "name": "Low-fanout process-corroborated mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Combining causal-target specificity with same-gene disease-process corroboration may remove both literature hubs and isolated causal assertions.",
+      "body": "R019 plus disease -process support-> process <-involved_in- same causal target gene",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Uses two independent biological branches around the same directly engaged gene without relying on treatment evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The source graph motif is TRAPI-expressible; process-support cardinality, degree, and absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 33,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 29
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.12121212121212122,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007234843003906816,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.21568058396223933
+    },
+    {
+      "id": "TREAT-I04-R025",
+      "name": "Low-fanout independently associated mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Combining causal-target specificity with a dedicated gene-condition association should isolate highly supported mechanisms.",
+      "body": "R019 plus same gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Uses a specific causal target and a second exact gene-disease relation without relying on treatment evidence.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 4,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.75,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005448997384481256,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.14689529198221862
+    },
+    {
+      "id": "TREAT-I04-R026",
+      "name": "Independent clinical low-fanout mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R022",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism plus an independently sourced clinical-trial assertion should retain validation hits while excluding disease-gene hubs and target-source leakage.",
+      "body": "R022 plus causal gene disease degree <=12 and clinical-trial source infores:multiomics-clinicaltrials",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Combines a specific target-level mechanism with independent translational evidence, but still uses treatment-oriented evidence.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 37,
+        "validation_hits": 3,
+        "training_hits": 18,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 16
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5675675675675675,
+        "visible_target_recall": 0.0007633032858389067,
+        "visible_target_f0_5": 0.0037960954446854666,
+        "validation_precision_lower_bound": 0.15789473684210525,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006180469715698395
+      },
+      "runtime_seconds": 0.16694912500679493
+    },
+    {
+      "id": "TREAT-I04-R027",
+      "name": "Curated independent clinical mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I04-R026",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Requiring curated SIGNOR perturbation evidence within the independent clinical low-fanout rule may further improve precision.",
+      "body": "R026 plus affects primary source infores:signor",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Combines curated directional target perturbation, causal specificity, and independent clinical evidence.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "counts": {
+        "candidate_pairs": 5,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005448205724248149,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.15446479100501165
+    }
+  ]
+}

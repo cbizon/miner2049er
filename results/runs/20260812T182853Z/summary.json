@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-08-12T18:28:53.058472+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R397",
+      "name": "Disease-module-central top-three target",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "For genetically heterogeneous disease, an inhibited top-ranked causal target is more relevant when it physically interacts with at least two other top-ten disease genes.",
+      "body": "Drug decreases a top-three causal target embedded in a disease-specific PPI module with at least two other top-ten genes",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule selects one intervention point by disease-relative network embedding rather than requiring the drug to hit several genes, but unsigned interactions and noisy effects remain.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; disease-relative ranks, distinct-neighbor cardinality, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[target_evidence:MINER_GENE_DISEASE_EVIDENCE]->\n      (object:Disease)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(neighbor:Gene)\n      -[neighbor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> neighbor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND target_evidence._miner_disease_rank >= 1\n  AND target_evidence._miner_disease_rank <= 3\n  AND neighbor_evidence._miner_disease_rank <= 10\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object,\n     collect(DISTINCT neighbor) AS neighbors,\n     collect(DISTINCT binding) AS bindings\nWHERE size(neighbors) >= 2\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 27,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 25
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.07407407407407407,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003620564808110065,
+        "validation_precision_lower_bound": 0.038461538461538464,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020366598778004076
+      },
+      "runtime_seconds": 0.21776145801413804
+    },
+    {
+      "id": "TREAT-I09-R398",
+      "name": "Evidence-independent disease-module-central target",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R397",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A disease-module-central target is more reliable when its directional effect is repeated and its physical binding is supported by at least two primary databases.",
+      "body": "R397 with repeated directional evidence and multi-database target binding",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Disease-relative network centrality selects the target, while independent binding databases and repeated directional evidence strengthen the intervention edge.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif is TRAPI-expressible; evidence aggregation, source cardinality, disease ranks, neighbor count, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[target_evidence:MINER_GENE_DISEASE_EVIDENCE]->\n      (object:Disease)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(neighbor:Gene)\n      -[neighbor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> neighbor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(\n        effect.evidence_count,\n        size(coalesce(effect.publications, [])),\n        1\n      ) >= 2\n\n  AND target_evidence._miner_disease_rank >= 1\n  AND target_evidence._miner_disease_rank <= 3\n  AND neighbor_evidence._miner_disease_rank <= 10\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object,\n     collect(DISTINCT neighbor) AS neighbors,\n     collect(DISTINCT binding) AS bindings\nWHERE size(neighbors) >= 2\n\nWITH subject, target, object, neighbors,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 2\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 11,
+        "validation_hits": 1,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 9
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.18181818181818182,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003628973726230222,
+        "validation_precision_lower_bound": 0.1,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020911752404851524
+      },
+      "runtime_seconds": 0.19063295802334324
+    },
+    {
+      "id": "TREAT-I09-R399",
+      "name": "Lower-ranked disease-module-central target control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "The same network and provenance architecture on causal targets ranked four through ten is a disease-relevance control for R398.",
+      "body": "R398 architecture with target rank four through ten",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Network embedding and evidence quality are retained while disease-relative target relevance is deliberately reduced.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R398, with a lower target-rank interval.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[binding:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->\n      (target:Gene)\nMATCH (subject)-[effect:AFFECTS]->(target)\nMATCH (target)-[target_evidence:MINER_GENE_DISEASE_EVIDENCE]->\n      (object:Disease)\nMATCH (target)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]-(neighbor:Gene)\n      -[neighbor_evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE target <> neighbor\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(\n        effect.evidence_count,\n        size(coalesce(effect.publications, [])),\n        1\n      ) >= 2\n\n  AND target_evidence._miner_disease_rank >= 4\n  AND target_evidence._miner_disease_rank <= 10\n  AND neighbor_evidence._miner_disease_rank <= 10\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, target, object,\n     collect(DISTINCT neighbor) AS neighbors,\n     collect(DISTINCT binding) AS bindings\nWHERE size(neighbors) >= 2\n\nWITH subject, target, object, neighbors,\n     reduce(\n       sources = [],\n       relation IN bindings |\n       reduce(\n         accumulated = sources,\n         source IN coalesce(relation.primary_knowledge_sources, []) |\n         CASE\n           WHEN source IN accumulated THEN accumulated\n           ELSE accumulated + source\n         END\n       )\n     ) AS binding_sources\nWHERE size(binding_sources) >= 2\n\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 18,
+        "validation_hits": 2,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 15
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.16666666666666666,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005437935034802784,
+        "validation_precision_lower_bound": 0.11764705882352941,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.004133939644481191
+      },
+      "runtime_seconds": 0.1259691669838503
+    }
+  ]
+}

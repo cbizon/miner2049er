@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-transfer-pooled-two-direct",
+  "family_id": "shared-curated-target-pharmacologic-neighbor-transfer",
+  "name": "Pharmacologic Neighbor Pooled Two Direct",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The parent drug has treatment-oriented evidence whose pair-level primary-source union includes SemMedDB literature, FAERS applied-use, and multiomics clinical trials The pinned descendant closure is biolink:ameliorates_condition, biolink:applied_to_treat, biolink:beneficial_in_models_for, biolink:in_clinical_trials_for, biolink:in_preclinical_trials_for, biolink:preventative_for_condition, biolink:studied_to_treat, biolink:treats, biolink:treats_or_applied_or_studied_to_treat. Exclude treats, ameliorates_condition, and preventative_for_condition; the remaining six descendants represent application, study, trial, model, or unspecialized treatment-oriented evidence.; Parent causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; Chemical causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.; The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. Additionally, The candidate and supported parent must be different canonical drug nodes. Deduplicate primary-source identifiers over all qualifying parent-disease edges and require all three named sources. At least 2 distinct shared target genes must occur across all supported parents pooled for this candidate and disease; different genes may use different parents.",
+  "hypothesis": "Explicit parent grouping and matched target pharmacology may distinguish transferable indications from pooled target-neighborhood similarity.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      },
+      {
+        "id": "parent",
+        "role": "Different drug with corroborated indication evidence",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Different drug with corroborated indication evidence."
+      }
+    ],
+    "edges": [
+      {
+        "id": "indication",
+        "subject": "parent",
+        "object": "disease",
+        "predicates": [
+          "biolink:treats_or_applied_or_studied_to_treat"
+        ],
+        "direction": "forward",
+        "explanation": "The parent drug has treatment-oriented evidence whose pair-level primary-source union includes SemMedDB literature, FAERS applied-use, and multiomics clinical trials The pinned descendant closure is biolink:ameliorates_condition, biolink:applied_to_treat, biolink:beneficial_in_models_for, biolink:in_clinical_trials_for, biolink:in_preclinical_trials_for, biolink:preventative_for_condition, biolink:studied_to_treat, biolink:treats, biolink:treats_or_applied_or_studied_to_treat. Exclude treats, ameliorates_condition, and preventative_for_condition; the remaining six descendants represent application, study, trial, model, or unspecialized treatment-oriented evidence.",
+        "excluded_predicates": [
+          "biolink:ameliorates_condition",
+          "biolink:preventative_for_condition",
+          "biolink:treats"
+        ],
+        "exclusion_rationale": "Exclude every target treatment predicate so parent indication support does not directly reuse a visible target label."
+      },
+      {
+        "id": "parent_target",
+        "subject": "parent",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Parent causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes"
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "candidate_target",
+        "subject": "chemical",
+        "object": "gene",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "Chemical causally affects gene without requiring a direction The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects. At least one primary source must be infores:chembl, infores:gtopdb, infores:drugcentral.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning.",
+        "qualifiers": {
+          "qualified_predicate": "biolink:causes"
+        },
+        "source_constraints": [
+          "infores:chembl",
+          "infores:gtopdb",
+          "infores:drugcentral"
+        ]
+      },
+      {
+        "id": "direct",
+        "subject": "chemical",
+        "object": "disease",
+        "predicates": [
+          "biolink:affects"
+        ],
+        "direction": "forward",
+        "explanation": "The candidate drug independently affects the same disease The pinned descendant closure is biolink:affects, biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates. All more-specific descendants are explicitly excluded, leaving only biolink:affects.",
+        "excluded_predicates": [
+          "biolink:affects_response_to",
+          "biolink:ameliorates_condition",
+          "biolink:decreases_response_to",
+          "biolink:disrupts",
+          "biolink:exacerbates_condition",
+          "biolink:has_adverse_event",
+          "biolink:has_side_effect",
+          "biolink:increases_response_to",
+          "biolink:regulates"
+        ],
+        "exclusion_rationale": "This arm tests the exact stated relation; response, adverse, treatment, and other more-specific assertions would change its biological meaning."
+      }
+    ],
+    "constraints": [
+      {
+        "id": "distinct-drugs",
+        "kind": "other",
+        "expression": "The candidate and supported parent must be different canonical drug nodes.",
+        "explanation": "The candidate and supported parent must be different canonical drug nodes."
+      },
+      {
+        "id": "roles",
+        "kind": "source",
+        "expression": "Deduplicate primary-source identifiers over all qualifying parent-disease edges and require all three named sources.",
+        "explanation": "Deduplicate primary-source identifiers over all qualifying parent-disease edges and require all three named sources."
+      },
+      {
+        "id": "target-grouping",
+        "kind": "cardinality",
+        "expression": "At least 2 distinct shared target genes must occur across all supported parents pooled for this candidate and disease; different genes may use different parents.",
+        "explanation": "At least 2 distinct shared target genes must occur across all supported parents pooled for this candidate and disease; different genes may use different parents."
+      }
+    ]
+  },
+  "derived_features": [
+    {
+      "name": "parent indication primary-source union",
+      "definition": "Distinct primary knowledge sources across the stated indication predicate closure for one parent-disease pair.",
+      "inputs": [
+        "Original parent-disease treatment-oriented predicates and primary_knowledge_sources arrays"
+      ],
+      "construction": "Group by canonical parent and disease, union and deduplicate source identifiers. Missing arrays contribute no identifiers. The stored access path contains pairs with at least two sources; this rule requires all three named sources and rematches raw edges.",
+      "formula": "Require SemMedDB, FAERS, and multiomics clinical trials in the deduplicated union.",
+      "interpretation": "Complementary resource coverage is not proof that evidence is statistically independent.",
+      "neo4j_artifact_id": "r0001-nontarget-treatment-source-support-v1"
+    },
+    {
+      "name": "complete curated causal target access",
+      "definition": "Curated causes-qualified drug-target pairs over the complete affects closure.",
+      "inputs": [
+        "Original causal affects-descendant edges from ChEMBL, Guide to Pharmacology, and DrugCentral"
+      ],
+      "construction": "Group qualifying raw edges by drug and gene, counting distinct relationship identities. Retain one compact edge per endpoint pair. Rematch every raw target predicate, qualifier, and source required here, on both drugs.",
+      "formula": "One access relationship iff at least one qualifying raw curated causal effect exists.",
+      "interpretation": "This only accelerates joins; missing edges mean no qualifying curated evidence. It adds no predictive threshold.",
+      "neo4j_artifact_id": "r0004-curated-causal-target-v1"
+    },
+    {
+      "name": "shared target grouping",
+      "definition": "At least 2 distinct shared target genes must occur across all supported parents pooled for this candidate and disease; different genes may use different parents.",
+      "inputs": [
+        "Canonical shared genes on all qualifying parent-candidate-disease paths"
+      ],
+      "construction": "Deduplicate genes before the minimum test within the explicitly stated group. Deduplicate final candidate-disease pairs. support_count reports the union of genes from retained groups.",
+      "formula": "Require distinct gene count >= 2 after pooling parents.",
+      "interpretation": "Distinct genes can be functionally related; target multiplicity alone is not independent biological evidence.",
+      "neo4j_artifact_id": null
+    }
+  ],
+  "mechanism": {
+    "score": "medium",
+    "rationale": "Explicit parent grouping and matched target pharmacology may distinguish transferable indications from pooled target-neighborhood similarity. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (parent:Drug)-[cohort:MINER_R0001_NONTARGET_TREATMENT_SOURCE_SUPPORT]->(disease:Disease) WHERE cohort.artifact_id='r0001-nontarget-treatment-source-support-v1' AND all(source IN [\"infores:semmeddb\", \"infores:faers\", \"infores:multiomics-clinicaltrials\"] WHERE source IN cohort.primary_sources) MATCH (parent)-[parent_access:MINER_R0004_CURATED_TARGET]->(gene:GeneOrGeneProduct) WHERE parent_access.artifact_id='r0004-curated-causal-target-v1' MATCH (chemical:Drug)-[candidate_access:MINER_R0004_CURATED_TARGET]->(gene) WHERE candidate_access.artifact_id='r0004-curated-causal-target-v1' WITH DISTINCT chemical,parent,gene,disease MATCH (parent:Drug)-[indication:{{relationship_types:indication}}]->(disease:Disease) WHERE indication.predicate IN {{predicates:indication}} MATCH (parent:Drug)-[parent_target:{{relationship_types:parent_target}}]->(gene:GeneOrGeneProduct) WHERE parent_target.predicate IN {{predicates:parent_target}} AND parent_target.qualified_predicate = \"biolink:causes\" AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(parent_target.primary_knowledge_sources,[])) MATCH (chemical:Drug)-[candidate_target:{{relationship_types:candidate_target}}]->(gene:GeneOrGeneProduct) WHERE candidate_target.predicate IN {{predicates:candidate_target}} AND candidate_target.qualified_predicate = \"biolink:causes\" AND any(source IN [\"infores:chembl\",\"infores:gtopdb\",\"infores:drugcentral\"] WHERE source IN coalesce(candidate_target.primary_knowledge_sources,[])) MATCH (chemical:Drug)-[direct:{{relationship_types:direct}}]->(disease:Disease) WHERE direct.predicate IN {{predicates:direct}} AND (chemical<>parent) WITH DISTINCT chemical,parent,gene,disease CALL { WITH parent,disease MATCH (parent)-[role_edge:{{relationship_types:indication}}]->(disease) WHERE role_edge.predicate IN {{predicates:indication}} UNWIND coalesce(role_edge.primary_knowledge_sources,[]) AS source RETURN collect(DISTINCT source) AS raw_sources } WITH chemical,parent,gene,disease WHERE all(source IN [\"infores:semmeddb\", \"infores:faers\", \"infores:multiomics-clinicaltrials\"] WHERE source IN raw_sources) WITH chemical,disease,collect(DISTINCT gene.id) AS shared_genes WHERE size(shared_genes)>=2 RETURN chemical.id AS subject_id,disease.id AS object_id,size(shared_genes) AS support_count",
+    "trapi": {
+      "expressibility": "partial",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "parent": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              }
+            },
+            "edges": {
+              "indication": {
+                "subject": "parent",
+                "object": "disease",
+                "predicates": [
+                  "biolink:treats_or_applied_or_studied_to_treat"
+                ]
+              },
+              "parent_target": {
+                "subject": "parent",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "candidate_target": {
+                "subject": "chemical",
+                "object": "gene",
+                "predicates": [
+                  "biolink:affects"
+                ],
+                "qualifier_constraints": [
+                  {
+                    "qualifier_set": [
+                      {
+                        "qualifier_type_id": "biolink:qualified_predicate",
+                        "qualifier_value": "biolink:causes"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "direct": {
+                "subject": "chemical",
+                "object": "disease",
+                "predicates": [
+                  "biolink:affects"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": "Outside TRAPI: indication: discard exact predicates biolink:ameliorates_condition, biolink:preventative_for_condition, biolink:treats; parent_target: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; parent_target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; candidate_target: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; candidate_target: enforce primary-source membership in infores:chembl, infores:gtopdb, infores:drugcentral; direct: discard exact predicates biolink:affects_response_to, biolink:ameliorates_condition, biolink:decreases_response_to, biolink:disrupts, biolink:exacerbates_condition, biolink:has_adverse_event, biolink:has_side_effect, biolink:increases_response_to, biolink:regulates; The candidate and supported parent must be different canonical drug nodes.; Deduplicate primary-source identifiers over all qualifying parent-disease edges and require all three named sources.; At least 2 distinct shared target genes must occur across all supported parents pooled for this candidate and disease; different genes may use different parents.; source unions and complete target grouping must be computed across all results"
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "Canonical graph identifiers are deduplicated; parallel evidence does not multiply gene support.",
+    "Shared molecular action does not guarantee shared exposure, dose, efficacy, or clinical context."
+  ]
+}

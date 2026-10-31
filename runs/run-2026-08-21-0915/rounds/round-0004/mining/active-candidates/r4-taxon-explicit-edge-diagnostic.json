@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "r4-taxon-explicit-edge-diagnostic",
+  "family_id": "taxonomic-edge-availability-diagnostic",
+  "name": "Explicit Molecular Taxonomy Edge Diagnostic",
+  "status": "candidate",
+  "plain_language_rule": "Predict treatment when The drug directly physically engages a molecular target The pinned descendant closure is biolink:binds, biolink:directly_physically_interacts_with.; The molecular target has an explicit graph-edge taxonomic assignment to the organism The pinned descendant closure is biolink:in_taxon.; The same taxonomically identified organism is asserted to cause the disease The pinned descendant closure is biolink:causes.",
+  "hypothesis": "An explicit in_taxon graph edge would provide a directly queryable taxonomic link; its absence must remain distinguishable from the available node-property representation.",
+  "graph_pattern": {
+    "nodes": [
+      {
+        "id": "chemical",
+        "role": "Candidate drug",
+        "categories": [
+          "biolink:Drug"
+        ],
+        "explanation": "Candidate drug."
+      },
+      {
+        "id": "disease",
+        "role": "Disease predicted to be treated",
+        "categories": [
+          "biolink:Disease"
+        ],
+        "explanation": "Disease predicted to be treated."
+      },
+      {
+        "id": "gene",
+        "role": "Disease-implicated gene or gene product",
+        "categories": [
+          "biolink:GeneOrGeneProduct"
+        ],
+        "explanation": "Disease-implicated gene or gene product."
+      },
+      {
+        "id": "organism",
+        "role": "Organism asserted to cause the disease",
+        "categories": [
+          "biolink:OrganismTaxon"
+        ],
+        "explanation": "Organism asserted to cause the disease."
+      }
+    ],
+    "edges": [
+      {
+        "id": "target",
+        "subject": "chemical",
+        "object": "gene",
+        "predicates": [
+          "biolink:directly_physically_interacts_with"
+        ],
+        "direction": "forward",
+        "explanation": "The drug directly physically engages a molecular target The pinned descendant closure is biolink:binds, biolink:directly_physically_interacts_with."
+      },
+      {
+        "id": "taxonomy",
+        "subject": "gene",
+        "object": "organism",
+        "predicates": [
+          "biolink:in_taxon"
+        ],
+        "direction": "forward",
+        "explanation": "The molecular target has an explicit graph-edge taxonomic assignment to the organism The pinned descendant closure is biolink:in_taxon."
+      },
+      {
+        "id": "infection",
+        "subject": "organism",
+        "object": "disease",
+        "predicates": [
+          "biolink:causes"
+        ],
+        "direction": "forward",
+        "explanation": "The same taxonomically identified organism is asserted to cause the disease The pinned descendant closure is biolink:causes."
+      }
+    ],
+    "constraints": []
+  },
+  "derived_features": [],
+  "mechanism": {
+    "score": "low",
+    "rationale": "An explicit in_taxon graph edge would provide a directly queryable taxonomic link; its absence must remain distinguishable from the available node-property representation. The graph pattern is a hypothesis, not proof of clinical efficacy."
+  },
+  "execution": {
+    "cypher_template": "MATCH (chemical:Drug)-[target:{{relationship_types:target}}]->(gene:GeneOrGeneProduct) WHERE target.predicate IN {{predicates:target}} MATCH (gene:GeneOrGeneProduct)-[taxonomy:{{relationship_types:taxonomy}}]->(organism:OrganismTaxon) WHERE taxonomy.predicate IN {{predicates:taxonomy}} MATCH (organism:OrganismTaxon)-[infection:{{relationship_types:infection}}]->(disease:Disease) WHERE infection.predicate IN {{predicates:infection}} RETURN chemical.id AS subject_id,disease.id AS object_id,count(DISTINCT organism) AS support_count",
+    "trapi": {
+      "expressibility": "full",
+      "query": {
+        "message": {
+          "query_graph": {
+            "nodes": {
+              "chemical": {
+                "categories": [
+                  "biolink:Drug"
+                ]
+              },
+              "disease": {
+                "categories": [
+                  "biolink:Disease"
+                ]
+              },
+              "gene": {
+                "categories": [
+                  "biolink:GeneOrGeneProduct"
+                ]
+              },
+              "organism": {
+                "categories": [
+                  "biolink:OrganismTaxon"
+                ]
+              }
+            },
+            "edges": {
+              "target": {
+                "subject": "chemical",
+                "object": "gene",
+                "predicates": [
+                  "biolink:directly_physically_interacts_with"
+                ]
+              },
+              "taxonomy": {
+                "subject": "gene",
+                "object": "organism",
+                "predicates": [
+                  "biolink:in_taxon"
+                ]
+              },
+              "infection": {
+                "subject": "organism",
+                "object": "disease",
+                "predicates": [
+                  "biolink:causes"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "limitations": ""
+    }
+  },
+  "limitations": [
+    "Unknown predictions are unlabeled, not known negatives.",
+    "The raw node taxonomy fields do not provide annotation-level primary-source provenance.",
+    "Taxonomic membership does not establish target essentiality, exposure, inhibition in an organism, or clinical efficacy.",
+    "Organism-causes-disease assertions can be broad or text-mined and do not prove a pathogen-specific clinical mechanism.",
+    "This diagnostic requires a real in_taxon relationship and does not read the similarly named raw node property.",
+    "Support counts distinct organism nodes; physical engagement alone does not establish inhibition."
+  ]
+}

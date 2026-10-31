@@ -1,0 +1,36 @@
+[
+  {
+    "purpose": "Profile every exact in_taxon edge by endpoint categories and primary-source composition.",
+    "query": "MATCH (subject)-[annotation:IN_TAXON]->(object) WHERE annotation.predicate IN $predicates RETURN labels(subject) AS subject_labels,labels(object) AS object_labels,annotation.primary_knowledge_sources AS primary_sources,count(*) AS edges,count(DISTINCT subject) AS subjects,count(DISTINCT object) AS objects ORDER BY edges DESC",
+    "parameters": {"predicates": ["biolink:in_taxon"]},
+    "timeout_seconds": 90,
+    "maximum_rows": 200,
+    "next_action": "Use the actual stored orientation and endpoint categories; an empty result indicates a missing relation, not failed anti-infective biology."
+  },
+  {
+    "purpose": "Inventory gene-product node property names for explicit or nested taxonomic identity without exporting node contents.",
+    "query": "MATCH (node:GeneOrGeneProduct) UNWIND keys(node) AS property RETURN property,count(*) AS populated_nodes ORDER BY populated_nodes DESC",
+    "timeout_seconds": 90,
+    "maximum_rows": 100,
+    "next_action": "Inspect the value type of any relevant raw property before defining a feature; do not interpret identifier names or infer taxonomy externally."
+  },
+  {
+    "purpose": "Inventory organism node property names for explicit or nested taxonomic identity.",
+    "query": "MATCH (node:OrganismTaxon) UNWIND keys(node) AS property RETURN property,count(*) AS populated_nodes ORDER BY populated_nodes DESC",
+    "timeout_seconds": 60,
+    "maximum_rows": 100,
+    "next_action": "Compare compatible stored identities only; record missing or ambiguous identity information as a graph limitation."
+  },
+  {
+    "purpose": "Profile taxon annotations attached to molecular products of disease-causing organisms before joining drug evidence.",
+    "query": "MATCH (organism:OrganismTaxon)-[cause:CAUSES]->(disease:Disease) WHERE cause.predicate IN $cause_predicates WITH DISTINCT organism MATCH (organism)-[production:PRODUCES]->(molecule) WHERE production.predicate IN $production_predicates OPTIONAL MATCH (molecule)-[annotation:IN_TAXON]->(taxon) WHERE annotation.predicate IN $taxon_predicates RETURN count(DISTINCT organism) AS causal_organisms,count(DISTINCT molecule) AS product_nodes,count(DISTINCT annotation) AS product_taxon_annotations,count(DISTINCT CASE WHEN taxon=organism THEN molecule END) AS products_annotated_to_same_causal_organism",
+    "parameters": {
+      "cause_predicates": ["biolink:causes"],
+      "production_predicates": ["biolink:produces"],
+      "taxon_predicates": ["biolink:in_taxon"]
+    },
+    "timeout_seconds": 90,
+    "maximum_rows": 10,
+    "next_action": "If same-organism annotations exist, test target-taxon chains and product-arm removals; otherwise retain an executable zero-result taxonomy diagnostic."
+  }
+]

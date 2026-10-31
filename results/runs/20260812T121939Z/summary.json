@@ -1,0 +1,293 @@
+{
+  "created_at": "2026-08-12T12:19:39.714993+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R174",
+      "name": "Direct suppression of dominant-negative disease gene",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Decreasing a gene with a dominant-negative disease mechanism may reduce the antagonistic mutant product.",
+      "body": "drug binds and decreases gene; Gene2Phenotype assertion specifies dominant-negative variant form",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule uses explicit disease-mechanism direction, but graph drug effects are not allele-specific and may also reduce the remaining wild-type product.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The direct target and disease paths are TRAPI-expressible; source, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'dominant_negative_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 61,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 61
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.8248149160062894
+    },
+    {
+      "id": "TREAT-I09-R175",
+      "name": "Dual gain-of-function driver suppression",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug that directly inhibits two distinct gain-of-function disease genes supplies convergent directionally corrective evidence.",
+      "body": "drug binds and decreases two Gene2Phenotype gain-of-function genes for the same disease",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two independent direct target arms align with two explicit gain-of-function disease mechanisms.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The repeated target and disease paths are TRAPI-expressible; two-gene cardinality, source, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene1:Gene)\nMATCH (subject)-[effect1:AFFECTS]->(gene1)\nMATCH (gene1)-[association1:ASSOCIATED_WITH]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene2:Gene)\nMATCH (subject)-[effect2:AFFECTS]->(gene2)\nMATCH (gene2)-[association2:ASSOCIATED_WITH]->(object)\nWHERE gene1.id < gene2.id\n  AND 'infores:gene2phenotype' IN\n      coalesce(association1.primary_knowledge_sources, [])\n  AND 'infores:gene2phenotype' IN\n      coalesce(association2.primary_knowledge_sources, [])\n  AND association1.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND association2.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect1.qualified_predicate = 'biolink:causes'\n  AND effect1.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect1.object_direction_qualifier = 'decreased'\n  AND effect2.qualified_predicate = 'biolink:causes'\n  AND effect2.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect2.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 12,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.9802482500090264
+    },
+    {
+      "id": "TREAT-I09-R176",
+      "name": "Affected-anatomy-localized GOF suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R160",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct inhibition of a gain-of-function disease gene is more credible when the gene is expressed in an anatomy affected by the disease.",
+      "body": "R160 plus Bgee expression of the GOF gene in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit corrective direction is localized to tissue independently affected by the disease, although expression does not establish disease-stage activity.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, expression, and disease-anatomy paths are TRAPI-expressible; Bgee provenance, shared anatomy, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 48,
+        "validation_hits": 0,
+        "training_hits": 8,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 40
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.16666666666666666,
+        "visible_target_recall": 0.0002907822041291073,
+        "visible_target_f0_5": 0.0014438348252959862,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.8637224590056576
+    },
+    {
+      "id": "TREAT-I09-R177",
+      "name": "Affected-anatomy-localized LOF activation",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R161",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Direct activation of a loss-of-function disease gene is more credible when the gene is expressed in an anatomy affected by the disease.",
+      "body": "R161 plus Bgee expression of the LOF gene in disease anatomy",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Explicit restorative direction is localized to tissue independently affected by the disease, although expression does not establish effective exposure.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, expression, and disease-anatomy paths are TRAPI-expressible; Bgee provenance, shared anatomy, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nMATCH (gene)-[expression:EXPRESSED_IN]->(anatomy:AnatomicalEntity)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND 'infores:bgee' IN coalesce(expression.primary_knowledge_sources, [])\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.6666666666666666,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.0003633192849876471,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.782826709037181
+    },
+    {
+      "id": "TREAT-I09-R178",
+      "name": "GOF mechanism transfer to immediate disease parent",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R160",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An explicit gain-of-function correction for a specific disease can support its immediate broader MONDO parent.",
+      "body": "drug decreases GOF gene for source disease; candidate is immediate ontology parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The molecular direction remains explicit, but upward ontology transfer can overgeneralize from one subtype to a heterogeneous parent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, disease, and one-step ontology paths are TRAPI-expressible; source, variant-form, and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'gain_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1634,
+        "validation_hits": 3,
+        "training_hits": 19,
+        "contraindicated_pairs": 19,
+        "unresolved_or_blind_pairs": 1612
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.01346389228886169,
+        "visible_target_recall": 0.000799651061355045,
+        "visible_target_f0_5": 0.0032307330827067667,
+        "validation_precision_lower_bound": 0.0018575851393188853,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0017024174327545114
+      },
+      "runtime_seconds": 0.44668900000397116
+    },
+    {
+      "id": "TREAT-I09-R179",
+      "name": "LOF mechanism transfer to immediate disease parent",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R161",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An explicit loss-of-function restoration for a specific disease can support its immediate broader MONDO parent.",
+      "body": "drug increases LOF gene for source disease; candidate is immediate ontology parent",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The molecular direction remains explicit, but upward ontology transfer can overgeneralize from one subtype to a heterogeneous parent.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The target, disease, and one-step ontology paths are TRAPI-expressible; source, variant-form, and ontology-degree constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(anchor:Disease)\nMATCH (anchor)-[:SUBCLASS_OF]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'loss_of_function_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 461,
+        "validation_hits": 1,
+        "training_hits": 13,
+        "contraindicated_pairs": 6,
+        "unresolved_or_blind_pairs": 447
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.03036876355748373,
+        "visible_target_recall": 0.0005088688572259378,
+        "visible_target_f0_5": 0.00238452105191443,
+        "validation_precision_lower_bound": 0.002232142857142857,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0012068549360366883
+      },
+      "runtime_seconds": 0.34831933304667473
+    },
+    {
+      "id": "TREAT-I09-R180",
+      "name": "Dominant-negative gene activation diagnostic",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing a dominant-negative disease gene may worsen the antagonistic mutant mechanism and serves as matched negative evidence.",
+      "body": "drug binds and increases gene; Gene2Phenotype assertion specifies dominant-negative variant form",
+      "mechanism_score": "low",
+      "mechanism_rationale": "Without allele specificity, increased abundance may amplify the dominant-negative product; this is a diagnostic countermechanism rather than a treatment rule.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The direct target and disease paths are TRAPI-expressible; source, variant-form, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier =\n      'dominant_negative_variant_form'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'increased'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 25,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 25
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.84517283301102
+    }
+  ]
+}

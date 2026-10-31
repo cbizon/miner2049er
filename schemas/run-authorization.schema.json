@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/run-authorization.schema.json",
+  "title": "Sealed rule-mining run authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "benchmark_id",
+    "split_id",
+    "graph_version",
+    "biolink_version",
+    "predicate_expansion",
+    "status",
+    "current_round_id",
+    "round_ids",
+    "feedback_submission_limit",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "benchmark_id": {"type": "string", "minLength": 1},
+    "split_id": {"type": "string", "minLength": 1},
+    "graph_version": {"type": "string", "minLength": 1},
+    "biolink_version": {"type": "string", "minLength": 1},
+    "predicate_expansion": {"const": "descendants"},
+    "status": {"enum": ["running", "round_complete", "completed"]},
+    "current_round_id": {
+      "type": ["string", "null"],
+      "pattern": "^round-[0-9]{4}$"
+    },
+    "round_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^round-[0-9]{4}$"}
+    },
+    "feedback_submission_limit": {"type": "integer", "minimum": 1},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

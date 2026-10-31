@@ -1,0 +1,734 @@
+{
+  "created_at": "2026-08-11T02:07:43.221078+00:00",
+  "rules_file": "/Users/bizon/Projects/experiments/miner2049er/rules/treats-rules.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I01-R001",
+      "name": "Affected disease-associated gene baseline",
+      "iteration": 1,
+      "parent_rule": null,
+      "library_status": "baseline",
+      "status": "completed",
+      "hypothesis": "A chemical that affects a gene associated with a disease may treat that disease.",
+      "body": "chemical -affects-> gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Connects a chemical to a disease-linked gene, but does not require a therapeutically corrective direction or corroborating mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A two-edge TRAPI query can express the graph pattern; edge-property refinements would require constraints.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:AFFECTS]->(gene:Gene)\n      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 799762,
+        "validation_hits": 181,
+        "training_hits": 1799,
+        "contraindicated_pairs": 1823,
+        "unresolved_or_blind_pairs": 797782
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0024757365316181563,
+        "visible_target_recall": 0.07196859552195406,
+        "visible_target_f0_5": 0.003068283249033026,
+        "validation_precision_lower_bound": 0.00022682755967381947,
+        "validation_recall": 0.07698851552530837,
+        "validation_f0_5": 0.0002833257623263143
+      },
+      "runtime_seconds": 21.523346124973614
+    },
+    {
+      "id": "TREAT-I01-R002",
+      "name": "Direct target with disease-gene association baseline",
+      "iteration": 1,
+      "parent_rule": null,
+      "library_status": "baseline",
+      "status": "completed",
+      "hypothesis": "A chemical that directly physically interacts with a disease-associated gene may treat the disease.",
+      "body": "chemical -directly_physically_interacts_with-> gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Direct molecular interaction is stronger than generic affects, but the rule lacks direction, functional consequence, and pathway corroboration.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "full",
+      "trapi_notes": "The two-edge path is directly expressible in TRAPI.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2372676,
+        "validation_hits": 38,
+        "training_hits": 621,
+        "contraindicated_pairs": 561,
+        "unresolved_or_blind_pairs": 2372017
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00027774546545756776,
+        "visible_target_recall": 0.023953184065135212,
+        "visible_target_f0_5": 0.0003461783174494044,
+        "validation_precision_lower_bound": 1.6019864632143857e-05,
+        "validation_recall": 0.016163334751169715,
+        "validation_f0_5": 2.0019870248059886e-05
+      },
+      "runtime_seconds": 25.213209667010233
+    },
+    {
+      "id": "TREAT-I02-R006",
+      "name": "Selective inhibition of a causal disease gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R001",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it selectively decreases the activity or abundance of a gene asserted to cause the disease.",
+      "body": "chemical -affects[causes, activity_or_abundance, decreased]-> causal gene -causes-> disease; chemical qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule links directional perturbation to a causal disease gene, but the graph does not establish whether decreased gene activity corrects or reproduces the disease mechanism.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The path and edge qualifiers are TRAPI-expressible; the chemical degree constraint requires Cypher or post-processing.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(gene:Gene)-[:CAUSES]->(object:Disease)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 170439,
+        "validation_hits": 38,
+        "training_hits": 429,
+        "contraindicated_pairs": 552,
+        "unresolved_or_blind_pairs": 169972
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0027399832198029793,
+        "visible_target_recall": 0.016974411166036638,
+        "visible_target_f0_5": 0.003292126530451113,
+        "validation_precision_lower_bound": 0.00022351626374919124,
+        "validation_recall": 0.016163334751169715,
+        "validation_f0_5": 0.0002784327460356306
+      },
+      "runtime_seconds": 23.45329941698583
+    },
+    {
+      "id": "TREAT-I02-R007",
+      "name": "Multi-gene inhibition within a disease-supported process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R003",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A selective chemical may treat a disease when it decreases multiple disease-associated genes participating in the same bounded-size biological process.",
+      "body": "disease has 3-20 associated genes in a process; chemical decreases activity_or_abundance of >=2 of those genes; chemical qualified gene degree <=100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Requires coherent multi-gene perturbation and suppresses hubs, but the graph does not establish whether decreasing those genes is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "cypher": "MATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\nWHERE support.gene_count >= 3 AND support.gene_count <= 20\nMATCH (targeted_gene:Gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)\nMATCH (targeted_gene)-[:INVOLVED_IN]->(process)\nMATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(targeted_gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 100\nWITH subject, object, count(DISTINCT targeted_gene) AS targeted_disease_genes\nWHERE targeted_disease_genes >= 2\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 50623,
+        "validation_hits": 23,
+        "training_hits": 435,
+        "contraindicated_pairs": 466,
+        "unresolved_or_blind_pairs": 50165
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.009047271003298895,
+        "visible_target_recall": 0.016647281186391392,
+        "visible_target_f0_5": 0.009956348585241996,
+        "validation_precision_lower_bound": 0.0004582768789352036,
+        "validation_recall": 0.009783071033602722,
+        "validation_f0_5": 0.000566215171612433
+      },
+      "runtime_seconds": 27.200215250020847
+    },
+    {
+      "id": "TREAT-I02-R009",
+      "name": "Normalized phenotype indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when at least half of the smaller disease phenotype profile is shared and both profiles are bounded.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=3 phenotypes; shared/min(phenotype degrees) >=0.5; each phenotype degree 3-50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Phenotypic similarity supports indication transfer but does not identify the drug mechanism responsible for efficacy.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN [$validation_source, $blind_source]\n)\n  AND anchor._miner_phenotype_degree >= 3\n  AND anchor._miner_phenotype_degree <= 50\nMATCH (anchor)-[:HAS_PHENOTYPE]->(phenotype:PhenotypicFeature)\n      <-[:HAS_PHENOTYPE]-(object:Disease)\nWHERE object <> anchor\n  AND object._miner_phenotype_degree >= 3\n  AND object._miner_phenotype_degree <= 50\nWITH subject, anchor, object,\n     count(DISTINCT phenotype) AS shared_phenotypes,\n     anchor._miner_phenotype_degree AS anchor_phenotypes,\n     object._miner_phenotype_degree AS object_phenotypes\nWHERE shared_phenotypes >= 3\n  AND toFloat(shared_phenotypes) /\n      CASE\n        WHEN anchor_phenotypes < object_phenotypes\n        THEN anchor_phenotypes\n        ELSE object_phenotypes\n      END >= 0.5\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15562,
+        "validation_hits": 0,
+        "training_hits": 211,
+        "contraindicated_pairs": 4,
+        "unresolved_or_blind_pairs": 15351
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.013558668551600052,
+        "visible_target_recall": 0.007669380633905205,
+        "visible_target_f0_5": 0.011753565062388591,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 8.266785042011179
+    },
+    {
+      "id": "TREAT-I02-R010",
+      "name": "Normalized genetic indication transfer",
+      "iteration": 2,
+      "parent_rule": "TREAT-I01-R004",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A treatment for one disease may transfer to another disease when the diseases share multiple associated genes and at least half of the smaller gene profile.",
+      "body": "chemical -treats-> anchor disease; anchor and candidate disease share >=2 associated genes; shared/min(gene degrees) >=0.5; each gene degree 2-100",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Genetic similarity provides a disease-mechanism bridge, but efficacy is still transferred from an existing indication.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph pattern is TRAPI-expressible; normalized overlap, degree limits, and source exclusion require post-processing or Cypher.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[treatment:TREATS|AMELIORATES_CONDITION]->(anchor:Disease)\nWHERE any(\n  source IN coalesce(treatment.primary_knowledge_sources, [])\n  WHERE NOT source IN [$validation_source, $blind_source]\n)\n  AND anchor._miner_gene_association_degree >= 2\n  AND anchor._miner_gene_association_degree <= 100\nMATCH (anchor)<-[:GENE_ASSOCIATED_WITH_CONDITION]-(gene:Gene)\n      -[:GENE_ASSOCIATED_WITH_CONDITION]->(object:Disease)\nWHERE object <> anchor\n  AND object._miner_gene_association_degree >= 2\n  AND object._miner_gene_association_degree <= 100\nWITH subject, anchor, object,\n     count(DISTINCT gene) AS shared_genes,\n     anchor._miner_gene_association_degree AS anchor_genes,\n     object._miner_gene_association_degree AS object_genes\nWHERE shared_genes >= 2\n  AND toFloat(shared_genes) /\n      CASE\n        WHEN anchor_genes < object_genes THEN anchor_genes ELSE object_genes\n      END >= 0.5\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 46,
+        "validation_hits": 0,
+        "training_hits": 2,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 44
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.043478260869565216,
+        "visible_target_recall": 7.269555103227682e-05,
+        "visible_target_f0_5": 0.00036106296938186015,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.19156154099619016
+    },
+    {
+      "id": "TREAT-I02-R011",
+      "name": "Clinical-trial evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical tested in clinical trials for a disease is enriched for exact treats assertions.",
+      "body": "chemical -in_clinical_trials_for-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is direct treatment-development evidence rather than an explanatory biological mechanism.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:IN_CLINICAL_TRIALS_FOR]->(object:Disease)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 310701,
+        "validation_hits": 208,
+        "training_hits": 11972,
+        "contraindicated_pairs": 852,
+        "unresolved_or_blind_pairs": 298521
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.039201676209603444,
+        "visible_target_recall": 0.4427159057865659,
+        "visible_target_f0_5": 0.04794082732170578,
+        "validation_precision_lower_bound": 0.0006962832533835015,
+        "validation_recall": 0.08847299021692896,
+        "validation_f0_5": 0.0008686450056670734
+      },
+      "runtime_seconds": 5.794554667023476
+    },
+    {
+      "id": "TREAT-I02-R012",
+      "name": "Studied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical studied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -studied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The rule restates treatment study evidence and does not explain efficacy.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:STUDIED_TO_TREAT]->(object:Disease)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1308,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 1291
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.012996941896024464,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0025958954312240413,
+        "validation_precision_lower_bound": 0.0007739938080495357,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0006649820454847719
+      },
+      "runtime_seconds": 0.10672454099403694
+    },
+    {
+      "id": "TREAT-I02-R013",
+      "name": "Applied-to-treat evidence benchmark",
+      "iteration": 2,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical applied to treat a disease is enriched for exact treats assertions.",
+      "body": "chemical -applied_to_treat-> disease",
+      "mechanism_score": "low",
+      "mechanism_rationale": "This is treatment-use evidence rather than a mechanistic explanation.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "full",
+      "trapi_notes": "A one-edge TRAPI query expresses the rule.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:APPLIED_TO_TREAT]->(object:Disease)\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 55583,
+        "validation_hits": 65,
+        "training_hits": 6499,
+        "contraindicated_pairs": 1275,
+        "unresolved_or_blind_pairs": 49019
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.11809366173110483,
+        "visible_target_recall": 0.23858679848793254,
+        "visible_target_f0_5": 0.13136196986919835,
+        "validation_precision_lower_bound": 0.0013242604514709477,
+        "validation_recall": 0.027647809442790303,
+        "validation_f0_5": 0.001635738624067
+      },
+      "runtime_seconds": 1.7267453329986893
+    },
+    {
+      "id": "TREAT-I02-R015",
+      "name": "Direct binding plus inhibition of a causal gene",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R006",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A chemical may treat a disease when it both directly binds and decreases the activity or abundance of a causal disease gene.",
+      "body": "chemical -directly_physically_interacts_with-> causal gene -causes-> disease; same chemical -affects[causes, activity_or_abundance, decreased]-> same gene; qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Requires target engagement, directional perturbation, and a causal disease link on the same gene, but lacks disease-mechanism direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The parallel-edge motif and qualifiers are TRAPI-expressible; the degree constraint requires Cypher or post-processing.",
+      "cypher": "MATCH (subject:ChemicalEntity)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 2134,
+        "validation_hits": 5,
+        "training_hits": 35,
+        "contraindicated_pairs": 19,
+        "unresolved_or_blind_pairs": 2094
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.01874414245548266,
+        "visible_target_recall": 0.0014539110206455365,
+        "visible_target_f0_5": 0.005548158011540168,
+        "validation_precision_lower_bound": 0.0023820867079561697,
+        "validation_recall": 0.002126754572522331,
+        "validation_f0_5": 0.0023262305759746906
+      },
+      "runtime_seconds": 0.34163666603853926
+    },
+    {
+      "id": "TREAT-I03-R017",
+      "name": "Specific drug binding and inhibition without adverse evidence",
+      "iteration": 3,
+      "parent_rule": "TREAT-I02-R015",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when the direct-binding and inhibition rule is restricted to drugs, specific MONDO diseases, and pairs without explicit adverse relations.",
+      "body": "drug binds and decreases causal gene; qualified gene degree <=50; MONDO disease with 1-500 descendants; no has_side_effect, contraindicated_in, exacerbates_condition, or causes edge from drug to disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains the same target-level evidence while excluding broad disease hubs and explicit adverse relations, but causal direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse graph patterns are TRAPI-expressible; degree and absence constraints require Cypher or post-processing.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 350,
+        "validation_hits": 3,
+        "training_hits": 25,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 322
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.08,
+        "visible_target_recall": 0.0010177377144518756,
+        "visible_target_f0_5": 0.0048422800221361376,
+        "validation_precision_lower_bound": 0.009230769230769232,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004108463434675432
+      },
+      "runtime_seconds": 0.12702595896553248
+    },
+    {
+      "id": "TREAT-I03-R018",
+      "name": "Curated-effect specific drug mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Requiring a curated SIGNOR perturbation edge further enriches the specific drug binding-and-inhibition rule.",
+      "body": "R017 plus affects primary source infores:signor",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses curated directional perturbation, direct binding, disease causality, specificity, and adverse-edge exclusion, but not disease-mechanism direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Positive, adverse, and provenance constraints can be represented in TRAPI only partly; degree and absence handling are easier in Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND 'infores:signor' IN coalesce(effect.primary_knowledge_sources, [])\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 21,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 18
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.14285714285714285,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005435570372517756,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.14662062498973683
+    },
+    {
+      "id": "TREAT-I03-R019",
+      "name": "Low-fanout causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "Restricting the causal target to genes linked to at most 12 diseases removes literature-derived disease hubs while retaining specific causal mechanisms.",
+      "body": "R017 plus causal gene disease degree <=12",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Retains direct target engagement and directional perturbation with a specific causal gene-disease link, but cannot distinguish therapeutic inhibition from disease-producing loss of function.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive and adverse patterns are TRAPI-expressible; causal-gene degree and absence constraints require Cypher or post-processing.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 244,
+        "validation_hits": 3,
+        "training_hits": 23,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 218
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.10655737704918032,
+        "visible_target_recall": 0.0009450421634195987,
+        "visible_target_f0_5": 0.004563324908733502,
+        "validation_precision_lower_bound": 0.013574660633484163,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004636785162287482
+      },
+      "runtime_seconds": 0.13035104097798467
+    },
+    {
+      "id": "TREAT-I03-R021",
+      "name": "Independently associated causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A causal-target mechanism is more reliable when the same gene-disease pair also has a dedicated gene-associated-with-condition assertion.",
+      "body": "R017 plus same gene -gene_associated_with_condition-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds an independent relation family supporting the exact target-disease pair, but does not resolve therapeutic direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 15,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 12
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.2,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.0005440301755404033,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.09449758398113772
+    },
+    {
+      "id": "TREAT-I03-R022",
+      "name": "Clinical-stage causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching clinical-trial evidence should strongly enrich for treatment relationships.",
+      "body": "R017 plus drug -in_clinical_trials_for-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target-level evidence with graph-internal translational evidence, but the molecular perturbation is not proven corrective.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (subject)-[:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 47,
+        "validation_hits": 3,
+        "training_hits": 20,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 24
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.48936170212765956,
+        "visible_target_recall": 0.0008359988368711835,
+        "visible_target_f0_5": 0.004151624548736461,
+        "validation_precision_lower_bound": 0.1111111111111111,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.0061000406669377795
+      },
+      "runtime_seconds": 0.09693016699748114
+    },
+    {
+      "id": "TREAT-I03-R023",
+      "name": "Applied causal target mechanism",
+      "iteration": 3,
+      "parent_rule": "TREAT-I03-R017",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism with matching applied-to-treat evidence should be a high-precision treatment rule.",
+      "body": "R017 plus drug -applied_to_treat-> disease",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines target-level evidence with graph-internal treatment-use evidence, but the latter is target-adjacent and molecular direction is unresolved.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif is TRAPI-expressible; degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (subject)-[:APPLIED_TO_TREAT]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 24,
+        "validation_hits": 1,
+        "training_hits": 16,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.7083333333333334,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.003078817733990148,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.0020981955518254306
+      },
+      "runtime_seconds": 0.09102379204705358
+    },
+    {
+      "id": "TREAT-I04-R024",
+      "name": "Low-fanout process-corroborated mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R019",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Combining causal-target specificity with same-gene disease-process corroboration may remove both literature hubs and isolated causal assertions.",
+      "body": "R019 plus disease -process support-> process <-involved_in- same causal target gene",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Uses two independent biological branches around the same directly engaged gene without treatment evidence, but therapeutic direction remains unresolved.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The source graph motif is TRAPI-expressible; process-support cardinality, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (object)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)<-[:INVOLVED_IN]-(gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12\n  AND support.gene_count >= 2\n  AND support.gene_count <= 20\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 33,
+        "validation_hits": 0,
+        "training_hits": 4,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 29
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.12121212121212122,
+        "visible_target_recall": 0.00014539110206455364,
+        "visible_target_f0_5": 0.0007234843003906816,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.1666673329891637
+    },
+    {
+      "id": "TREAT-I04-R026",
+      "name": "Independent clinical low-fanout mechanism",
+      "iteration": 4,
+      "parent_rule": "TREAT-I03-R022",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "A specific causal-target mechanism plus an independently sourced clinical-trial assertion should retain validation hits while excluding disease-gene hubs and target-source leakage.",
+      "body": "R022 plus causal gene disease degree <=12 and clinical-trial source infores:multiomics-clinicaltrials",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines specific target-level evidence with independent translational evidence, but still uses treatment-oriented evidence and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive motif and provenance are partly TRAPI-expressible; causal-gene degree and adverse-edge absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND COUNT { (gene)-[:CAUSES]->(:Disease) } <= 12\n  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 37,
+        "validation_hits": 3,
+        "training_hits": 18,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 16
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5675675675675675,
+        "visible_target_recall": 0.0007633032858389067,
+        "visible_target_f0_5": 0.0037960954446854666,
+        "validation_precision_lower_bound": 0.15789473684210525,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006180469715698395
+      },
+      "runtime_seconds": 0.14552470803027973
+    },
+    {
+      "id": "TREAT-I05-R030",
+      "name": "Independent clinical disease-relative rescue",
+      "iteration": 5,
+      "parent_rule": "TREAT-I04-R026",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "Disease-relative literature relevance can extend the independent clinical rule to strong pleiotropic targets without restoring general hub noise.",
+      "body": "R022 with independent clinical source plus causal fanout <=12 OR causal publications >=3, causal publication NPMI >=0.5, and within-disease relevance rank <=3",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Combines disease-relative target evidence with independent clinical evidence, but remains treatment-oriented and lacks disease-mechanism direction.",
+      "uses_treatment_edges": true,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological and clinical motifs are TRAPI-expressible; NPMI, disease-relative rank, provenance, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nMATCH (subject)-[trial:IN_CLINICAL_TRIALS_FOR]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 3\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n    )\n  )\n  AND 'infores:multiomics-clinicaltrials' IN coalesce(trial.primary_knowledge_sources, [])\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 43,
+        "validation_hits": 3,
+        "training_hits": 19,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 21
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.5116279069767442,
+        "visible_target_recall": 0.000799651061355045,
+        "visible_target_f0_5": 0.0039734142464961705,
+        "validation_precision_lower_bound": 0.125,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.006129955046996322
+      },
+      "runtime_seconds": 0.5989894170197658
+    },
+    {
+      "id": "TREAT-I05-R031",
+      "name": "Multi-evidence disease-relative rescue",
+      "iteration": 5,
+      "parent_rule": "TREAT-I05-R028",
+      "library_status": "retained",
+      "status": "completed",
+      "hypothesis": "A stricter rescue requiring concentrated literature plus relation diversity or a non-SemMed source may improve precision for pleiotropic genes.",
+      "body": "R017 plus causal fanout <=12 OR top-three disease-relative NPMI rescue with publications >=5 and either non-SemMed source support or >=4 direct relation types",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "Adds provenance or relation-family corroboration to disease-relative literature relevance, but still lacks therapeutic direction.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The biological motif is TRAPI-expressible; NPMI, evidence diversity, disease-relative rank, degree, and absence constraints require post-processing or Cypher.",
+      "cypher": "MATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\n      -[:CAUSES]->(object:Disease)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\n  AND (\n    evidence._miner_gene_causal_disease_degree <= 12\n    OR (\n      evidence._miner_causal_publication_count >= 5\n      AND evidence._miner_causal_publication_npmi >= 0.5\n      AND evidence._miner_disease_rank <= 3\n      AND (\n        evidence._miner_non_semmed_primary_source_count >= 1\n        OR evidence._miner_direct_relation_type_count >= 4\n      )\n    )\n  )\n  AND object.id STARTS WITH 'MONDO:'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND NOT EXISTS {\n    MATCH (subject)-[:HAS_SIDE_EFFECT|CONTRAINDICATED_IN|EXACERBATES_CONDITION|CAUSES]->(object)\n  }\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 250,
+        "validation_hits": 3,
+        "training_hits": 24,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 223
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.108,
+        "visible_target_recall": 0.0009813899389357371,
+        "visible_target_f0_5": 0.004734848484848485,
+        "validation_precision_lower_bound": 0.01327433628318584,
+        "validation_recall": 0.0012760527435133986,
+        "validation_f0_5": 0.004608294930875576
+      },
+      "runtime_seconds": 0.04928620799910277
+    },
+    {
+      "id": "TREAT-I02-R016",
+      "name": "Tight multi-gene inhibition in a compact disease process",
+      "iteration": 2,
+      "parent_rule": "TREAT-I02-R007",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "Precision improves when a selective chemical decreases at least three disease-associated genes in a compact process.",
+      "body": "disease has 3-10 associated genes in a process; chemical decreases activity_or_abundance of >=3; chemical qualified gene degree <=50",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "This is a stricter, hub-resistant multi-target pathway perturbation, but the graph does not establish that decreasing the genes is corrective.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The graph motif and qualifiers are TRAPI-expressible; cardinality and degree constraints require Cypher or post-processing.",
+      "cypher": "MATCH (object:Disease)-[support:MINER_DISEASE_PROCESS_SUPPORT]->(process)\nWHERE support.gene_count >= 3 AND support.gene_count <= 10\nMATCH (targeted_gene:Gene)-[:GENE_ASSOCIATED_WITH_CONDITION]->(object)\nMATCH (targeted_gene)-[:INVOLVED_IN]->(process)\nMATCH (subject:ChemicalEntity)-[effect:AFFECTS]->(targeted_gene)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND subject._miner_affects_aa_decreased_gene_degree <= 50\nWITH subject, object, count(DISTINCT targeted_gene) AS targeted_disease_genes\nWHERE targeted_disease_genes >= 3\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 17246,
+        "validation_hits": 8,
+        "training_hits": 159,
+        "contraindicated_pairs": 177,
+        "unresolved_or_blind_pairs": 17079
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00968340484750087,
+        "visible_target_recall": 0.0060700785111951145,
+        "visible_target_f0_5": 0.008653208423147074,
+        "validation_precision_lower_bound": 0.0004681921928951835,
+        "validation_recall": 0.0034028073160357296,
+        "validation_f0_5": 0.0005657788653304856
+      },
+      "runtime_seconds": 12.254446666978765
+    }
+  ]
+}

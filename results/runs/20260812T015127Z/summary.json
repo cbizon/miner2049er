@@ -1,0 +1,194 @@
+{
+  "created_at": "2026-08-12T01:51:27.316425+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R131",
+      "name": "Drug exposure, target expression, and disease anatomy coincide",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug is more likely to treat a disease when the drug is reported in an affected anatomy, directly inhibits a top-ranked causal disease gene, and that gene is expressed in the same anatomy.",
+      "body": "drug located in anatomy shared by inhibited top-three causal gene expression and disease location",
+      "mechanism_score": "medium",
+      "mechanism_rationale": "The rule triangulates exposure, target expression, and affected anatomy, but drug localization is SemMedDB-derived and may represent mention rather than measured tissue exposure.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive graph motif and qualifiers are TRAPI-expressible; gene rank and disease ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene)-[:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 155,
+        "validation_hits": 0,
+        "training_hits": 15,
+        "contraindicated_pairs": 22,
+        "unresolved_or_blind_pairs": 140
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0967741935483871,
+        "visible_target_recall": 0.0005452166327420761,
+        "visible_target_f0_5": 0.0026660031281103367,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.48200787499081343
+    },
+    {
+      "id": "TREAT-I09-R132",
+      "name": "Multi-target drug exposure in affected anatomy",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R131",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "The exposure-expression-anatomy mechanism is more credible when a drug inhibits at least two distinct top-ranked causal disease genes in affected anatomy.",
+      "body": "R131 with at least two distinct inhibited top-three causal genes",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Two independently implicated targets connect drug action to the affected anatomy, although the SemMedDB drug-location edge remains an imperfect exposure proxy.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; distinct-target cardinality, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:LOCATED_IN]->(anatomy:AnatomicalEntity)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (subject)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (gene)-[:EXPRESSED_IN]->(anatomy)\nMATCH (object)-[:LOCATED_IN|OCCURS_IN]->(anatomy)\nWHERE effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nWITH subject, object, count(DISTINCT gene) AS gene_count\nWHERE gene_count >= 2\nRETURN subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 10,
+        "validation_hits": 0,
+        "training_hits": 3,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 7
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3,
+        "visible_target_recall": 0.00010904332654841524,
+        "visible_target_f0_5": 0.000544425087108014,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.43327187502291054
+    },
+    {
+      "id": "TREAT-I09-R133",
+      "name": "Active metabolite inhibits a causal disease gene",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A parent drug can treat a disease when a distinct metabolite directly inhibits a top-ranked causal disease gene.",
+      "body": "parent drug has distinct active metabolite that directly binds and decreases a top-three causal disease gene",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule represents a pharmacologically direct mechanism through an active metabolite, but the graph does not encode metabolite exposure or whether the metabolite concentration is therapeutic.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive metabolite-target-disease path is TRAPI-expressible; excluding self-loops and applying rank and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (metabolite)-[effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nWHERE subject <> metabolite\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 43,
+        "validation_hits": 0,
+        "training_hits": 17,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 26
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3953488372093023,
+        "visible_target_recall": 0.000617912183774353,
+        "visible_target_f0_5": 0.0030703655541106777,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 0.33073966595111415
+    },
+    {
+      "id": "TREAT-I09-R134",
+      "name": "Parent and active metabolite converge on a causal gene",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R133",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "An active-metabolite prediction is more credible when the parent drug independently binds and decreases the same causal disease gene.",
+      "body": "R133 plus parent directly binds and decreases the same causal gene",
+      "mechanism_score": "high",
+      "mechanism_rationale": "Parent and metabolite provide convergent directional target evidence, but coverage is expected to be very small.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "The positive paths are TRAPI-expressible; identity, self-loop exclusion, rank, and ontology constraints require post-processing.",
+      "trapi_template": null,
+      "cypher": "MATCH (subject:Drug)-[:HAS_METABOLITE]->(metabolite:ChemicalEntity)\nMATCH (metabolite)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene:Gene)\nMATCH (metabolite)-[metabolite_effect:AFFECTS]->(gene)\nMATCH (gene)-[evidence:MINER_GENE_DISEASE_EVIDENCE]->(object:Disease)\nMATCH (subject)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(gene)\nMATCH (subject)-[parent_effect:AFFECTS]->(gene)\nWHERE subject <> metabolite\n  AND metabolite_effect.qualified_predicate = 'biolink:causes'\n  AND metabolite_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND metabolite_effect.object_direction_qualifier = 'decreased'\n  AND parent_effect.qualified_predicate = 'biolink:causes'\n  AND parent_effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND parent_effect.object_direction_qualifier = 'decreased'\n  AND evidence._miner_disease_rank <= 3\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 3,
+        "validation_hits": 0,
+        "training_hits": 1,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 2
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.3333333333333333,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00018165964249382356,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.3984409580007195
+    }
+  ]
+}

@@ -1,0 +1,326 @@
+{
+  "created_at": "2026-08-12T16:09:08.277264+00:00",
+  "rules_file": "rules/campaign-i09.toml",
+  "target_inventory": {
+    "target_predicate": "biolink:treats",
+    "predicate_closure": [
+      "biolink:treats",
+      "biolink:ameliorates_condition",
+      "biolink:preventative_for_condition"
+    ],
+    "neo4j_relationship_types": [
+      "TREATS",
+      "AMELIORATES_CONDITION"
+    ],
+    "absent_neo4j_relationship_types": [
+      "PREVENTATIVE_FOR_CONDITION"
+    ],
+    "partition_policy": {
+      "training": "all target facts except source-exclusive validation and blind facts",
+      "validation_source": "infores:drug-repurposing-hub",
+      "blind_source": "infores:ttd"
+    },
+    "counts": {
+      "semantic_pairs": 28988,
+      "edge_rows": 33641,
+      "training_pairs": 25161,
+      "validation_pairs": 2351,
+      "blind_pairs": 1476,
+      "subjects": 5040,
+      "objects": 5066
+    },
+    "sources": [
+      {
+        "source": "infores:multiomics-clinicaltrials",
+        "supported_pairs": 12906,
+        "exclusive_pairs": 11662
+      },
+      {
+        "source": "infores:drugcentral",
+        "supported_pairs": 9608,
+        "exclusive_pairs": 7291
+      },
+      {
+        "source": "infores:multiomics-drugapprovals",
+        "supported_pairs": 5095,
+        "exclusive_pairs": 2941
+      },
+      {
+        "source": "infores:drug-repurposing-hub",
+        "supported_pairs": 3579,
+        "exclusive_pairs": 2351
+      },
+      {
+        "source": "infores:ttd",
+        "supported_pairs": 2453,
+        "exclusive_pairs": 1476
+      }
+    ]
+  },
+  "results": [
+    {
+      "id": "TREAT-I09-R310",
+      "name": "GOF activated-effector blockade",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R306",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can correct GOF signaling by suppressing an effector that the causal driver upregulates.",
+      "body": "GOF driver upregulates effector; drug directly binds and decreases effector activity or abundance",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The drug blocks a signed activated downstream arm of an explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R306.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1134,
+        "validation_hits": 0,
+        "training_hits": 9,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1125
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.007936507936507936,
+        "visible_target_recall": 0.00032712997964524573,
+        "visible_target_f0_5": 0.0014041437843235148,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.8219788749702275
+    },
+    {
+      "id": "TREAT-I09-R311",
+      "name": "GOF repressed-effector restoration",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R306",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can correct GOF signaling by restoring an effector that the causal driver downregulates.",
+      "body": "GOF driver downregulates effector; drug directly binds and increases effector activity or abundance",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The drug restores a signed downstream arm repressed by an explicit GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R306.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 150,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 150
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.0417095409939066
+    },
+    {
+      "id": "TREAT-I09-R312",
+      "name": "LOF activated-effector restoration",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R308",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can compensate for LOF signaling by restoring an effector that the normal causal driver upregulates.",
+      "body": "LOF driver normally upregulates effector; drug directly binds and increases effector activity or abundance",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The drug restores a signed activated downstream arm lost under an explicit LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R308.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 308,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 308
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.2087294170050882
+    },
+    {
+      "id": "TREAT-I09-R313",
+      "name": "LOF disinhibited-effector suppression",
+      "iteration": 9,
+      "parent_rule": "TREAT-I09-R308",
+      "library_status": "candidate",
+      "status": "completed",
+      "hypothesis": "A drug can compensate for LOF signaling by suppressing an effector normally repressed by the causal driver.",
+      "body": "LOF driver normally downregulates effector; drug directly binds and decreases effector activity or abundance",
+      "mechanism_score": "high",
+      "mechanism_rationale": "The rule suppresses a signed downstream effector released from inhibition by an explicit LOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R308.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 960,
+        "validation_hits": 2,
+        "training_hits": 4,
+        "contraindicated_pairs": 2,
+        "unresolved_or_blind_pairs": 954
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.00625,
+        "visible_target_recall": 0.00021808665309683048,
+        "visible_target_f0_5": 0.0009568767542740495,
+        "validation_precision_lower_bound": 0.0020920502092050207,
+        "validation_recall": 0.0008507018290089324,
+        "validation_f0_5": 0.0016194331983805665
+      },
+      "runtime_seconds": 1.3119593340088613
+    },
+    {
+      "id": "TREAT-I09-R314",
+      "name": "GOF activated-effector reinforcement control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing an effector already upregulated by a GOF driver is a matched reinforcing control.",
+      "body": "R310 with increased rather than decreased effector",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug reinforces the activated downstream arm of the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R306.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 229,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 229
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.2049016670207493
+    },
+    {
+      "id": "TREAT-I09-R315",
+      "name": "GOF repressed-effector suppression control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Further suppressing an effector downregulated by a GOF driver is a matched worsening control.",
+      "body": "R311 with decreased rather than increased effector",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug reinforces the repressed downstream arm of the GOF driver.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R306.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'increased'\n  ELSE 'decreased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'gain_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 566,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 566
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.3229081250028685
+    },
+    {
+      "id": "TREAT-I09-R316",
+      "name": "LOF activated-effector suppression control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Suppressing an effector normally activated by a LOF driver is a matched worsening control.",
+      "body": "R312 with decreased rather than increased effector",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug further suppresses a downstream arm already lost under LOF.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R308.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'upregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 1299,
+        "validation_hits": 0,
+        "training_hits": 0,
+        "contraindicated_pairs": 0,
+        "unresolved_or_blind_pairs": 1299
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.0,
+        "visible_target_recall": 0.0,
+        "visible_target_f0_5": 0.0,
+        "validation_precision_lower_bound": 0.0,
+        "validation_recall": 0.0,
+        "validation_f0_5": 0.0
+      },
+      "runtime_seconds": 1.7549981249612756
+    },
+    {
+      "id": "TREAT-I09-R317",
+      "name": "LOF disinhibited-effector activation control",
+      "iteration": 9,
+      "parent_rule": null,
+      "library_status": "rejected",
+      "status": "completed",
+      "hypothesis": "Increasing an effector released from repression by a LOF driver is a matched worsening control.",
+      "body": "R313 with increased rather than decreased effector",
+      "mechanism_score": "low",
+      "mechanism_rationale": "The drug further activates a downstream effector disinhibited by LOF.",
+      "uses_treatment_edges": false,
+      "trapi_expressibility": "partial",
+      "trapi_notes": "Same expressibility constraints as R308.",
+      "trapi_template": null,
+      "cypher": "MATCH (driver:Gene)-[regulation:REGULATES]->(effector:Gene)\nMATCH (subject:Drug)-[:DIRECTLY_PHYSICALLY_INTERACTS_WITH]->(effector)\nMATCH (subject)-[effect:AFFECTS]->(effector)\nMATCH (driver)-[association:ASSOCIATED_WITH]->(object:Disease)\nWHERE driver <> effector\n  AND 'infores:signor' IN\n      coalesce(regulation.primary_knowledge_sources, [])\n  AND regulation.qualified_predicate = 'biolink:causes'\n  AND regulation.object_direction_qualifier IN\n      ['upregulated', 'downregulated']\n  AND regulation.object_direction_qualifier = 'downregulated'\n  AND effect.qualified_predicate = 'biolink:causes'\n  AND effect.object_aspect_qualifier = 'activity_or_abundance'\n  AND effect.object_direction_qualifier = CASE regulation.object_direction_qualifier\n  WHEN 'upregulated' THEN 'decreased'\n  ELSE 'increased'\nEND\n  AND 'infores:gene2phenotype' IN\n      coalesce(association.primary_knowledge_sources, [])\n  AND association.subject_form_or_variant_qualifier = 'loss_of_function_variant_form'\n  AND coalesce(object._miner_disease_descendant_degree, 0) <= 500\n  AND object._miner_disease_superclass_degree >= 1\n  AND object.id STARTS WITH 'MONDO:'\nRETURN DISTINCT subject.id AS subject_id, object.id AS object_id",
+      "counts": {
+        "candidate_pairs": 254,
+        "validation_hits": 1,
+        "training_hits": 0,
+        "contraindicated_pairs": 1,
+        "unresolved_or_blind_pairs": 253
+      },
+      "metrics": {
+        "visible_target_precision_lower_bound": 0.003937007874015748,
+        "visible_target_recall": 3.634777551613841e-05,
+        "visible_target_f0_5": 0.00017526640493550194,
+        "validation_precision_lower_bound": 0.003937007874015748,
+        "validation_recall": 0.0004253509145044662,
+        "validation_f0_5": 0.001485001485001485
+      },
+      "runtime_seconds": 1.0026693329564296
+    }
+  ]
+}
