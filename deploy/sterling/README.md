@@ -91,7 +91,24 @@ The agent runs `miner-run-agent run --isolation container`: the controller
 refuses to start if a sealed path or an operator-only variable is visible, and
 ends at `awaiting_operator_seal` instead of sealing.
 
+## Daily loop
+
+- `nightly.yaml`: at 11 pm New York time a CronJob seals the previous round
+  (`next-round`) and runs tonight's agent with a 7-hour deadline. Its
+  settings (run, model, effort, instruction) are in the `miner-nightly`
+  ConfigMap.
+- The agent ends each night with a final summary that includes questions for
+  the operator and ranked proposed directions.
+- Morning: `scripts/sterling_debrief.sh` prints the digest (or `--check` for a
+  one-line "needs you?"); the `/miner` Claude Code skill wraps the debrief,
+  the discussion, and setting tonight's instruction with
+  `scripts/sterling_set_instruction.sh`.
+- Instructions are dated. A night without a fresh one runs the ConfigMap's
+  `fallback.md`: follow the agent's top proposed direction and its defaults.
+- Dashboard: `kubectl -n bizon port-forward svc/miner-dashboard 6431:6431`,
+  then http://localhost:6431.
+
 Not yet done: Gandalf on the cluster (agents skip TRAPI checks), a
 NetworkPolicy limiting the agent's egress (it can currently reach the
-internet, so "no external information" is enforced only by the prompt), the
-dashboard, and a nightly CronJob.
+internet, so "no external information" is enforced only by the prompt), and
+the morning checker and taste-file judge.

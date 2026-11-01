@@ -70,7 +70,7 @@ spec:
             seccompProfile: {type: RuntimeDefault}
           initContainers:
             - name: operator
-              image: ghcr.io/cbizon/miner2049er:1.0.2-dab0bd0@sha256:9db2e610ce1d0f8f974d2b27f8b478ad67067fc3fc4bb27b162e6cd409a4ec36
+              image: ghcr.io/cbizon/miner2049er:1.0.2-4addf3c@sha256:ea95ddced66408acca18089b51473c32147482aa35ad7a727045f0c382f808c8
               command: [sh, -euc]
               args:
                 - |
@@ -104,7 +104,7 @@ spec:
                 capabilities: {drop: [ALL]}
           containers:
             - name: agent
-              image: ghcr.io/cbizon/miner2049er:1.0.2-dab0bd0@sha256:9db2e610ce1d0f8f974d2b27f8b478ad67067fc3fc4bb27b162e6cd409a4ec36
+              image: ghcr.io/cbizon/miner2049er:1.0.2-4addf3c@sha256:ea95ddced66408acca18089b51473c32147482aa35ad7a727045f0c382f808c8
               command: [sh, -euc]
               args:
                 - |
