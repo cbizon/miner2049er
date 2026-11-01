@@ -62,3 +62,36 @@ kubectl apply -f neo4j.yaml
 kubectl logs -f miner-neo4j-0 -c import
 kubectl logs -f job/miner-neo4j-indexes
 ```
+
+## Scorer and agent rounds
+
+`scorer.yaml` runs the feedback scorer (`miner-scorer:6430`). It and the
+operator Jobs are the only workloads that mount `miner-sealed`, and only the
+scorer holds the final-scoring token (Secret `miner-scorer-final`).
+
+A round is three steps:
+
+```bash
+# 1. Operator: create the run and authorize round 1 (or start-round for later rounds)
+sed -e "s/@JOB@/miner-op-init-RUN/" \
+    -e "s|@ARGS@|init-run --run-id RUN --deadline 2026-11-02T07:00:00-05:00 --instruction '...'|" \
+    operator-job.yaml | kubectl apply -f -
+
+# 2. Agent: no sealed volume, evaluations read-only, Claude token from a Secret
+sed -e "s/@RUN@/RUN/g" -e "s/@ROUND@/round-0001/g" \
+    -e "s/@MODEL@/claude-opus-5-5/" -e "s/@EFFORT@/high/" \
+    agent-job.yaml | kubectl apply -f -
+
+# 3. Operator: seal the round once the agent Job finishes
+sed -e "s/@JOB@/miner-op-finish-RUN-round-0001/" -e "s|@ARGS@|finish-round --run-id RUN|" \
+    operator-job.yaml | kubectl apply -f -
+```
+
+The agent runs `miner-run-agent run --isolation container`: the controller
+refuses to start if a sealed path or an operator-only variable is visible, and
+ends at `awaiting_operator_seal` instead of sealing.
+
+Not yet done: Gandalf on the cluster (agents skip TRAPI checks), a
+NetworkPolicy limiting the agent's egress (it can currently reach the
+internet, so "no external information" is enforced only by the prompt), the
+dashboard, and a nightly CronJob.
