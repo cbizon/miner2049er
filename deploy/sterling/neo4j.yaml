@@ -1,5 +1,12 @@
-# Neo4j serving the imported 1.0.2 store. Bolt is reachable in-namespace only
-# (the namespace's default policy admits ingress from its own pods).
+# Neo4j serving the 1.0.2 store. Bolt is reachable in-namespace only (the
+# namespace's default policy admits ingress from its own pods).
+#
+# The store lives in a memory-backed emptyDir, not a PVC: every storage class
+# available to this namespace is NetApp ontap-nas (NFS), and neo4j-admin import
+# fails on NFS with spurious "missing node" errors (the same import succeeds on
+# local disk). Each pod start re-imports from the Parquet on miner-import
+# (~31GB store, minutes), so writes made through Neo4j do not survive a restart.
+# Move /data to an nvme-ephemeral PVC once the namespace has that quota.
 apiVersion: v1
 kind: Service
 metadata:
@@ -31,6 +38,35 @@ spec:
         runAsGroup: 7474
         fsGroup: 7474
         seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: import
+          image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+          command: [sh, -euc]
+          args:
+            - |
+              mkdir -p /data/logs
+              neo4j-admin database import full \
+                --input-type=parquet \
+                --nodes=/import/neo4j-import/nodes.parquet \
+                --relationships=/import/neo4j-import/edges.parquet \
+                --id-type=string --strict=true --bad-tolerance=0 --verbose \
+                --threads=4 --max-off-heap-memory=4G \
+                --report-file=/data/logs/import.report \
+                neo4j
+              du -sh /data
+          env:
+            - {name: NEO4J_server_memory_heap_max__size, value: 3G}
+            - {name: NEO4J_server_directories_logs, value: /data/logs}
+          volumeMounts:
+            - {name: import, mountPath: /import, readOnly: true}
+            - {name: data, mountPath: /data}
+          resources:
+            # The tmpfs pages written here are charged to this pod's memory.
+            requests: {cpu: "1", memory: 44Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "4", memory: 48Gi, ephemeral-storage: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
       containers:
         - name: neo4j
           image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
@@ -39,8 +75,9 @@ spec:
               valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
             - {name: NEO4J_server_memory_heap_initial__size, value: 4G}
             - {name: NEO4J_server_memory_heap_max__size, value: 4G}
-            # Raise toward the store size once the import reports it.
-            - {name: NEO4J_server_memory_pagecache_size, value: 16G}
+            # The store is already in RAM (tmpfs); the page cache only needs to
+            # cover the hot working set.
+            - {name: NEO4J_server_memory_pagecache_size, value: 8G}
             - {name: NEO4J_server_directories_logs, value: /data/logs}
             - {name: NEO4J_db_transaction_timeout, value: 30m}
           ports:
@@ -52,13 +89,15 @@ spec:
             periodSeconds: 10
           volumeMounts: [{name: data, mountPath: /data}]
           resources:
-            requests: {cpu: "1", memory: 22Gi, ephemeral-storage: 100Mi}
-            limits: {cpu: "8", memory: 24Gi, ephemeral-storage: 1Gi}
+            # ~31Gi tmpfs store + 4G heap + 8G page cache + overhead.
+            requests: {cpu: "1", memory: 46Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "8", memory: 50Gi, ephemeral-storage: 1Gi}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
       volumes:
-        - {name: data, persistentVolumeClaim: {claimName: miner-neo4j-data}}
+        - {name: data, emptyDir: {medium: Memory, sizeLimit: 36Gi}}
+        - {name: import, persistentVolumeClaim: {claimName: miner-import, readOnly: true}}
 ---
 # Indexes from cypher/indexes.cypher. Create the ConfigMap from the repo file:
 #   kubectl create configmap miner-neo4j-indexes --from-file=../../cypher/indexes.cypher

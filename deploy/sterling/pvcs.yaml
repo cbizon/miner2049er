@@ -1,5 +1,7 @@
 # Storage for the Translator 1.0.2 benchmark on Sterling (namespace quota 128Gi).
-# Total requested: 91Gi. All classes allow expansion.
+# Total requested: 31Gi. All classes allow expansion.
+# Neo4j's store is not here: every class is NFS, which Neo4j can't import onto,
+# so it lives in memory for now (see neo4j.yaml).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -45,15 +47,3 @@ spec:
   accessModes: [ReadWriteOnce]
   storageClassName: basic
   resources: {requests: {storage: 10Gi}}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: miner-neo4j-data
-  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
-spec:
-  # basic-noatime: the ssd class is blocked for new volumes by Sterling policy.
-  # The 2026_06_21 store was 54Gi with raw_json/sources_json copies; 1.0.2 drops them.
-  accessModes: [ReadWriteOnce]
-  storageClassName: basic-noatime
-  resources: {requests: {storage: 60Gi}}

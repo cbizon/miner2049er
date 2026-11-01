@@ -1,4 +1,5 @@
-# One-shot build: fetch 1.0.2 -> split labels -> export Parquet -> neo4j-admin import.
+# One-shot build: fetch 1.0.2 -> split labels -> export Parquet. The Parquet on
+# miner-import is what the Neo4j pod imports from (see neo4j.yaml).
 # Each step skips work a previous attempt finished, so the Job can be rerun
 # (delete and re-apply) after a failure without starting over.
 apiVersion: batch/v1
@@ -63,6 +64,7 @@ spec:
             - {name: sealed, mountPath: /sealed}
           resources: *python
           securityContext: *locked
+      containers:
         - name: export-parquet
           image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
           command: [sh, -euc]
@@ -82,38 +84,8 @@ spec:
             - {name: import, mountPath: /import}
           resources: *python
           securityContext: *locked
-      containers:
-        - name: neo4j-import
-          image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
-          command: [sh, -euc]
-          args:
-            - |
-              if [ -d /data/databases/neo4j ]; then
-                echo "Neo4j database already exists; refusing to overwrite" >&2; exit 1
-              fi
-              mkdir -p /data/logs
-              neo4j-admin database import full \
-                --input-type=parquet \
-                --nodes=/import/neo4j-import/nodes.parquet \
-                --relationships=/import/neo4j-import/edges.parquet \
-                --id-type=string --strict=true --bad-tolerance=0 --verbose \
-                --threads=4 --max-off-heap-memory=8G \
-                --report-file=/data/logs/import.report \
-                neo4j
-              du -sh /data
-          env:
-            - {name: NEO4J_server_memory_heap_max__size, value: 4G}
-            - {name: NEO4J_server_directories_logs, value: /data/logs}
-          volumeMounts:
-            - {name: import, mountPath: /import, readOnly: true}
-            - {name: neo4j-data, mountPath: /data}
-          resources:
-            requests: {cpu: "1", memory: 14Gi, ephemeral-storage: 100Mi}
-            limits: {cpu: "4", memory: 16Gi, ephemeral-storage: 1Gi}
-          securityContext: *locked
       volumes:
         - {name: source, persistentVolumeClaim: {claimName: miner-source}}
         - {name: sealed, persistentVolumeClaim: {claimName: miner-sealed}}
         - {name: work, persistentVolumeClaim: {claimName: miner-work}}
         - {name: import, persistentVolumeClaim: {claimName: miner-import}}
-        - {name: neo4j-data, persistentVolumeClaim: {claimName: miner-neo4j-data}}
