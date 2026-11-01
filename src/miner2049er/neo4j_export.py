@@ -37,6 +37,8 @@ NODE_STRING_FIELDS = (
     "inheritance",
     "chembl_availability_type",
     "chembl_black_box_warning",
+)
+NODE_BOOL_FIELDS = (
     "chembl_natural_product",
     "chembl_prodrug",
 )
@@ -46,6 +48,8 @@ EDGE_LIST_FIELDS = (
     "FDA_regulatory_approvals",
     "has_evidence",
     "has_evidence_of_type",
+    "supporting_text",
+    "anatomical_context_qualifier",
 )
 EDGE_STRING_FIELDS = (
     "knowledge_level",
@@ -59,8 +63,10 @@ EDGE_STRING_FIELDS = (
     "original_predicate",
     "original_subject",
     "subject_feature_name",
-    "supporting_text",
     "update_date",
+    # An enum in Translator 1.0.2: clinical_trial_phase_1 ... _4, _1_to_2,
+    # _2_to_3, pre_clinical_research_phase, not_provided.
+    "max_research_phase",
 )
 EDGE_FLOAT_FIELDS = (
     "adjusted_p_value",
@@ -77,11 +83,9 @@ EDGE_INT_FIELDS = (
     "evidence_count",
     "has_count",
     "has_total",
-    "max_research_phase",
     "number_of_cases",
 )
 QUALIFIER_FIELDS = (
-    "anatomical_context_qualifier",
     "causal_mechanism_qualifier",
     "disease_context_qualifier",
     "frequency_qualifier",
@@ -118,13 +122,18 @@ def compact_json(value: Any) -> str:
     return orjson.dumps(value, option=orjson.OPT_SORT_KEYS).decode("utf-8")
 
 
+# The converters raise on a value of the wrong shape rather than dropping it:
+# Translator 1.0.2 changed several field types, and silently exporting None
+# hid that. The field lists above match a full type scan of 1.0.2.
+
+
 def as_string(value: Any) -> str | None:
     if value is None:
         return None
     if isinstance(value, str):
         return value
-    if isinstance(value, (dict, list)):
-        return compact_json(value)
+    if isinstance(value, (dict, list, bool)):
+        raise TypeError(f"Expected a string, got {type(value).__name__}: {value!r}")
     return str(value)
 
 
@@ -136,22 +145,20 @@ def as_string_list(value: Any) -> list[str] | None:
 
 
 def as_float(value: Any) -> float | None:
-    if value is None or isinstance(value, (dict, list, bool)):
+    if value is None:
         return None
-    try:
-        result = float(value)
-    except (TypeError, ValueError):
-        return None
+    if isinstance(value, (dict, list, bool)):
+        raise TypeError(f"Expected a number, got {type(value).__name__}: {value!r}")
+    result = float(value)
     return result if math.isfinite(result) else None
 
 
 def as_int(value: Any) -> int | None:
-    if value is None or isinstance(value, (dict, list, bool)):
+    if value is None:
         return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+    if isinstance(value, (dict, list, bool, float)):
+        raise TypeError(f"Expected an integer, got {type(value).__name__}: {value!r}")
+    return int(value)
 
 
 def as_bool(value: Any) -> bool | None:
@@ -165,7 +172,7 @@ def as_bool(value: Any) -> bool | None:
             return True
         if lowered in {"false", "0", "no"}:
             return False
-    return None
+    raise ValueError(f"Expected a boolean, got {value!r}")
 
 
 def flatten_sources(sources: Any) -> tuple[list[str], list[str], list[str]]:
@@ -214,6 +221,7 @@ def node_schema() -> pa.Schema:
         pa.field("in_taxon", pa.list_(pa.string())),
     ]
     fields.extend(pa.field(name, pa.string()) for name in NODE_STRING_FIELDS)
+    fields.extend(pa.field(name, pa.bool_()) for name in NODE_BOOL_FIELDS)
     fields.append(pa.field("information_content", pa.float64()))
     return pa.schema(fields)
 
@@ -230,6 +238,8 @@ def edge_schema() -> pa.Schema:
         pa.field("FDA_regulatory_approvals", pa.list_(pa.string())),
         pa.field("has_evidence", pa.list_(pa.string())),
         pa.field("has_evidence_of_type", pa.list_(pa.string())),
+        pa.field("supporting_text", pa.list_(pa.string())),
+        pa.field("anatomical_context_qualifier", pa.list_(pa.string())),
         pa.field("primary_knowledge_sources", pa.list_(pa.string())),
         pa.field("aggregator_knowledge_sources", pa.list_(pa.string())),
         pa.field("upstream_resource_ids", pa.list_(pa.string())),
@@ -258,6 +268,8 @@ def transform_node(node: dict[str, Any]) -> dict[str, Any]:
             record[field] = as_string_list(node.get(field))
     for field in NODE_STRING_FIELDS:
         record[field] = as_string(node.get(field))
+    for field in NODE_BOOL_FIELDS:
+        record[field] = as_bool(node.get(field))
     return record
 
 

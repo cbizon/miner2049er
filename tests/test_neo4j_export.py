@@ -121,12 +121,18 @@ def test_edge_keeps_supporting_studies_and_drops_raw_copies():
             "predicate": "biolink:directly_physically_interacts_with",
             "has_supporting_studies": studies,
             "subject_activity_qualifier": "binding",
+            "max_research_phase": "clinical_trial_phase_2",
+            "anatomical_context_qualifier": ["MESH:D008099"],
+            "supporting_text": ["one sentence", "another"],
         }
     )
 
     assert transformed["supporting_study_count"] == 1
     assert json.loads(transformed["supporting_studies_json"]) == studies
     assert transformed["subject_activity_qualifier"] == "binding"
+    assert transformed["max_research_phase"] == "clinical_trial_phase_2"
+    assert transformed["anatomical_context_qualifier"] == ["MESH:D008099"]
+    assert transformed["supporting_text"] == ["one sentence", "another"]
     assert "raw_json" not in transformed
     assert "sources_json" not in transformed
     assert set(transformed) <= set(edge_schema().names)
@@ -135,3 +141,16 @@ def test_edge_keeps_supporting_studies_and_drops_raw_copies():
 def test_supporting_studies_must_be_an_object():
     with pytest.raises(TypeError, match="must be an object"):
         supporting_studies(3)
+
+
+def test_converters_raise_on_values_of_the_wrong_shape():
+    with pytest.raises(TypeError, match="Expected an integer"):
+        transform_edge(
+            {"subject": "A", "object": "B", "predicate": "biolink:related_to", "has_count": [1]}
+        )
+    with pytest.raises(TypeError, match="Expected a string"):
+        transform_edge(
+            {"subject": "A", "object": "B", "predicate": "biolink:related_to", "update_date": {}}
+        )
+    with pytest.raises(ValueError, match="Expected a boolean"):
+        transform_node({"id": "A", "chembl_prodrug": "sometimes"})
