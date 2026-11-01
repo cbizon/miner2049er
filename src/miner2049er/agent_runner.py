@@ -734,10 +734,11 @@ def _completion_protocol(
   remaining time for reruns, artifact checks, and synthesis.
 - Append research events only with `uv run miner-log-research-event`; never
   write `research-log.jsonl` directly.
-- Aggregate evaluator output is readable under `data/evaluations`, but it is
-  read-only. The held-out labels and scorer state remain inaccessible.
+- Aggregate evaluator output is readable in the evaluations directory, but it
+  is read-only. The held-out labels and scorer state remain inaccessible.
 - Append one `final_summary` event for {context["round_id"]} with
-  `uv run miner-log-research-event`.
+  `uv run miner-log-research-event`, including `questions_for_operator` and
+  `proposed_directions` for tomorrow's human review.
 - Then run the final
   `uv run miner-validate-run {context["run_dir"]}`.
 - Exit normally after the summary and final validation. Do not sleep merely to

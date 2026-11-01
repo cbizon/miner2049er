@@ -495,8 +495,23 @@ details so another researcher can reconstruct what was tried:
   `workaround`;
 - `checkpoint`: `progress`, `active_hypotheses`, and `next_actions`; and
 - `final_summary`: `families_explored`, `surviving_rule_ids`,
-  `failed_families`, `pareto_summary`, `graph_gaps`, and
-  `next_round_priorities`.
+  `failed_families`, `pareto_summary`, `graph_gaps`,
+  `next_round_priorities`, `questions_for_operator`, and
+  `proposed_directions`.
+
+The final summary is read by the human operator the next morning, who answers
+in the following round's instruction. Use it to get decisions you can't make
+yourself:
+
+- `questions_for_operator`: zero to five objects with `question`,
+  `why_it_matters`, and `default_if_unanswered` (what you will do next round if
+  no answer comes). Ask about judgment the data can't settle: which mechanism
+  families matter scientifically, whether a rule's logic is biologically
+  credible, whether a leakage concern is real, or where to spend the remaining
+  feedback budget. Don't ask what you could find out by querying.
+- `proposed_directions`: two or three objects with `direction` and
+  `rationale`, ranked, for the next round. Make each one a concrete research
+  move, not a restatement of the objective.
 
 For example:
 

@@ -43,6 +43,8 @@ spec:
             - {name: work, mountPath: /app/data/evaluations, subPath: evaluations, readOnly: true}
             - {name: work, mountPath: /app/data/rule-set-evaluations, subPath: rule-set-evaluations, readOnly: true}
             - {name: work, mountPath: /app/results/rule-sets, subPath: rule-sets, readOnly: true}
+            # Agent controller state, read by miner-debrief to tell whether a night ended cleanly.
+            - {name: work, mountPath: /app/agents, subPath: agents, readOnly: true}
           resources:
             requests: {cpu: 100m, memory: 1Gi, ephemeral-storage: 50Mi}
             limits: {cpu: "1", memory: 3Gi, ephemeral-storage: 256Mi}
