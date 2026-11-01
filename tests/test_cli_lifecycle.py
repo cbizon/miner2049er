@@ -174,3 +174,75 @@ def test_cli_lifecycle_from_initialization_through_close(
     assert manifest["status"] == "completed"
     assert manifest["round_count"] == 2
     assert manifest["current_round_id"] is None
+
+
+def test_next_round_initializes_then_seals_and_advances(tmp_path: Path, monkeypatch) -> None:
+    import pytest
+
+    config = load_benchmark_config()
+    runs_dir = tmp_path / "runs"
+    evaluations_dir = tmp_path / "evaluations"
+    sealed_dir = tmp_path / "sealed"
+    sealed_manifest = sealed_dir / config.split_id / "sealed-manifest.json"
+    sealed_manifest.parent.mkdir(parents=True)
+    sealed_manifest.write_text("{}\n", encoding="utf-8")
+    run_dir = runs_dir / "nightly"
+
+    def next_round(hours: int) -> None:
+        deadline = (datetime.now(UTC) + timedelta(hours=hours)).isoformat()
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "miner-benchmark-setup",
+                "next-round",
+                "--run-id",
+                "nightly",
+                "--deadline",
+                deadline,
+                "--runs-dir",
+                str(runs_dir),
+                "--evaluations-dir",
+                str(evaluations_dir),
+                "--sealed-dir",
+                str(sealed_dir),
+                "--instruction",
+                "Strip down the current best rules.",
+            ],
+        )
+        benchmark_setup_main()
+
+    def manifest() -> dict:
+        return json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+
+    next_round(1)
+    assert manifest()["status"] == "running"
+    assert manifest()["current_round_id"] == "round-0001"
+    instructions = (run_dir / "rounds" / "round-0001" / "instructions.md").read_text()
+    assert "Strip down the current best rules." in instructions
+
+    # The agent left no final_summary: sealing must refuse rather than skip.
+    with pytest.raises(ValueError):
+        next_round(2)
+    assert manifest()["current_round_id"] == "round-0001"
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "miner-log-research-event",
+            "--run-dir",
+            str(run_dir),
+            "--event-type",
+            "final_summary",
+            "--summary",
+            "Completed the first nightly round.",
+            "--details-json",
+            FINAL_SUMMARY_DETAILS,
+        ],
+    )
+    research_log_main()
+    next_round(2)
+    assert manifest()["status"] == "running"
+    assert manifest()["round_count"] == 2
+    assert manifest()["current_round_id"] == "round-0002"

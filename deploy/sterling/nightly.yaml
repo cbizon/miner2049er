@@ -1,0 +1,132 @@
+# Nightly round. Edit the ConfigMap during the day to steer the next night:
+#   kubectl edit configmap miner-nightly
+#
+# One pod, two stages:
+#   1. operator (init container, sealed volume mounted): next-round seals the
+#      previous round if it is still active, then starts tonight's round with
+#      instruction.md and a deadline 7 hours out. If the previous agent did not
+#      finish (no final_summary), sealing fails and the night stops there.
+#   2. agent (no sealed volume in this container; the controller checks): runs
+#      the round to its deadline and leaves it awaiting the next night's seal.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: miner-nightly
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: nightly}
+data:
+  run_id: sterling-2026-11-01-r2
+  model: claude-opus-5-5
+  effort: high
+  deadline_hours: "7"
+  instruction.md: |
+    Strip-down audit. For the current best rules on each Pareto surface, drop
+    one condition at a time (thresholds, filters, extra hops) and measure the
+    effect on training-label statistics only, which costs no feedback budget.
+    Keep a simplification when the training lower-bound precision holds up, and
+    record each ablation as a research event. Submit to feedback only the few
+    simplified rules that survive. Prefer the simpler rule when two are close.
+    Gandalf/TRAPI is not deployed: skip its checks and say so in limitations.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: miner-nightly
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: nightly}
+spec:
+  schedule: "0 23 * * *"
+  timeZone: America/New_York
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: nightly}
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 32400
+      ttlSecondsAfterFinished: 1209600
+      template:
+        metadata:
+          labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: nightly}
+        spec:
+          restartPolicy: Never
+          imagePullSecrets: [{name: registry-credentials}]
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 7474
+            runAsGroup: 7474
+            fsGroup: 7474
+            seccompProfile: {type: RuntimeDefault}
+          initContainers:
+            - name: operator
+              image: @IMAGE@
+              command: [sh, -euc]
+              args:
+                - |
+                  DEADLINE=$(date -d "+${DEADLINE_HOURS} hours" --iso-8601=seconds)
+                  miner-benchmark-setup next-round --run-id "$RUN_ID" --deadline "$DEADLINE" \
+                    --instruction-file /nightly/instruction.md \
+                    --runs-dir /work/runs --evaluations-dir /work/evaluations \
+                    --public-dir /work/benchmark --sealed-dir /sealed
+              env:
+                - {name: HOME, value: /tmp}
+                - {name: TZ, value: America/New_York}
+                - name: RUN_ID
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: run_id}}
+                - name: DEADLINE_HOURS
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: deadline_hours}}
+              volumeMounts:
+                - {name: work, mountPath: /work}
+                - {name: sealed, mountPath: /sealed}
+                - {name: nightly, mountPath: /nightly, readOnly: true}
+              resources:
+                requests: {cpu: 100m, memory: 1Gi, ephemeral-storage: 50Mi}
+                limits: {cpu: "1", memory: 4Gi, ephemeral-storage: 256Mi}
+              securityContext: &locked
+                allowPrivilegeEscalation: false
+                capabilities: {drop: [ALL]}
+          containers:
+            - name: agent
+              image: @IMAGE@
+              command: [sh, -euc]
+              args:
+                - |
+                  ROUND=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["current_round_id"])' "/work/runs/$RUN_ID/run.json")
+                  export NEO4J_PASSWORD="${NEO4J_AUTH#neo4j/}"; unset NEO4J_AUTH
+                  exec miner-run-agent run --isolation container \
+                    --run-dir "/work/runs/$RUN_ID" \
+                    --runtime-dir "/work/agents/$RUN_ID-$ROUND" \
+                    --evaluations-dir /work/evaluations \
+                    --sealed-root /sealed \
+                    --agent-runtime claude --model-provider anthropic \
+                    --model "$MODEL" --reasoning-effort "$EFFORT"
+              env:
+                - {name: HOME, value: /tmp}
+                - name: RUN_ID
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: run_id}}
+                - name: MODEL
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: model}}
+                - name: EFFORT
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: effort}}
+                - {name: NEO4J_URI, value: "bolt://miner-neo4j:7687"}
+                - {name: NEO4J_USER, value: neo4j}
+                - name: NEO4J_AUTH
+                  valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+                - {name: SCORER_URL, value: "http://miner-scorer:6430"}
+                - name: CLAUDE_CODE_OAUTH_TOKEN
+                  valueFrom: {secretKeyRef: {name: claude-provider-credentials, key: CLAUDE_CODE_OAUTH_TOKEN}}
+              volumeMounts:
+                - {name: work, mountPath: /work/runs, subPath: runs}
+                - {name: work, mountPath: /work/agents, subPath: agents}
+                - {name: work, mountPath: /work/evaluations, subPath: evaluations, readOnly: true}
+                - {name: work, mountPath: /work/benchmark, subPath: benchmark, readOnly: true}
+              resources:
+                requests: {cpu: "1", memory: 4Gi, ephemeral-storage: 100Mi}
+                limits: {cpu: "4", memory: 8Gi, ephemeral-storage: 2Gi}
+              securityContext: *locked
+          volumes:
+            - {name: work, persistentVolumeClaim: {claimName: miner-work}}
+            - {name: sealed, persistentVolumeClaim: {claimName: miner-sealed}}
+            - {name: nightly, configMap: {name: miner-nightly, items: [{key: instruction.md, path: instruction.md}]}}

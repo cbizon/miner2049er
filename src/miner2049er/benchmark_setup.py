@@ -174,6 +174,7 @@ def parse_args() -> argparse.Namespace:
             "finish-round",
             "start-round",
             "close-run",
+            "next-round",
         ),
     )
     parser.add_argument("--config", type=Path, default=DEFAULT_BENCHMARK_CONFIG)
@@ -209,6 +210,66 @@ def parse_args() -> argparse.Namespace:
     instruction_group.add_argument("--instruction")
     instruction_group.add_argument("--instruction-file", type=Path)
     return parser.parse_args()
+
+
+def advance_run(
+    *,
+    run_dir: Path,
+    runs_dir: Path,
+    evaluations_dir: Path,
+    authorization_dir: Path,
+    config,
+    deadline: str,
+    instruction: str | None,
+) -> dict[str, object]:
+    """Bring a run to a freshly started round, for unattended scheduling.
+
+    Creates the run if it doesn't exist, seals the previous round if it is
+    still active, then starts the next one. Sealing raises when the previous
+    agent didn't finish (e.g. no final_summary), so a broken night stops
+    instead of starting another round on top of it.
+    """
+    actions: list[str] = []
+    if not (run_dir / "run.json").is_file():
+        initialize_run(
+            runs_dir=runs_dir,
+            evaluations_dir=evaluations_dir,
+            authorization_dir=authorization_dir,
+            run_id=run_dir.name,
+            config=config,
+            prompt_path=ROOT / "prompts" / "treats-rule-mining.md",
+            deadline=deadline,
+            instruction=instruction or DEFAULT_INITIAL_INSTRUCTION,
+        )
+        actions.append("init-run")
+    else:
+        status = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))["status"]
+        if status == "running":
+            finish_round(
+                run_dir=run_dir,
+                evaluations_dir=evaluations_dir,
+                authorization_dir=authorization_dir,
+                config=config,
+            )
+            actions.append("finish-round")
+            status = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))["status"]
+        if status != "round_complete":
+            raise ValueError(f"Run {run_dir.name} is {status}; no round can be started")
+        start_round(
+            run_dir=run_dir,
+            evaluations_dir=evaluations_dir,
+            authorization_dir=authorization_dir,
+            config=config,
+            deadline=deadline,
+            instruction=instruction or DEFAULT_CONTINUATION_INSTRUCTION,
+        )
+        actions.append("start-round")
+    manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+    return {
+        "run_dir": str(run_dir),
+        "round_id": manifest["current_round_id"],
+        "actions": actions,
+    }
 
 
 def _round_instruction(args: argparse.Namespace, default: str) -> str:
@@ -254,7 +315,7 @@ def main() -> None:
             sealed_root=args.sealed_dir,
             config_path=args.config,
         )
-    if args.phase in {"init-run", "finish-round", "start-round", "close-run"}:
+    if args.phase in {"init-run", "finish-round", "start-round", "close-run", "next-round"}:
         if not args.run_id:
             raise ValueError(f"--run-id is required for {args.phase}")
         _sealed_manifest(args.sealed_dir, config.split_id)
@@ -307,6 +368,23 @@ def main() -> None:
                     "round_id": round_manifest["round_id"],
                     "agent_prompt": str(agent_prompt),
                 },
+                indent=2,
+            )
+        )
+    if args.phase == "next-round":
+        print(
+            json.dumps(
+                advance_run(
+                    run_dir=args.runs_dir / args.run_id,
+                    runs_dir=args.runs_dir,
+                    evaluations_dir=args.evaluations_dir,
+                    authorization_dir=authorization_dir,
+                    config=config,
+                    deadline=args.deadline,
+                    instruction=args.instruction_file.read_text(encoding="utf-8")
+                    if args.instruction_file
+                    else args.instruction,
+                ),
                 indent=2,
             )
         )
