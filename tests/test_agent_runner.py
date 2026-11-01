@@ -427,3 +427,61 @@ def test_controller_refuses_to_seal_out_of_order_research_events(
 
     assert validation is None
     assert error == "ValueError: Research event timestamps must be nondecreasing"
+
+
+def test_container_isolation_refuses_visible_sealed_data(tmp_path, monkeypatch):
+    from miner2049er.agent_runner import verify_container_isolation
+
+    monkeypatch.delenv("SCORER_FINAL_TOKEN", raising=False)
+    monkeypatch.delenv("BENCHMARK_SEALED_DIR", raising=False)
+    absent = tmp_path / "not-mounted"
+    verify_container_isolation(absent)
+
+    sealed = tmp_path / "sealed"
+    sealed.mkdir()
+    with pytest.raises(RuntimeError, match="Sealed paths are visible"):
+        verify_container_isolation(sealed)
+
+
+def test_container_isolation_refuses_operator_token(tmp_path, monkeypatch):
+    from miner2049er.agent_runner import verify_container_isolation
+
+    monkeypatch.setenv("SCORER_FINAL_TOKEN", "operator-only")
+    with pytest.raises(RuntimeError, match="Operator-only variables"):
+        verify_container_isolation(tmp_path / "not-mounted")
+
+
+def test_container_claude_token_comes_from_environment(monkeypatch):
+    from miner2049er.agent_runner import _container_claude_token
+
+    monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="CLAUDE_CODE_OAUTH_TOKEN"):
+        _container_claude_token()
+    monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "token")
+    assert _container_claude_token() == "token"
+
+
+def test_container_mode_leaves_sealing_to_the_operator(tmp_path):
+    from miner2049er.agent_runner import _seal_controller_round
+
+    context = {
+        "run_id": "run",
+        "round_id": "round-0001",
+        "run_dir": tmp_path,
+        "deadline": datetime.now(UTC) + timedelta(hours=1),
+    }
+    status = _seal_controller_round(
+        context=context,
+        runtime_dir=tmp_path,
+        evaluations_dir=tmp_path,
+        authorization_dir=None,
+        config_path=tmp_path / "unused.json",
+        invocations=1,
+        last_exit_code=0,
+        validation={"rules": 0},
+        completion_mode="agent_normal",
+    )
+
+    assert status == 0
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert state["status"] == "awaiting_operator_seal"

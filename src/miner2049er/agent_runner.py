@@ -4,6 +4,7 @@ import argparse
 import getpass
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -56,6 +57,14 @@ DEFAULT_MODEL_CATALOG = Path("/Users/bizon/.codex/models.azure-codex.json")
 DEFAULT_REASONING_EFFORT = "xhigh"
 DEFAULT_AGENT_RUNTIME = "codex"
 CLAUDE_BINARY = Path("/Users/bizon/.nvm/versions/node/v22.18.0/bin/claude")
+# sandbox-exec: the controller confines the agent with a macOS sandbox profile and
+#   seals the round itself.
+# container: the pod is the boundary. The agent container mounts no sealed data
+#   and holds no final-scoring token (checked at startup), Claude's token comes
+#   from CLAUDE_CODE_OAUTH_TOKEN, and an operator Job seals the round afterwards.
+ISOLATION_MODES = ("sandbox-exec", "container")
+CONTAINER_SEALED_PATHS = (Path("/sealed"),)
+CONTAINER_FORBIDDEN_VARIABLES = ("SCORER_FINAL_TOKEN", "BENCHMARK_SEALED_DIR")
 CLAUDE_KEYCHAIN_SERVICE = "Claude Code-credentials"
 CLAUDE_REFRESH_MODEL = "haiku"
 CLAUDE_REFRESH_BUFFER_SECONDS = 600
@@ -189,6 +198,7 @@ def build_agent_environment(
     service_environment: dict[str, str],
     api_key_env: str,
     agent_runtime: str = DEFAULT_AGENT_RUNTIME,
+    isolation: str = "sandbox-exec",
 ) -> dict[str, str]:
     home = runtime_dir / "home"
     codex_home = runtime_dir / "codex-home"
@@ -217,6 +227,10 @@ def build_agent_environment(
         "TERM": "dumb",
         **service_environment,
     }
+    if isolation == "container":
+        # The image's venv is prebuilt and read-only to the agent's user; the
+        # prompt's `uv run ...` commands must use it as is.
+        environment["UV_NO_SYNC"] = "1"
     if agent_runtime == "codex":
         api_key = os.environ.get(api_key_env)
         if not api_key:
@@ -278,13 +292,23 @@ def build_codex_command(
     ]
 
 
+def _claude_binary(isolation: str) -> str:
+    if isolation == "sandbox-exec":
+        return str(CLAUDE_BINARY)
+    found = shutil.which("claude")
+    if not found:
+        raise FileNotFoundError("claude is not on PATH in this container")
+    return found
+
+
 def build_claude_command(
     *,
     model: str,
     reasoning_effort: str,
+    isolation: str = "sandbox-exec",
 ) -> list[str]:
     return [
-        str(CLAUDE_BINARY),
+        _claude_binary(isolation),
         "-p",
         "--output-format",
         "stream-json",
@@ -310,8 +334,11 @@ def build_agent_command(
     model_base_url: str,
     api_key_env: str,
     reasoning_effort: str,
+    isolation: str = "sandbox-exec",
 ) -> list[str]:
     if agent_runtime == "codex":
+        if isolation != "sandbox-exec":
+            raise ValueError("Container isolation is implemented for Claude only")
         return build_codex_command(
             model=model,
             model_provider=model_provider,
@@ -323,6 +350,7 @@ def build_agent_command(
         return build_claude_command(
             model=model,
             reasoning_effort=reasoning_effort,
+            isolation=isolation,
         )
     raise ValueError(f"Unsupported agent runtime: {agent_runtime}")
 
@@ -412,6 +440,27 @@ def _open_one_shot_secret_pipe(secret: str) -> int:
     return read_fd
 
 
+def _container_claude_token() -> str:
+    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+    if not token:
+        raise ValueError("CLAUDE_CODE_OAUTH_TOKEN is not set in the agent container")
+    return token
+
+
+def verify_container_isolation(sealed_root: Path) -> None:
+    """Fail unless this container really lacks sealed labels and the final token."""
+    visible = [
+        str(path)
+        for path in (*CONTAINER_SEALED_PATHS, sealed_root)
+        if path.exists()
+    ]
+    if visible:
+        raise RuntimeError(f"Sealed paths are visible to the agent container: {visible}")
+    present = [name for name in CONTAINER_FORBIDDEN_VARIABLES if os.environ.get(name)]
+    if present:
+        raise RuntimeError(f"Operator-only variables are set: {present}")
+
+
 def _start_agent_process(
     *,
     command: list[str],
@@ -419,12 +468,18 @@ def _start_agent_process(
     environment: dict[str, str],
     events: Any,
     errors: Any,
+    isolation: str = "sandbox-exec",
 ) -> subprocess.Popen[str]:
     child_environment = dict(environment)
     credential_fd: int | None = None
     pass_fds: tuple[int, ...] = ()
     if agent_runtime == "claude":
-        credential_fd = _open_one_shot_secret_pipe(_load_claude_access_token())
+        token = (
+            _load_claude_access_token()
+            if isolation == "sandbox-exec"
+            else _container_claude_token()
+        )
+        credential_fd = _open_one_shot_secret_pipe(token)
         child_environment["CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR"] = str(
             credential_fd
         )
@@ -780,13 +835,28 @@ def _seal_controller_round(
     context: dict[str, Any],
     runtime_dir: Path,
     evaluations_dir: Path,
-    authorization_dir: Path,
+    authorization_dir: Path | None,
     config_path: Path,
     invocations: int,
     last_exit_code: int | None,
     validation: dict[str, int],
     completion_mode: str,
 ) -> int:
+    if authorization_dir is None:
+        # Container isolation: sealing needs the sealed authorization records,
+        # so `miner-benchmark-setup finish-round` runs as a separate operator Job.
+        _write_state(
+            runtime_dir,
+            context,
+            status="awaiting_operator_seal",
+            controller_pid=None,
+            agent_pid=None,
+            invocations=invocations,
+            last_exit_code=last_exit_code,
+            validation=validation,
+            completion_mode=completion_mode,
+        )
+        return 0
     try:
         manifest, sealed_validation = _finish_controller_round(
             context=context,
@@ -833,7 +903,7 @@ def _recover_and_finish_after_deadline(
     context: dict[str, Any],
     runtime_dir: Path,
     evaluations_dir: Path,
-    authorization_dir: Path,
+    authorization_dir: Path | None,
     config_path: Path,
     invocations: int,
     last_exit_code: int | None,
@@ -841,6 +911,7 @@ def _recover_and_finish_after_deadline(
     deadline_poll_seconds: int,
     recovery_wrap_up_seconds: int,
     shutdown_grace_seconds: int,
+    isolation: str = "sandbox-exec",
 ) -> int:
     validation, validation_error = _completion_validation(context, evaluations_dir)
     if validation is not None:
@@ -888,6 +959,7 @@ def _recover_and_finish_after_deadline(
                 environment=environment,
                 events=events,
                 errors=errors,
+                isolation=isolation,
             )
             _write_state(
                 runtime_dir,
@@ -980,24 +1052,38 @@ def run_controller(args: argparse.Namespace) -> int:
     runtime_dir.mkdir(parents=True, exist_ok=True)
     evaluations_dir = args.evaluations_dir.resolve()
     evaluations_dir.mkdir(parents=True, exist_ok=True)
-    config = load_benchmark_config(args.config)
-    authorization_dir = _authorization_directory(
-        authorization_dir=args.authorization_dir,
-        sealed_root=args.sealed_root,
-        split_id=config.split_id,
-    )
-    preflight = _controller_preflight(
-        context=context,
-        evaluations_dir=evaluations_dir,
-        authorization_dir=authorization_dir,
-        config_path=args.config,
-    )
+    isolation = args.isolation
+    if isolation == "container":
+        verify_container_isolation(args.sealed_root)
+        # Authorization was checked by the operator Job that started the round.
+        authorization_dir = None
+        preflight = validate_run_directory(context["run_dir"], evaluations_dir)
+    else:
+        config = load_benchmark_config(args.config)
+        authorization_dir = _authorization_directory(
+            authorization_dir=args.authorization_dir,
+            sealed_root=args.sealed_root,
+            split_id=config.split_id,
+        )
+        preflight = _controller_preflight(
+            context=context,
+            evaluations_dir=evaluations_dir,
+            authorization_dir=authorization_dir,
+            config_path=args.config,
+        )
     service_environment = {
         name: os.environ[name]
         for name in SAFE_SERVICE_VARIABLES
         if os.environ.get(name)
     }
-    missing = [name for name in SAFE_SERVICE_VARIABLES if name not in service_environment]
+    # Gandalf is not deployed on the cluster yet; container rounds say so in
+    # their round instruction instead of requiring GANDALF_URL.
+    optional = {"GANDALF_URL"} if isolation == "container" else set()
+    missing = [
+        name
+        for name in SAFE_SERVICE_VARIABLES
+        if name not in service_environment and name not in optional
+    ]
     if missing:
         raise ValueError(f"Controller is missing service variables: {', '.join(missing)}")
     environment = build_agent_environment(
@@ -1005,37 +1091,38 @@ def run_controller(args: argparse.Namespace) -> int:
         service_environment=service_environment,
         api_key_env=args.api_key_env,
         agent_runtime=args.agent_runtime,
+        isolation=isolation,
     )
-    profile_path = runtime_dir / "sandbox.sb"
-    profile_path.write_text(
-        build_sandbox_profile(
-            run_dir=context["run_dir"],
-            runtime_dir=runtime_dir,
-            sealed_root=args.sealed_root,
-            source_root=args.source_root,
-            evaluations_dir=evaluations_dir,
-        ),
-        encoding="utf-8",
+    agent_command = build_agent_command(
+        agent_runtime=args.agent_runtime,
+        model=args.model,
+        model_provider=args.model_provider,
+        model_base_url=args.model_base_url,
+        api_key_env=args.api_key_env,
+        reasoning_effort=args.reasoning_effort,
+        isolation=isolation,
     )
-    verify_sandbox(
-        profile_path,
-        context,
-        args.sealed_root,
-        evaluations_dir,
-    )
-    command = [
-        "/usr/bin/sandbox-exec",
-        "-f",
-        str(profile_path),
-        *build_agent_command(
-            agent_runtime=args.agent_runtime,
-            model=args.model,
-            model_provider=args.model_provider,
-            model_base_url=args.model_base_url,
-            api_key_env=args.api_key_env,
-            reasoning_effort=args.reasoning_effort,
-        ),
-    ]
+    if isolation == "container":
+        command = agent_command
+    else:
+        profile_path = runtime_dir / "sandbox.sb"
+        profile_path.write_text(
+            build_sandbox_profile(
+                run_dir=context["run_dir"],
+                runtime_dir=runtime_dir,
+                sealed_root=args.sealed_root,
+                source_root=args.source_root,
+                evaluations_dir=evaluations_dir,
+            ),
+            encoding="utf-8",
+        )
+        verify_sandbox(
+            profile_path,
+            context,
+            args.sealed_root,
+            evaluations_dir,
+        )
+        command = ["/usr/bin/sandbox-exec", "-f", str(profile_path), *agent_command]
     record_agent_execution(
         run_dir=context["run_dir"],
         round_id=context["round_id"],
@@ -1059,7 +1146,7 @@ def run_controller(args: argparse.Namespace) -> int:
         controller_pid=os.getpid(),
         run_dir=str(context["run_dir"]),
         evaluations_dir=str(evaluations_dir),
-        authorization_dir=str(authorization_dir),
+        authorization_dir=str(authorization_dir) if authorization_dir else None,
         wrap_up_at=wrap_up_at.isoformat(),
         agent_runtime=args.agent_runtime,
         model=args.model,
@@ -1094,6 +1181,7 @@ def run_controller(args: argparse.Namespace) -> int:
                 environment=environment,
                 events=events,
                 errors=errors,
+                isolation=isolation,
             )
             _write_state(
                 runtime_dir,
@@ -1128,6 +1216,7 @@ def run_controller(args: argparse.Namespace) -> int:
                     deadline_poll_seconds=args.deadline_poll_seconds,
                     recovery_wrap_up_seconds=args.recovery_wrap_up_seconds,
                     shutdown_grace_seconds=args.shutdown_grace_seconds,
+                    isolation=isolation,
                 )
             last_exit_code = process.returncode
 
@@ -1165,6 +1254,7 @@ def run_controller(args: argparse.Namespace) -> int:
                 deadline_poll_seconds=args.deadline_poll_seconds,
                 recovery_wrap_up_seconds=args.recovery_wrap_up_seconds,
                 shutdown_grace_seconds=args.shutdown_grace_seconds,
+                isolation=isolation,
             )
 
         if process.returncode == 0:
@@ -1203,6 +1293,7 @@ def run_controller(args: argparse.Namespace) -> int:
         deadline_poll_seconds=args.deadline_poll_seconds,
         recovery_wrap_up_seconds=args.recovery_wrap_up_seconds,
         shutdown_grace_seconds=args.shutdown_grace_seconds,
+        isolation=isolation,
     )
 
 
@@ -1461,6 +1552,12 @@ def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--reasoning-effort",
         default=DEFAULT_REASONING_EFFORT,
+    )
+    parser.add_argument(
+        "--isolation",
+        choices=ISOLATION_MODES,
+        default="sandbox-exec",
+        help="sandbox-exec on the laptop; container inside a pod",
     )
 
 
