@@ -1,12 +1,13 @@
 # Storage for the Translator 1.0.2 benchmark on Sterling (namespace quota 128Gi).
-# Total requested: 102Gi. All classes allow expansion.
+# Total requested: 91Gi. All classes allow expansion.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: miner-source
   labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: source}
 spec:
-  # nodes.jsonl.zst + edges.jsonl.zst (~3.4Gi) plus the archive while splitting.
+  # nodes.jsonl.zst + edges.jsonl.zst (4.0GB measured) plus the 3.4GB archive
+  # while splitting.
   accessModes: [ReadWriteOnce]
   storageClassName: basic
   resources: {requests: {storage: 10Gi}}
@@ -39,10 +40,11 @@ metadata:
   name: miner-import
   labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: import}
 spec:
-  # Parquet handed to neo4j-admin. Delete this PVC after the import succeeds.
+  # Parquet handed to neo4j-admin (3.6GB for full 1.0.2, measured locally).
+  # Delete this PVC after the import succeeds.
   accessModes: [ReadWriteOnce]
   storageClassName: basic
-  resources: {requests: {storage: 20Gi}}
+  resources: {requests: {storage: 10Gi}}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

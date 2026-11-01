@@ -10,11 +10,11 @@ the scorer, the dashboard and the nightly agent CronJob come later.
 | `miner-source` | basic | 10Gi | `nodes.jsonl.zst`, `edges.jsonl.zst`, metadata | build Job |
 | `miner-sealed` | encrypted | 1Gi | feedback and final labels | build Job, later the scorer only |
 | `miner-work` | basic | 10Gi | public split, runs, evaluations | build Job, later agent and scorer |
-| `miner-import` | basic | 20Gi | Parquet for `neo4j-admin` | build Job; delete after import |
+| `miner-import` | basic | 10Gi | Parquet for `neo4j-admin` | build Job; delete after import |
 | `miner-neo4j-data` | basic-noatime | 60Gi | Neo4j store | build Job, Neo4j |
 
 The `ssd` class is blocked for new volumes by Sterling's Gatekeeper policy.
-The namespace quota is 128Gi; this requests 101Gi.
+The namespace quota is 128Gi; this requests 91Gi.
 
 The source stays zstd-compressed (`SOURCE_COMPRESSION=zstd`), so the 28GB
 uncompressed graph is never written. The Neo4j export drops the per-record
