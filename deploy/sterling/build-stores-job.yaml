@@ -96,7 +96,7 @@ spec:
                 --input-type=parquet \
                 --nodes=/import/neo4j-import/nodes.parquet \
                 --relationships=/import/neo4j-import/edges.parquet \
-                --id-type=string --strict=true --bad-tolerance=0 \
+                --id-type=string --strict=true --bad-tolerance=0 --verbose \
                 --threads=4 --max-off-heap-memory=8G \
                 --report-file=/data/logs/import.report \
                 neo4j
