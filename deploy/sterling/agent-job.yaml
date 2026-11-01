@@ -28,7 +28,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: agent
-          image: ghcr.io/cbizon/miner2049er:1.0.2-4a1917e@sha256:856506ba37593862bd19d352ad3e3001abaefb3e010575e93aeb7a64321c3486
+          image: ghcr.io/cbizon/miner2049er:1.0.2-dab0bd0@sha256:9db2e610ce1d0f8f974d2b27f8b478ad67067fc3fc4bb27b162e6cd409a4ec36
           command: [sh, -euc]
           args:
             - |
@@ -56,7 +56,7 @@ spec:
             - {name: work, mountPath: /work/benchmark, subPath: benchmark, readOnly: true}
           resources:
             requests: {cpu: "1", memory: 4Gi, ephemeral-storage: 100Mi}
-            limits: {cpu: "4", memory: 8Gi, ephemeral-storage: 2Gi}
+            limits: {cpu: "4", memory: 8Gi, ephemeral-storage: 512Mi}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}

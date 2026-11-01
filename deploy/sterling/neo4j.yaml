@@ -63,7 +63,7 @@ spec:
           resources:
             # The tmpfs pages written here are charged to this pod's memory.
             requests: {cpu: "1", memory: 44Gi, ephemeral-storage: 100Mi}
-            limits: {cpu: "4", memory: 48Gi, ephemeral-storage: 1Gi}
+            limits: {cpu: "4", memory: 48Gi, ephemeral-storage: 256Mi}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
@@ -91,7 +91,7 @@ spec:
           resources:
             # ~31Gi tmpfs store + 4G heap + 8G page cache + overhead.
             requests: {cpu: "1", memory: 46Gi, ephemeral-storage: 100Mi}
-            limits: {cpu: "8", memory: 50Gi, ephemeral-storage: 1Gi}
+            limits: {cpu: "8", memory: 50Gi, ephemeral-storage: 256Mi}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
