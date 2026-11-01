@@ -1,0 +1,73 @@
+# Feedback scorer. Besides operator Jobs, the only workload that mounts the
+# sealed labels (read-only) or holds the final-scoring token.
+apiVersion: v1
+kind: Service
+metadata:
+  name: miner-scorer
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: scorer}
+spec:
+  selector: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: scorer}
+  ports: [{name: http, port: 6430, targetPort: 6430}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miner-scorer
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: scorer}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: scorer}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: scorer}
+    spec:
+      imagePullSecrets: [{name: registry-credentials}]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 7474
+        runAsGroup: 7474
+        fsGroup: 7474
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: work-layout
+          image: ghcr.io/cbizon/miner2049er:1.0.2-c842553@sha256:afa5eccf26a7e55e3f7ea06166e56971468675b4860708aec36df3cc212a4c88
+          command: [sh, -euc, "mkdir -p /work/runs /work/evaluations /work/scorer-state /work/rule-sets /work/rule-set-evaluations /work/agents"]
+          volumeMounts: [{name: work, mountPath: /work}]
+          resources: &small
+            requests: {cpu: 100m, memory: 512Mi, ephemeral-storage: 50Mi}
+            limits: {cpu: "1", memory: 2Gi, ephemeral-storage: 256Mi}
+          securityContext: &locked
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      containers:
+        - name: scorer
+          image: ghcr.io/cbizon/miner2049er:1.0.2-c842553@sha256:afa5eccf26a7e55e3f7ea06166e56971468675b4860708aec36df3cc212a4c88
+          command: [uvicorn, "miner2049er.scorer_server:APP", --host, 0.0.0.0, --port, "6430"]
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: BENCHMARK_CONFIG, value: /app/config/benchmark.json}
+            - {name: BENCHMARK_SEALED_MANIFEST, value: /sealed/bf9f8f5300edac94/sealed-manifest.json}
+            - {name: SCORER_AUTHORIZED_RUNS_DIR, value: /sealed/bf9f8f5300edac94/authorized-runs}
+            - {name: SCORER_STATE_DB, value: /work/scorer-state/submissions-v2.sqlite3}
+            - {name: SCORER_EVALUATIONS_DIR, value: /work/evaluations}
+            - {name: SCORER_RULE_SET_ROOT, value: /work/rule-sets}
+            - {name: SCORER_RULE_SET_EVALUATIONS_DIR, value: /work/rule-set-evaluations}
+            - {name: SCORER_RUNS_DIR, value: /work/runs}
+            - name: SCORER_FINAL_TOKEN
+              valueFrom: {secretKeyRef: {name: miner-scorer-final, key: SCORER_FINAL_TOKEN}}
+          ports: [{name: http, containerPort: 6430}]
+          readinessProbe:
+            tcpSocket: {port: 6430}
+            periodSeconds: 10
+          volumeMounts:
+            - {name: work, mountPath: /work}
+            - {name: sealed, mountPath: /sealed, readOnly: true}
+          resources:
+            requests: {cpu: 250m, memory: 2Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "2", memory: 4Gi, ephemeral-storage: 512Mi}
+          securityContext: *locked
+      volumes:
+        - {name: work, persistentVolumeClaim: {claimName: miner-work}}
+        - {name: sealed, persistentVolumeClaim: {claimName: miner-sealed, readOnly: true}}

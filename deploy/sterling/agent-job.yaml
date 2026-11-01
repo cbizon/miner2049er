@@ -1,0 +1,64 @@
+# One agent round for run @RUN@. No sealed volume and no final token: the
+# controller refuses to start if either is visible (--isolation container).
+# Evaluations are read-only here; only the scorer writes them.
+# Render with: sed -e "s/@RUN@/<run-id>/g" -e "s/@ROUND@/<round-id>/g"
+#                  -e "s/@MODEL@/<model>/" -e "s/@EFFORT@/<effort>/"
+# Use a full model ID (e.g. claude-opus-5-5): the CLI's "opus" alias can lag
+# the current model.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: miner-agent-@RUN@-@ROUND@
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: agent}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: agent}
+    spec:
+      restartPolicy: Never
+      imagePullSecrets: [{name: registry-credentials}]
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 7474
+        runAsGroup: 7474
+        fsGroup: 7474
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: agent
+          image: ghcr.io/cbizon/miner2049er:1.0.2-c842553@sha256:afa5eccf26a7e55e3f7ea06166e56971468675b4860708aec36df3cc212a4c88
+          command: [sh, -euc]
+          args:
+            - |
+              export NEO4J_PASSWORD="${NEO4J_AUTH#neo4j/}"; unset NEO4J_AUTH
+              exec miner-run-agent run --isolation container \
+                --run-dir /work/runs/@RUN@ \
+                --runtime-dir /work/agents/@RUN@-@ROUND@ \
+                --evaluations-dir /work/evaluations \
+                --sealed-root /sealed \
+                --agent-runtime claude --model-provider anthropic \
+                --model @MODEL@ --reasoning-effort @EFFORT@
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: NEO4J_URI, value: "bolt://miner-neo4j:7687"}
+            - {name: NEO4J_USER, value: neo4j}
+            - name: NEO4J_AUTH
+              valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+            - {name: SCORER_URL, value: "http://miner-scorer:6430"}
+            - name: CLAUDE_CODE_OAUTH_TOKEN
+              valueFrom: {secretKeyRef: {name: claude-provider-credentials, key: CLAUDE_CODE_OAUTH_TOKEN}}
+          volumeMounts:
+            - {name: work, mountPath: /work/runs, subPath: runs}
+            - {name: work, mountPath: /work/agents, subPath: agents}
+            - {name: work, mountPath: /work/evaluations, subPath: evaluations, readOnly: true}
+            - {name: work, mountPath: /work/benchmark, subPath: benchmark, readOnly: true}
+          resources:
+            requests: {cpu: "1", memory: 4Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "4", memory: 8Gi, ephemeral-storage: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      volumes:
+        - {name: work, persistentVolumeClaim: {claimName: miner-work}}
