@@ -1,5 +1,5 @@
 # Read-only benchmark dashboard. Not exposed outside the namespace; view it with
-#   kubectl port-forward svc/miner-dashboard 6431:6431   ->  http://localhost:6431
+#   kubectl port-forward svc/miner-dashboard 6431:6431   ->  http://localhost:6431/benchmark
 apiVersion: v1
 kind: Service
 metadata:
@@ -36,7 +36,7 @@ spec:
           env: [{name: HOME, value: /tmp}]
           ports: [{name: http, containerPort: 6431}]
           readinessProbe:
-            httpGet: {path: /, port: 6431}
+            httpGet: {path: /benchmark, port: 6431}
             periodSeconds: 15
           volumeMounts:
             - {name: work, mountPath: /app/runs, subPath: runs, readOnly: true}

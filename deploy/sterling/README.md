@@ -106,7 +106,7 @@ ends at `awaiting_operator_seal` instead of sealing.
 - Instructions are dated. A night without a fresh one runs the ConfigMap's
   `fallback.md`: follow the agent's top proposed direction and its defaults.
 - Dashboard: `kubectl -n bizon port-forward svc/miner-dashboard 6431:6431`,
-  then http://localhost:6431.
+  then http://localhost:6431/benchmark.
 
 Not yet done: Gandalf on the cluster (agents skip TRAPI checks), a
 NetworkPolicy limiting the agent's egress (it can currently reach the

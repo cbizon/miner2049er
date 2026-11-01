@@ -1,4 +1,6 @@
-# Neo4j serving the 1.0.2 store. Bolt is reachable in-namespace only (the
+# Neo4j serving the 1.0.2 store. Needs ConfigMap miner-neo4j-indexes
+# (kubectl create configmap miner-neo4j-indexes --from-file=../../cypher/indexes.cypher).
+# Bolt is reachable in-namespace only (the
 # namespace's default policy admits ingress from its own pods).
 #
 # The store lives in a memory-backed emptyDir, not a PVC: every storage class
@@ -83,11 +85,25 @@ spec:
           ports:
             - {name: bolt, containerPort: 7687}
             - {name: http, containerPort: 7474}
+          # The store is rebuilt on every start, so indexes are too. The pod is
+          # marked ready only after this hook has created them.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    shell() { cypher-shell -u neo4j -p "${NEO4J_AUTH#neo4j/}" "$@"; }
+                    until shell "RETURN 1" >/dev/null 2>&1; do sleep 5; done
+                    shell -f /cypher/indexes.cypher && shell "CALL db.awaitIndexes(3600)"
           readinessProbe:
             tcpSocket: {port: 7687}
             initialDelaySeconds: 20
             periodSeconds: 10
-          volumeMounts: [{name: data, mountPath: /data}]
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: cypher, mountPath: /cypher, readOnly: true}
           resources:
             # ~31Gi tmpfs store + 4G heap + 8G page cache + overhead.
             requests: {cpu: "1", memory: 46Gi, ephemeral-storage: 100Mi}
@@ -98,47 +114,4 @@ spec:
       volumes:
         - {name: data, emptyDir: {medium: Memory, sizeLimit: 36Gi}}
         - {name: import, persistentVolumeClaim: {claimName: miner-import, readOnly: true}}
----
-# Indexes from cypher/indexes.cypher. Create the ConfigMap from the repo file:
-#   kubectl create configmap miner-neo4j-indexes --from-file=../../cypher/indexes.cypher
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: miner-neo4j-indexes
-  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: build}
-spec:
-  backoffLimit: 0
-  template:
-    metadata:
-      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: build}
-    spec:
-      restartPolicy: Never
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 7474
-        runAsGroup: 7474
-        seccompProfile: {type: RuntimeDefault}
-      containers:
-        - name: indexes
-          image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
-          command: [sh, -euc]
-          args:
-            - |
-              export NEO4J_PASSWORD="${NEO4J_AUTH#neo4j/}"
-              shell() { cypher-shell -a bolt://miner-neo4j:7687 -u neo4j -p "$NEO4J_PASSWORD" "$@"; }
-              until shell "RETURN 1" >/dev/null 2>&1; do sleep 5; done
-              shell -f /cypher/indexes.cypher
-              shell "CALL db.awaitIndexes(3600)"
-              shell "SHOW INDEXES YIELD name, state, populationPercent RETURN name, state, populationPercent"
-          env:
-            - name: NEO4J_AUTH
-              valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
-          volumeMounts: [{name: cypher, mountPath: /cypher, readOnly: true}]
-          resources:
-            requests: {cpu: 100m, memory: 512Mi, ephemeral-storage: 50Mi}
-            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 256Mi}
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities: {drop: [ALL]}
-      volumes:
         - {name: cypher, configMap: {name: miner-neo4j-indexes}}

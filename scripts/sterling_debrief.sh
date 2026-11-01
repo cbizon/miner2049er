@@ -4,7 +4,7 @@
 set -euo pipefail
 
 namespace="${MINER_NAMESPACE:-bizon}"
-run_id="$(kubectl -n "$namespace" get configmap miner-nightly -o jsonpath='{.data.run_id}')"
+run_id=""
 args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -12,6 +12,10 @@ while [[ $# -gt 0 ]]; do
     *) args+=("$1"); shift ;;
   esac
 done
+
+if [[ -z "$run_id" ]]; then
+  run_id="$(kubectl -n "$namespace" get configmap miner-nightly -o jsonpath='{.data.run_id}')"
+fi
 
 kubectl -n "$namespace" exec deploy/miner-dashboard -c dashboard -- \
   env PYTHONWARNINGS=ignore miner-debrief --run-id "$run_id" ${args[@]+"${args[@]}"}
