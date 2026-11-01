@@ -23,7 +23,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: fetch-source
-          image: ghcr.io/cbizon/miner2049er:IMAGE_TAG
+          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
           command: [sh, -euc]
           args:
             - |
@@ -43,7 +43,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
         - name: prepare-split
-          image: ghcr.io/cbizon/miner2049er:IMAGE_TAG
+          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
           command: [sh, -euc]
           args:
             - |
@@ -64,7 +64,7 @@ spec:
           resources: *python
           securityContext: *locked
         - name: export-parquet
-          image: ghcr.io/cbizon/miner2049er:IMAGE_TAG
+          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
           command: [sh, -euc]
           args:
             - |
