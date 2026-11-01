@@ -7,6 +7,7 @@ from typing import Any
 import orjson
 
 from miner2049er.partitioning import Pair, load_label_pairs
+from miner2049er.source_files import open_source
 
 
 def load_holdout_pairs(paths: list[Path]) -> set[Pair]:
@@ -42,7 +43,7 @@ class FilteredKGXJsonlSource:
         self.holdout_pairs = holdout_pairs
 
     def _raw_edges(self) -> Iterator[dict[str, Any]]:
-        with self.edge_path.open("rb") as stream:
+        with open_source(self.edge_path) as stream:
             for line in stream:
                 edge = orjson.loads(line)
                 if edge_is_visible(edge, self.target_predicates, self.holdout_pairs):
@@ -65,7 +66,7 @@ class FilteredKGXJsonlSource:
         from gandalf.normalize import normalize_node
         from gandalf.sources.base import validate_normalized_node
 
-        with self.node_path.open("rb") as stream:
+        with open_source(self.node_path) as stream:
             for line in stream:
                 node = normalize_node(orjson.loads(line))
                 if not node.get("id"):

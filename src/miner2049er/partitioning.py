@@ -18,6 +18,7 @@ from miner2049er.benchmark_config import (
     load_benchmark_config,
 )
 from miner2049er.settings import ROOT, edges_path, graph_version
+from miner2049er.source_files import open_source
 
 DEFAULT_PUBLIC_DIR = ROOT / "data" / "benchmark"
 DEFAULT_SEALED_DIR = ROOT.parent / f"{ROOT.name}-sealed"
@@ -60,7 +61,7 @@ def collect_target_pairs(
 ) -> dict[Pair, TargetPair]:
     predicates = set(target_predicates)
     pairs: dict[Pair, TargetPair] = {}
-    with source.open("rb") as stream:
+    with open_source(source) as stream:
         for line_number, line in enumerate(stream, start=1):
             try:
                 edge = orjson.loads(line)

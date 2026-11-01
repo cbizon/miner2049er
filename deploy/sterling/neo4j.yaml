@@ -1,0 +1,105 @@
+# Neo4j serving the imported 1.0.2 store. Bolt is reachable in-namespace only
+# (the namespace's default policy admits ingress from its own pods).
+apiVersion: v1
+kind: Service
+metadata:
+  name: miner-neo4j
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+spec:
+  selector: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+  ports:
+    - {name: bolt, port: 7687, targetPort: 7687}
+    - {name: http, port: 7474, targetPort: 7474}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: miner-neo4j
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+spec:
+  serviceName: miner-neo4j
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 7474
+        runAsGroup: 7474
+        fsGroup: 7474
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: neo4j
+          image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+          env:
+            - name: NEO4J_AUTH
+              valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+            - {name: NEO4J_server_memory_heap_initial__size, value: 4G}
+            - {name: NEO4J_server_memory_heap_max__size, value: 4G}
+            # Raise toward the store size once the import reports it.
+            - {name: NEO4J_server_memory_pagecache_size, value: 16G}
+            - {name: NEO4J_server_directories_logs, value: /data/logs}
+            - {name: NEO4J_db_transaction_timeout, value: 30m}
+          ports:
+            - {name: bolt, containerPort: 7687}
+            - {name: http, containerPort: 7474}
+          readinessProbe:
+            tcpSocket: {port: 7687}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          volumeMounts: [{name: data, mountPath: /data}]
+          resources:
+            requests: {cpu: "1", memory: 22Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "8", memory: 24Gi, ephemeral-storage: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      volumes:
+        - {name: data, persistentVolumeClaim: {claimName: miner-neo4j-data}}
+---
+# Indexes from cypher/indexes.cypher. Create the ConfigMap from the repo file:
+#   kubectl create configmap miner-neo4j-indexes --from-file=../../cypher/indexes.cypher
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: miner-neo4j-indexes
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: build}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: build}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 7474
+        runAsGroup: 7474
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: indexes
+          image: neo4j@sha256:d9dd3dc7d1c78fa959191ff02dbdcbefadceaf83eee23428fb92a58cac8ad3fe
+          command: [sh, -euc]
+          args:
+            - |
+              export NEO4J_PASSWORD="${NEO4J_AUTH#neo4j/}"
+              shell() { cypher-shell -a bolt://miner-neo4j:7687 -u neo4j -p "$NEO4J_PASSWORD" "$@"; }
+              until shell "RETURN 1" >/dev/null 2>&1; do sleep 5; done
+              shell -f /cypher/indexes.cypher
+              shell "CALL db.awaitIndexes(3600)"
+              shell "SHOW INDEXES YIELD name, state, populationPercent RETURN name, state, populationPercent"
+          env:
+            - name: NEO4J_AUTH
+              valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+          volumeMounts: [{name: cypher, mountPath: /cypher, readOnly: true}]
+          resources:
+            requests: {cpu: 100m, memory: 512Mi, ephemeral-storage: 50Mi}
+            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      volumes:
+        - {name: cypher, configMap: {name: miner-neo4j-indexes}}

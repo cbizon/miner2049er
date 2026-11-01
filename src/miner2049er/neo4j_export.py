@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 
 from miner2049er.graph_filter import edge_is_visible, load_holdout_pairs
 from miner2049er.settings import edges_path, neo4j_import_path, nodes_path
+from miner2049er.source_files import open_source
 
 BATCH_SIZE = 50_000
 TOKEN_PATTERN = re.compile(r"[^A-Za-z0-9_]")
@@ -75,7 +76,6 @@ EDGE_FLOAT_FIELDS = (
 EDGE_INT_FIELDS = (
     "evidence_count",
     "has_count",
-    "has_supporting_studies",
     "has_total",
     "max_research_phase",
     "number_of_cases",
@@ -88,13 +88,19 @@ QUALIFIER_FIELDS = (
     "object_aspect_qualifier",
     "object_direction_qualifier",
     "object_form_or_variant_qualifier",
+    "object_activity_qualifier",
+    "object_context_qualifier",
+    "object_process_qualifier",
     "onset_qualifier",
     "qualified_predicate",
     "qualifier",
     "sex_qualifier",
     "species_context_qualifier",
     "stage_qualifier",
+    "subject_activity_qualifier",
+    "subject_context_qualifier",
     "subject_form_or_variant_qualifier",
+    "subject_process_qualifier",
 )
 
 
@@ -162,7 +168,7 @@ def as_bool(value: Any) -> bool | None:
     return None
 
 
-def flatten_sources(sources: Any) -> tuple[list[str], list[str], list[str], str]:
+def flatten_sources(sources: Any) -> tuple[list[str], list[str], list[str]]:
     primary: list[str] = []
     aggregators: list[str] = []
     upstream: list[str] = []
@@ -179,12 +185,20 @@ def flatten_sources(sources: Any) -> tuple[list[str], list[str], list[str], str]
             aggregators.append(str(resource_id))
         upstream.extend(str(value) for value in source.get("upstream_resource_ids", []))
 
-    return (
-        sorted(set(primary)),
-        sorted(set(aggregators)),
-        sorted(set(upstream)),
-        compact_json(source_records),
-    )
+    return sorted(set(primary)), sorted(set(aggregators)), sorted(set(upstream))
+
+
+def supporting_studies(value: Any) -> tuple[int | None, str | None]:
+    """Count and compact JSON of has_supporting_studies.
+
+    Translator 1.0.2 records it as a map of study ID to study record, with
+    assay results such as pIC50 for BindingDB and ChEMBL binding edges.
+    """
+    if value is None:
+        return None, None
+    if not isinstance(value, dict):
+        raise TypeError(f"has_supporting_studies must be an object, not {value!r}")
+    return len(value), compact_json(value)
 
 
 def node_schema() -> pa.Schema:
@@ -201,7 +215,6 @@ def node_schema() -> pa.Schema:
     ]
     fields.extend(pa.field(name, pa.string()) for name in NODE_STRING_FIELDS)
     fields.append(pa.field("information_content", pa.float64()))
-    fields.append(pa.field("raw_json", pa.string(), nullable=False))
     return pa.schema(fields)
 
 
@@ -220,14 +233,14 @@ def edge_schema() -> pa.Schema:
         pa.field("primary_knowledge_sources", pa.list_(pa.string())),
         pa.field("aggregator_knowledge_sources", pa.list_(pa.string())),
         pa.field("upstream_resource_ids", pa.list_(pa.string())),
-        pa.field("sources_json", pa.string(), nullable=False),
+        pa.field("supporting_study_count", pa.int64()),
+        pa.field("supporting_studies_json", pa.string()),
     ]
     fields.extend(pa.field(name, pa.string()) for name in EDGE_STRING_FIELDS)
     fields.extend(pa.field(name, pa.float64()) for name in EDGE_FLOAT_FIELDS)
     fields.extend(pa.field(name, pa.int64()) for name in EDGE_INT_FIELDS)
     fields.append(pa.field("negated", pa.bool_()))
     fields.extend(pa.field(name, pa.string()) for name in QUALIFIER_FIELDS)
-    fields.append(pa.field("raw_json", pa.string(), nullable=False))
     return pa.schema(fields)
 
 
@@ -238,7 +251,6 @@ def transform_node(node: dict[str, Any]) -> dict[str, Any]:
         "id:ID(Entity)": node["id"],
         ":LABEL": ";".join(dict.fromkeys(labels)),
         "categories": categories,
-        "raw_json": compact_json(node),
         "information_content": as_float(node.get("information_content")),
     }
     for field in NODE_LIST_FIELDS:
@@ -251,7 +263,8 @@ def transform_node(node: dict[str, Any]) -> dict[str, Any]:
 
 def transform_edge(edge: dict[str, Any]) -> dict[str, Any]:
     predicate = edge["predicate"]
-    primary, aggregators, upstream, sources_json = flatten_sources(edge.get("sources"))
+    primary, aggregators, upstream = flatten_sources(edge.get("sources"))
+    study_count, studies_json = supporting_studies(edge.get("has_supporting_studies"))
     record: dict[str, Any] = {
         ":START_ID(Entity)": edge["subject"],
         ":END_ID(Entity)": edge["object"],
@@ -262,9 +275,9 @@ def transform_edge(edge: dict[str, Any]) -> dict[str, Any]:
         "primary_knowledge_sources": primary,
         "aggregator_knowledge_sources": aggregators,
         "upstream_resource_ids": upstream,
-        "sources_json": sources_json,
+        "supporting_study_count": study_count,
+        "supporting_studies_json": studies_json,
         "negated": as_bool(edge.get("negated")),
-        "raw_json": compact_json(edge),
     }
     for field in EDGE_LIST_FIELDS:
         target = "association_categories" if field == "category" else field
@@ -287,7 +300,7 @@ def batches(
     include_record=lambda _record: True,
 ) -> Iterable[list[dict[str, Any]]]:
     batch: list[dict[str, Any]] = []
-    with path.open("rb") as stream:
+    with open_source(path) as stream:
         for line_number, line in enumerate(stream, start=1):
             try:
                 record = orjson.loads(line)

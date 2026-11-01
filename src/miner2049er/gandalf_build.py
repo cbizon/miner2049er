@@ -54,6 +54,11 @@ def main() -> None:
         )
         graph = _build_graph_from_source(source)
     else:
+        if ".zst" in {args.nodes.suffix, args.edges.suffix}:
+            raise ValueError(
+                "Gandalf's own JSONL loader cannot read zstd sources; build with "
+                "--exclude-labels, which streams through miner2049er's reader"
+            )
         graph = build_graph_from_jsonl(
             edge_jsonl_path=str(args.edges),
             node_jsonl_path=str(args.nodes),

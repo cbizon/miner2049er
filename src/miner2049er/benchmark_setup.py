@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from miner2049er.benchmark_config import (
@@ -25,13 +26,14 @@ from miner2049er.run_artifacts import (
     initialize_run,
     start_round,
 )
-from miner2049er.settings import ROOT
+from miner2049er.settings import ROOT, source_file
 
+STORES = ("neo4j", "gandalf")
 
 def validate_source(source_dir: Path, expected_version: str) -> dict:
     required = {
-        "nodes": source_dir / "nodes.jsonl",
-        "edges": source_dir / "edges.jsonl",
+        "nodes": source_file(source_dir, "nodes"),
+        "edges": source_file(source_dir, "edges"),
         "metadata": source_dir / "graph-metadata.json",
     }
     missing = [str(path) for path in required.values() if not path.is_file()]
@@ -58,6 +60,14 @@ def _run(command: list[str], env: dict[str, str] | None = None) -> None:
     subprocess.run(command, cwd=ROOT, env=env, check=True)
 
 
+def _console_script(name: str) -> str:
+    """The entry point installed beside the running interpreter (same venv)."""
+    path = Path(sys.executable).parent / name
+    if not path.is_file():
+        raise FileNotFoundError(f"Console script {name} not found at {path}")
+    return str(path)
+
+
 def build_store_artifacts(
     *,
     source_dir: Path,
@@ -65,11 +75,13 @@ def build_store_artifacts(
     sealed_root: Path,
     config_path: Path,
     overwrite: bool,
+    stores: tuple[str, ...] = STORES,
+    store_root: Path | None = None,
 ) -> dict[str, str]:
     config = load_benchmark_config(config_path)
     sealed_manifest_path = _sealed_manifest(sealed_root, config.split_id)
     sealed = json.loads(sealed_manifest_path.read_text(encoding="utf-8"))
-    store_root = public_root / config.split_id / "stores"
+    store_root = store_root or public_root / config.split_id / "stores"
     neo4j_output = store_root / "neo4j-import"
     gandalf_output = store_root / "gandalf"
     predicate_args = [
@@ -84,43 +96,40 @@ def build_store_artifacts(
         str(sealed_manifest_path.parent / sealed["final_labels"]),
     ]
     overwrite_args = ["--overwrite"] if overwrite else []
-    _run(
-        [
-            "uv",
-            "run",
-            "miner-export-neo4j",
-            "--nodes",
-            str(source_dir / "nodes.jsonl"),
-            "--edges",
-            str(source_dir / "edges.jsonl"),
-            "--output",
-            str(neo4j_output),
-            *exclusion_args,
-            *predicate_args,
-            *overwrite_args,
-        ]
-    )
-    _run(
-        [
-            "uv",
-            "run",
-            "miner-build-gandalf",
-            "--nodes",
-            str(source_dir / "nodes.jsonl"),
-            "--edges",
-            str(source_dir / "edges.jsonl"),
-            "--output",
-            str(gandalf_output),
-            *exclusion_args,
-            *predicate_args,
-            *overwrite_args,
-        ]
-    )
-    return {
-        "store_root": str(store_root),
-        "neo4j_import": str(neo4j_output),
-        "gandalf": str(gandalf_output),
-    }
+    built = {"store_root": str(store_root)}
+    if "neo4j" in stores:
+        _run(
+            [
+                _console_script("miner-export-neo4j"),
+                "--nodes",
+                str(source_file(source_dir, "nodes")),
+                "--edges",
+                str(source_file(source_dir, "edges")),
+                "--output",
+                str(neo4j_output),
+                *exclusion_args,
+                *predicate_args,
+                *overwrite_args,
+            ]
+        )
+        built["neo4j_import"] = str(neo4j_output)
+    if "gandalf" in stores:
+        _run(
+            [
+                _console_script("miner-build-gandalf"),
+                "--nodes",
+                str(source_file(source_dir, "nodes")),
+                "--edges",
+                str(source_file(source_dir, "edges")),
+                "--output",
+                str(gandalf_output),
+                *exclusion_args,
+                *predicate_args,
+                *overwrite_args,
+            ]
+        )
+        built["gandalf"] = str(gandalf_output)
+    return built
 
 
 def start_services(
@@ -148,7 +157,7 @@ def start_services(
         print(f"Using existing benchmark Neo4j data: {neo4j_data}")
     _run(["docker", "compose", "up", "-d", "neo4j", "scorer", "dashboard"], environment)
     _run([str(ROOT / "scripts" / "index_neo4j.sh")], environment)
-    _run(["uv", "run", "miner-build-rule-features"], environment)
+    _run([_console_script("miner-build-rule-features")], environment)
     _run([str(ROOT / "scripts" / "start_gandalf.sh")], environment)
 
 
@@ -176,6 +185,18 @@ def parse_args() -> argparse.Namespace:
         default=Path(os.environ.get("BENCHMARK_SEALED_DIR", DEFAULT_SEALED_DIR)),
     )
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument(
+        "--stores",
+        nargs="+",
+        choices=STORES,
+        default=list(STORES),
+        help="Which query stores build-stores produces",
+    )
+    parser.add_argument(
+        "--store-root",
+        type=Path,
+        help="Where build-stores writes; defaults to <public-dir>/<split>/stores",
+    )
     parser.add_argument("--run-id")
     parser.add_argument("--deadline")
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
@@ -206,7 +227,7 @@ def main() -> None:
         validate_source(source_dir, config.graph_version)
     if args.phase in {"prepare", "all"}:
         manifest = build_partition_artifacts(
-            source_dir / "edges.jsonl",
+            source_file(source_dir, "edges"),
             config,
             args.public_dir,
             args.sealed_dir,
@@ -221,6 +242,8 @@ def main() -> None:
                     sealed_root=args.sealed_dir,
                     config_path=args.config,
                     overwrite=args.overwrite,
+                    stores=tuple(args.stores),
+                    store_root=args.store_root,
                 ),
                 indent=2,
             )

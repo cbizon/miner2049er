@@ -1,0 +1,57 @@
+# Storage for the Translator 1.0.2 benchmark on Sterling (namespace quota 128Gi).
+# Total requested: 102Gi. All classes allow expansion.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-source
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: source}
+spec:
+  # nodes.jsonl.zst + edges.jsonl.zst (~3.4Gi) plus the archive while splitting.
+  accessModes: [ReadWriteOnce]
+  storageClassName: basic
+  resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-sealed
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: sealed}
+spec:
+  # Feedback and final labels. Mounted only by the build Job and, later, the scorer.
+  accessModes: [ReadWriteMany]
+  storageClassName: encrypted
+  resources: {requests: {storage: 1Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-work
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: work}
+spec:
+  # Public split artifacts (training labels), run directories, evaluations.
+  accessModes: [ReadWriteMany]
+  storageClassName: basic
+  resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-import
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: import}
+spec:
+  # Parquet handed to neo4j-admin. Delete this PVC after the import succeeds.
+  accessModes: [ReadWriteOnce]
+  storageClassName: basic
+  resources: {requests: {storage: 20Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-neo4j-data
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: neo4j}
+spec:
+  # basic-noatime: the ssd class is blocked for new volumes by Sterling policy.
+  # The 2026_06_21 store was 54Gi with raw_json/sources_json copies; 1.0.2 drops them.
+  accessModes: [ReadWriteOnce]
+  storageClassName: basic-noatime
+  resources: {requests: {storage: 60Gi}}
