@@ -31,7 +31,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: dashboard
-          image: ghcr.io/cbizon/miner2049er:1.0.2-4addf3c@sha256:ea95ddced66408acca18089b51473c32147482aa35ad7a727045f0c382f808c8
+          image: ghcr.io/cbizon/miner2049er:1.0.2-3065d41@sha256:c343cc2daaecb6dff6907a8010e375a78c709ef4f89875f034f93d50aa50bd53
           command: [uvicorn, "miner2049er.dashboard_server:APP", --host, 0.0.0.0, --port, "6431"]
           env: [{name: HOME, value: /tmp}]
           ports: [{name: http, containerPort: 6431}]
