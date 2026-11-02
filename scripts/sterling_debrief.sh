@@ -3,6 +3,11 @@
 #   scripts/sterling_debrief.sh [--run-id RUN] [--check]
 set -euo pipefail
 
+# Scheduled and non-interactive shells often lack these on PATH. kubectl lives
+# in /usr/local/bin, and Sterling's OIDC login runs `kubectl oidc-login`,
+# which needs kubectl-oidc_login from /opt/homebrew/bin.
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
 namespace="${MINER_NAMESPACE:-bizon}"
 run_id=""
 args=()

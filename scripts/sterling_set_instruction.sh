@@ -5,6 +5,11 @@
 # the standing fallback instead (see deploy/sterling/nightly.yaml).
 set -euo pipefail
 
+# Scheduled and non-interactive shells often lack these on PATH. kubectl lives
+# in /usr/local/bin, and Sterling's OIDC login runs `kubectl oidc-login`,
+# which needs kubectl-oidc_login from /opt/homebrew/bin.
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
 namespace="${MINER_NAMESPACE:-bizon}"
 instruction_file="$1"
 [[ -s "$instruction_file" ]] || { echo "Empty or missing: $instruction_file" >&2; exit 1; }
