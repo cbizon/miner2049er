@@ -123,6 +123,7 @@ def build_debrief(
         },
         "summary": None if summary_event is None else summary_event["summary"],
         "final_summary": summary,
+        "experiments": (summary or {}).get("experiments", []),
         "questions": questions,
         "proposed_directions": (summary or {}).get("proposed_directions", []),
         "new_rules": new_rules,
@@ -156,8 +157,26 @@ def render_markdown(debrief: dict[str, Any]) -> str:
         )
     if debrief["attention"]:
         lines += ["", "## Needs you", *[f"- {item}" for item in debrief["attention"]]]
-    if debrief["instruction"]:
-        lines += ["", "## Last night's instruction", "", debrief["instruction"].strip()]
+    if debrief["experiments"]:
+        lines += ["", "## What the agent tried"]
+        for number, item in enumerate(debrief["experiments"], start=1):
+            lines += [
+                "",
+                f"### {number}. {item['question']}",
+                f"- What it did: {item['what_was_done']}",
+                f"- What happened: {item['result']}",
+                f"- What it means: {item['takeaway']}",
+            ]
+    elif debrief["final_summary"]:
+        lines += [
+            "",
+            "## What the agent tried",
+            "",
+            (
+                "(This summary predates the plain-language experiments section; "
+                "reconstruct the experiments from the research log.)"
+            ),
+        ]
     final = debrief["final_summary"]
     if final:
         lines += ["", "## Agent's summary", "", debrief["summary"], "", final["pareto_summary"]]
@@ -180,6 +199,8 @@ def render_markdown(debrief: dict[str, Any]) -> str:
         lines += ["", "## Proposed next directions"]
         for number, item in enumerate(debrief["proposed_directions"], start=1):
             lines += [f"{number}. {item['direction']}", f"   - {item['rationale']}"]
+    if debrief["instruction"]:
+        lines += ["", "## Last night's instruction", "", debrief["instruction"].strip()]
     if debrief["new_rules"]:
         lines += [
             "",

@@ -36,6 +36,8 @@ def _load_details(args: argparse.Namespace) -> dict[str, Any]:
     return value
 
 
+MAX_OPERATOR_QUESTIONS = 5
+
 def append_research_event(
     *,
     run_dir: Path,
@@ -47,6 +49,14 @@ def append_research_event(
     manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     if manifest["status"] != "running" or not manifest["current_round_id"]:
         raise ValueError("Research events can be appended only to an active round")
+    questions = details.get("questions_for_operator", []) if event_type == "final_summary" else []
+    if len(questions) > MAX_OPERATOR_QUESTIONS:
+        # Enforced at write time rather than in the schema, so logs written
+        # before the cap still validate.
+        raise ValueError(
+            f"A final summary may ask at most {MAX_OPERATOR_QUESTIONS} questions; "
+            f"this one asks {len(questions)}. Keep the ones that need human judgment."
+        )
 
     path = run_dir / manifest["artifacts"]["research_log"]
     path.parent.mkdir(parents=True, exist_ok=True)

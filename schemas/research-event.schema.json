@@ -373,6 +373,20 @@
         "pareto_summary": {"type": "string", "minLength": 1},
         "graph_gaps": {"$ref": "#/$defs/stringArray"},
         "next_round_priorities": {"$ref": "#/$defs/stringArray"},
+        "experiments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["question", "what_was_done", "result", "takeaway"],
+            "properties": {
+              "question": {"type": "string", "minLength": 20},
+              "what_was_done": {"type": "string", "minLength": 20},
+              "result": {"type": "string", "minLength": 20},
+              "takeaway": {"type": "string", "minLength": 20}
+            },
+            "additionalProperties": false
+          }
+        },
         "questions_for_operator": {
           "type": "array",
           "items": {

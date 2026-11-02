@@ -496,14 +496,24 @@ details so another researcher can reconstruct what was tried:
 - `checkpoint`: `progress`, `active_hypotheses`, and `next_actions`; and
 - `final_summary`: `families_explored`, `surviving_rule_ids`,
   `failed_families`, `pareto_summary`, `graph_gaps`,
-  `next_round_priorities`, `questions_for_operator`, and
+  `next_round_priorities`, `experiments`, `questions_for_operator`, and
   `proposed_directions`.
 
-The final summary is read by the human operator the next morning, who answers
-in the following round's instruction. Use it to get decisions you can't make
-yourself:
+The final summary is read by the human operator the next morning, a scientist
+who did not watch the round. Write the `experiments`, questions, and directions
+for that reader: plain language, no rule IDs, internal names, or metric
+abbreviations (say "about half of its predictions were right" rather than
+"P0.52"), and define any graph term the first time you use it.
 
-- `questions_for_operator`: zero to five objects with `question`,
+- `experiments`: one object per distinct experiment this round, most important
+  first, each with `question` (what you set out to learn and why it mattered),
+  `what_was_done` (the rules or analyses you tried, described in words),
+  `result` (what happened, with the key numbers in words), and `takeaway`
+  (what it means for the search, including negative results).
+
+Use the summary to get decisions you can't make yourself:
+
+- `questions_for_operator`: at most five objects (recording rejects more), with `question`,
   `why_it_matters`, and `default_if_unanswered` (what you will do next round if
   no answer comes). Ask about judgment the data can't settle: which mechanism
   families matter scientifically, whether a rule's logic is biologically

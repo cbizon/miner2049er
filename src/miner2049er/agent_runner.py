@@ -742,7 +742,8 @@ def _completion_protocol(
   it). Ignore the relative `evaluations` path recorded in older run.json
   files. The held-out labels and scorer state remain inaccessible.
 - Append one `final_summary` event for {context["round_id"]} with
-  `uv run miner-log-research-event`, including `questions_for_operator` and
+  `uv run miner-log-research-event`, including plain-language
+  `experiments`, at most five `questions_for_operator`, and
   `proposed_directions` for tomorrow's human review.
 - Then run the final
   `uv run miner-validate-run {context["run_dir"]}`.

@@ -24,6 +24,14 @@ SUMMARY = {
             "default_if_unanswered": "Report them only on the treats-included surface.",
         }
     ],
+    "experiments": [
+        {
+            "question": "Can a drug be predicted for a disease from drugs that treat similar diseases?",
+            "what_was_done": "Linked diseases that share many known treatments and transferred them.",
+            "result": "About half of the predictions were right, and it found one in eight hidden treatments.",
+            "takeaway": "Borrowing treatments from similar diseases is the strongest signal so far.",
+        }
+    ],
     "proposed_directions": [
         {
             "direction": "Add gain or loss of function direction to target rules.",
@@ -81,6 +89,8 @@ def test_debrief_surfaces_questions_and_instruction(tmp_path: Path):
     assert "Strip down the over-fancy rules." in text
     assert "Should rules that use clinical-trial edges count as discovery?" in text
     assert "Add gain or loss of function direction" in text
+    assert text.index("What the agent tried") < text.index("Questions for you")
+    assert "About half of the predictions were right" in text
 
 
 def test_debrief_flags_a_night_without_a_final_summary(tmp_path: Path):
@@ -92,3 +102,17 @@ def test_debrief_flags_a_night_without_a_final_summary(tmp_path: Path):
 
     assert during["in_progress"] and not during["needs_attention"]
     assert after["attention"] == ["round-0001 passed its deadline without a final summary"]
+
+
+def test_recording_refuses_more_than_five_questions(tmp_path: Path):
+    import pytest
+
+    run_dir = _run(tmp_path, datetime.now(UTC) + timedelta(hours=1))
+    question = SUMMARY["questions_for_operator"][0]
+    with pytest.raises(ValueError, match="at most 5 questions"):
+        append_research_event(
+            run_dir=run_dir,
+            event_type="final_summary",
+            summary="Too many questions.",
+            details={**SUMMARY, "questions_for_operator": [question] * 6},
+        )

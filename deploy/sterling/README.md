@@ -93,7 +93,7 @@ ends at `awaiting_operator_seal` instead of sealing.
 
 ## Daily loop
 
-- `nightly.yaml`: at 11 pm New York time a CronJob seals the previous round
+- `nightly.yaml` (+ `nightly-settings.yaml`, applied once): at 11 pm New York time a CronJob seals the previous round
   (`next-round`) and runs tonight's agent with a 7-hour deadline. Its
   settings (run, model, effort, instruction) are in the `miner-nightly`
   ConfigMap.
