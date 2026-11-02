@@ -35,8 +35,10 @@ spec:
           command: [uvicorn, "miner2049er.dashboard_server:APP", --host, 0.0.0.0, --port, "6431"]
           env: [{name: HOME, value: /tmp}]
           ports: [{name: http, containerPort: 6431}]
+          # A port check: rendering /benchmark loads and validates the whole run,
+          # which outgrows a probe timeout as the run grows.
           readinessProbe:
-            httpGet: {path: /benchmark, port: 6431}
+            tcpSocket: {port: 6431}
             periodSeconds: 15
           volumeMounts:
             - {name: work, mountPath: /app/runs, subPath: runs, readOnly: true}
