@@ -28,7 +28,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: agent
-          image: ghcr.io/cbizon/miner2049er:1.0.2-3065d41@sha256:c343cc2daaecb6dff6907a8010e375a78c709ef4f89875f034f93d50aa50bd53
+          image: ghcr.io/cbizon/miner2049er:1.0.2-b2f185f@sha256:2f879e58351ea3f925e12c4f1325c0c4fa05b347c7bda3adbd8bb9e94689d15c
           command: [sh, -euc]
           args:
             - |
