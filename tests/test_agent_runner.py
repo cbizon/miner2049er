@@ -248,10 +248,12 @@ def test_completion_protocol_requires_summary_then_official_validation() -> None
             "round_id": "round-0001",
         },
         wrap_up_at=deadline - timedelta(minutes=15),
+        evaluations_dir=Path("/work/evaluations"),
     )
 
     assert protocol.index("final_summary") < protocol.index("miner-validate-run")
     assert "Do not sleep" in protocol
+    assert "/work/evaluations" in protocol
 
 
 def test_process_wait_rechecks_wall_clock_after_host_sleep() -> None:

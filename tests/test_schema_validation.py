@@ -136,3 +136,64 @@ def test_structured_research_event_rejects_missing_required_details():
             },
             "research-event.schema.json",
         )
+
+
+PINNED_PREDICTION_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://renci.org/miner2049er/schemas/prediction.schema.json",
+    "title": "Rule prediction",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["schema_version", "run_id", "round_id", "rule_id", "subject_id", "object_id"],
+    "properties": {
+        "schema_version": {"const": "1.0"},
+        "run_id": {"type": "string", "minLength": 1},
+        "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+        "rule_id": {"type": "string", "minLength": 1},
+        "subject_id": {"type": "string", "minLength": 1},
+        "object_id": {"type": "string", "minLength": 1},
+        "support_count": {"type": "integer", "minimum": 0},
+        "evidence_bindings": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+
+def test_prediction_schema_matches_the_hand_written_check():
+    """If this fails, update prediction_is_valid to match the schema change."""
+    from miner2049er.schema_validation import load_schema
+
+    assert load_schema("prediction.schema.json") == PINNED_PREDICTION_SCHEMA
+
+
+def test_fast_prediction_check_agrees_with_jsonschema():
+    from jsonschema import Draft202012Validator
+
+    from miner2049er.schema_validation import prediction_is_valid
+
+    validator = Draft202012Validator(PINNED_PREDICTION_SCHEMA)
+    base = {
+        "schema_version": "1.0",
+        "run_id": "r",
+        "round_id": "round-0001",
+        "rule_id": "rule",
+        "subject_id": "CHEBI:1",
+        "object_id": "MONDO:1",
+    }
+    cases = [
+        base,
+        {**base, "support_count": 0, "evidence_bindings": ["e1"]},
+        {**base, "support_count": -1},
+        {**base, "support_count": True},
+        {**base, "support_count": 1.5},
+        {**base, "evidence_bindings": [1]},
+        {**base, "evidence_bindings": "e1"},
+        {**base, "round_id": "round-1"},
+        {**base, "round_id": "x-round-0001-y"},
+        {**base, "schema_version": "2.0"},
+        {**base, "subject_id": ""},
+        {**base, "extra": 1},
+        {key: value for key, value in base.items() if key != "object_id"},
+        [],
+    ]
+    for case in cases:
+        assert prediction_is_valid(case) == validator.is_valid(case), case

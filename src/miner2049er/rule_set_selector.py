@@ -12,8 +12,9 @@ from miner2049er.partitioning import Pair, load_label_pairs
 from miner2049er.rules import f_beta
 from miner2049er.schema_validation import read_jsonl, validate_document
 from miner2049er.settings import ROOT
+from miner2049er.settings import evaluations_dir as configured_evaluations_dir
 
-DEFAULT_EVALUATIONS_DIR = ROOT / "data" / "evaluations"
+DEFAULT_EVALUATIONS_DIR = configured_evaluations_dir()
 DEFAULT_OUTPUT_ROOT = ROOT / "results" / "rule-sets"
 DEFAULT_PUBLIC_BENCHMARK_ROOT = ROOT / "data" / "benchmark"
 SELECTION_METHOD = "greedy_marginal_f0_5_coverage_v1"

@@ -11,6 +11,11 @@ DEFAULT_GRAPH_VERSION = "1.0.2"
 SOURCE_COMPRESSIONS = {"none": "", "zstd": ".zst"}
 
 
+def evaluations_dir() -> Path:
+    """Where the scorer's aggregate evaluations live (the scorer writes them)."""
+    return Path(os.environ.get("MINER_EVALUATIONS_DIR", ROOT / "data" / "evaluations"))
+
+
 def source_dir() -> Path:
     return Path(os.environ.get("SOURCE_DIR", DEFAULT_SOURCE_DIR))
 

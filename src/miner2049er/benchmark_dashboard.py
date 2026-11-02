@@ -15,8 +15,9 @@ from miner2049er.rule_viewer import BASE_CSS
 from miner2049er.run_artifacts import DEFAULT_RUNS_DIR, load_run
 from miner2049er.schema_validation import read_jsonl, validate_document
 from miner2049er.settings import ROOT
+from miner2049er.settings import evaluations_dir as configured_evaluations_dir
 
-DEFAULT_EVALUATIONS_DIR = ROOT / "data" / "evaluations"
+DEFAULT_EVALUATIONS_DIR = configured_evaluations_dir()
 DEFAULT_RULE_SET_ROOT = ROOT / "results" / "rule-sets"
 DEFAULT_RULE_SET_EVALUATIONS_DIR = ROOT / "data" / "rule-set-evaluations"
 DEFAULT_SURFACE = "treats-included"

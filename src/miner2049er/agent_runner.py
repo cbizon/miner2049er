@@ -199,6 +199,7 @@ def build_agent_environment(
     api_key_env: str,
     agent_runtime: str = DEFAULT_AGENT_RUNTIME,
     isolation: str = "sandbox-exec",
+    evaluations_dir: Path = DEFAULT_EVALUATIONS_DIR,
 ) -> dict[str, str]:
     home = runtime_dir / "home"
     codex_home = runtime_dir / "codex-home"
@@ -225,6 +226,7 @@ def build_agent_environment(
         "LANG": "en_US.UTF-8",
         "LC_ALL": "en_US.UTF-8",
         "TERM": "dumb",
+        "MINER_EVALUATIONS_DIR": str(evaluations_dir),
         **service_environment,
     }
     if isolation == "container":
@@ -725,6 +727,7 @@ def _completion_protocol(
     *,
     context: dict[str, Any],
     wrap_up_at: datetime,
+    evaluations_dir: Path,
 ) -> str:
     return f"""
 
@@ -734,8 +737,10 @@ def _completion_protocol(
   remaining time for reruns, artifact checks, and synthesis.
 - Append research events only with `uv run miner-log-research-event`; never
   write `research-log.jsonl` directly.
-- Aggregate evaluator output is readable in the evaluations directory, but it
-  is read-only. The held-out labels and scorer state remain inaccessible.
+- Aggregate evaluator output is in {evaluations_dir} (read-only; the
+  `MINER_EVALUATIONS_DIR` variable points there, so the run validator sees
+  it). Ignore the relative `evaluations` path recorded in older run.json
+  files. The held-out labels and scorer state remain inaccessible.
 - Append one `final_summary` event for {context["round_id"]} with
   `uv run miner-log-research-event`, including `questions_for_operator` and
   `proposed_directions` for tomorrow's human review.
@@ -1093,6 +1098,7 @@ def run_controller(args: argparse.Namespace) -> int:
         api_key_env=args.api_key_env,
         agent_runtime=args.agent_runtime,
         isolation=isolation,
+        evaluations_dir=evaluations_dir,
     )
     agent_command = build_agent_command(
         agent_runtime=args.agent_runtime,
@@ -1135,7 +1141,11 @@ def run_controller(args: argparse.Namespace) -> int:
     wrap_up_at = deadline - timedelta(seconds=args.wrap_up_seconds)
     prompt = (
         context["prompt_path"].read_text(encoding="utf-8")
-        + _completion_protocol(context=context, wrap_up_at=wrap_up_at)
+        + _completion_protocol(
+            context=context,
+            wrap_up_at=wrap_up_at,
+            evaluations_dir=evaluations_dir,
+        )
     )
     invocation = 0
     consecutive_failures = 0

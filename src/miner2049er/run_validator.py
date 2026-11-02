@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from miner2049er.run_artifacts import validate_run_directory
-from miner2049er.settings import ROOT
+from miner2049er.settings import evaluations_dir as configured_evaluations_dir
 
 
 def parse_args() -> argparse.Namespace:
@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--evaluations-dir",
         type=Path,
-        default=ROOT / "data" / "evaluations",
+        default=configured_evaluations_dir(),
     )
     return parser.parse_args()
 

@@ -42,6 +42,7 @@ spec:
                 --model @MODEL@ --reasoning-effort @EFFORT@
           env:
             - {name: HOME, value: /tmp}
+            - {name: MINER_EVALUATIONS_DIR, value: /work/evaluations}
             - {name: NEO4J_URI, value: "bolt://miner-neo4j:7687"}
             - {name: NEO4J_USER, value: neo4j}
             - name: NEO4J_AUTH

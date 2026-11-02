@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 from datetime import UTC, datetime
@@ -14,9 +15,10 @@ from miner2049er.benchmark_config import BenchmarkConfig
 from miner2049er.biolink_semantics import validate_rule_biolink_semantics
 from miner2049er.schema_validation import read_jsonl, validate_document
 from miner2049er.settings import ROOT
+from miner2049er.settings import evaluations_dir as configured_evaluations_dir
 
 DEFAULT_RUNS_DIR = ROOT / "runs"
-DEFAULT_EVALUATIONS_DIR = ROOT / "data" / "evaluations"
+DEFAULT_EVALUATIONS_DIR = configured_evaluations_dir()
 DEFAULT_INITIAL_INSTRUCTION = (
     "Begin the rule-mining experiment. Establish baselines, explore distinct "
     "mechanism families, and follow the complete base assignment."
@@ -372,6 +374,7 @@ def initialize_run(
     if authorization_file.exists():
         raise FileExistsError(authorization_file)
     run_dir.mkdir(parents=True, exist_ok=False)
+    evaluations_dir.mkdir(parents=True, exist_ok=True)
     try:
         for name in (
             "neo4j-artifacts.jsonl",
@@ -407,7 +410,11 @@ def initialize_run(
                 "rules": "rules.jsonl",
                 "predictions": "predictions.jsonl",
                 "research_log": "research-log.jsonl",
-                "evaluations": f"../../data/evaluations/{run_id}.jsonl",
+                # Informational; tools take the directory from
+                # MINER_EVALUATIONS_DIR / --evaluations-dir.
+                "evaluations": os.path.relpath(
+                    evaluations_dir / f"{run_id}.jsonl", run_dir
+                ),
             },
         }
         validate_document(manifest, "run.schema.json")
@@ -536,6 +543,14 @@ def load_run(run_dir: Path, evaluations_dir: Path) -> dict[str, Any]:
             "neo4j-artifact.schema.json",
         )
     )
+    if not evaluations_dir.is_dir():
+        # A missing file means nothing has been scored yet; a missing directory
+        # means the tool is looking in the wrong place, which would otherwise
+        # read as zero evaluations.
+        raise FileNotFoundError(
+            f"Evaluations directory {evaluations_dir} does not exist; set "
+            "MINER_EVALUATIONS_DIR or pass --evaluations-dir"
+        )
     evaluations_path = evaluations_dir / f"{manifest['run_id']}.jsonl"
     evaluations = (
         list(read_jsonl(evaluations_path, "evaluation.schema.json"))

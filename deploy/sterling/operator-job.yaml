@@ -30,7 +30,9 @@ spec:
               miner-benchmark-setup @ARGS@
               --runs-dir /work/runs --evaluations-dir /work/evaluations
               --public-dir /work/benchmark --sealed-dir /sealed
-          env: [{name: HOME, value: /tmp}]
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: MINER_EVALUATIONS_DIR, value: /work/evaluations}
           volumeMounts:
             - {name: work, mountPath: /work}
             - {name: sealed, mountPath: /sealed}
