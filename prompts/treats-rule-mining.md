@@ -35,6 +35,13 @@ Fail immediately if a required variable is missing. Do not read an operator
 `.env` file or attempt to access the sealed directory, original graph, final
 scoring token, Docker socket, or scorer state.
 
+### Scratch Files
+
+Put every scratch file (candidate JSON, helper scripts, logs, pickled query
+pulls) under `$TMPDIR`, never under a literal `/tmp`. `$TMPDIR` is on
+persistent storage sized for large graph pulls; `/tmp` in a container has a
+small disk quota, and exceeding it kills the round without warning.
+
 ### Neo4j
 
 Neo4j supports arbitrary Cypher, including property and degree constraints and
@@ -177,7 +184,7 @@ validates against `schemas/rule-candidate.schema.json`, then record it with:
 curl --fail --silent --show-error "$SCORER_URL/health"
 uv run miner-record-rule \
   --run-dir "<run-directory-from-the-round-prompt>" \
-  --candidate "/tmp/<rule-id>.json"
+  --candidate "$TMPDIR/<rule-id>.json"
 ```
 
 `miner-record-rule` deterministically:
@@ -261,7 +268,7 @@ held-out evaluation:
 ```bash
 uv run miner-record-rule \
   --run-dir "<run-directory-from-the-round-prompt>" \
-  --candidate "/tmp/<rule-id>.json" \
+  --candidate "$TMPDIR/<rule-id>.json" \
   --submit-feedback
 ```
 
