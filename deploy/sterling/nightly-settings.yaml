@@ -22,6 +22,8 @@ data:
     previous round's final summary: pursue your top-ranked proposed direction,
     and apply your stated default to every question the operator did not answer.
     Gandalf/TRAPI is not deployed: skip its checks and say so in limitations.
+    Keep every scratch file, including pickled query pulls, under $TMPDIR and
+    never under a literal /tmp: the container's /tmp has a 512Mi disk quota.
   instruction.md: |
     Strip-down audit. For the current best rules on each Pareto surface, drop
     one condition at a time (thresholds, filters, extra hops) and measure the
