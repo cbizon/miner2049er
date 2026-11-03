@@ -23,7 +23,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: operator
-          image: ghcr.io/cbizon/miner2049er:1.0.2-b2f185f@sha256:2f879e58351ea3f925e12c4f1325c0c4fa05b347c7bda3adbd8bb9e94689d15c
+          image: ghcr.io/cbizon/miner2049er:1.0.2-214f5b8@sha256:9c63824c8101029f3505ffc7d94a3fb6de0be1f65c431ac60cf298b2d1d97bc8
           command: [sh, -euc]
           args:
             - >-
