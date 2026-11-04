@@ -1,0 +1,68 @@
+# Gandalf TRAPI server for the 1.0.2 store built by build-gandalf-job.yaml
+# (held-out treats edges removed, checked over TRAPI before publishing).
+# Reachable in-namespace only, at http://miner-gandalf:6429.
+#
+# The store is mmapped read-only from the miner-gandalf NFS volume; LMDB is
+# opened with lock=False when read-only, so nothing is written to NFS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: miner-gandalf
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+spec:
+  selector: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+  ports: [{name: http, port: 6429, targetPort: 6429}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miner-gandalf
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+    spec:
+      imagePullSecrets: [{name: registry-credentials}]
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 7474
+        runAsGroup: 7474
+        fsGroup: 7474
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: gandalf
+          image: ghcr.io/cbizon/miner2049er:PIN-ME
+          command: [uvicorn, "miner2049er.gandalf_server:APP", --host, 0.0.0.0, --port, "6429"]
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: GANDALF_GRAPH_PATH, value: /gandalf/bf9f8f5300edac94}
+            - {name: GANDALF_GRAPH_FORMAT, value: mmap}
+            - {name: GANDALF_LOAD_MMAPS_INTO_MEMORY, value: "false"}
+            - {name: GANDALF_OTEL_ENABLED, value: "false"}
+            - {name: GANDALF_WORKERS, value: "1"}
+          ports: [{name: http, containerPort: 6429}]
+          startupProbe:
+            httpGet: {path: /metadata, port: 6429}
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /metadata, port: 6429}
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: gandalf, mountPath: /gandalf, readOnly: true}
+          resources:
+            # Local server RSS was ~3GB; mmapped pages from NFS are page cache.
+            requests: {cpu: 500m, memory: 6Gi, ephemeral-storage: 100Mi}
+            limits: {cpu: "4", memory: 16Gi, ephemeral-storage: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+      volumes:
+        - {name: gandalf, persistentVolumeClaim: {claimName: miner-gandalf, readOnly: true}}

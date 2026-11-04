@@ -47,6 +47,7 @@ spec:
             - {name: NEO4J_USER, value: neo4j}
             - name: NEO4J_AUTH
               valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+            - {name: GANDALF_URL, value: "http://miner-gandalf:6429"}
             - {name: SCORER_URL, value: "http://miner-scorer:6430"}
             - name: CLAUDE_CODE_OAUTH_TOKEN
               valueFrom: {secretKeyRef: {name: claude-provider-credentials, key: CLAUDE_CODE_OAUTH_TOKEN}}

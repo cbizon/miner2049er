@@ -1,7 +1,7 @@
 # Sterling deployment: Translator 1.0.2 query stores
 
-Builds the benchmark's Neo4j store on Sterling (namespace `bizon`). Gandalf,
-the scorer, the dashboard and the nightly agent CronJob come later.
+Builds the benchmark's Neo4j and Gandalf stores on Sterling (namespace
+`bizon`) and runs the scorer, the dashboard and the nightly agent CronJob.
 
 ## Storage
 
@@ -12,6 +12,8 @@ the scorer, the dashboard and the nightly agent CronJob come later.
 | `miner-work` | basic | 10Gi | public split, runs, evaluations | build Job, later agent and scorer |
 | `miner-import` | basic | 10Gi | Parquet the Neo4j pod imports from | build Job, Neo4j (read-only) |
 | Neo4j `/data` | emptyDir, memory | 36Gi | Neo4j store (~31GB) | Neo4j |
+| `miner-gandalf` | basic | 30Gi | published Gandalf mmap store | Gandalf build Job, Gandalf (read-only) |
+| Gandalf build scratch | nvme-ephemeral, per pod | 55Gi | store being built | Gandalf build Job only |
 
 Every storage class available to `bizon` is NetApp `ontap-nas` (NFS). Neo4j
 doesn't support NFS for its store: `neo4j-admin import` onto `basic-noatime`
@@ -63,6 +65,25 @@ kubectl logs -f miner-neo4j-0 -c import
 kubectl logs -f job/miner-neo4j-indexes
 ```
 
+## Gandalf
+
+Needs `pvcs.yaml` applied (for `miner-gandalf`) and the split prepared by
+`miner-build-stores`.
+
+```bash
+kubectl apply -f build-gandalf-job.yaml
+kubectl logs -f job/miner-build-gandalf --all-containers
+kubectl apply -f gandalf.yaml
+```
+
+The build uses the same held-out split as Neo4j (`build-stores --stores
+gandalf`, filtering through `graph_filter.edge_is_visible`). It builds on
+pod-scoped NVMe scratch, then serves the result on localhost and requires over
+TRAPI that sampled feedback and final pairs are absent and sampled training
+pairs present (`miner-check-gandalf-holdout`, counts only). Only a store that
+passes is copied to `miner-gandalf`. Agents reach it at
+`http://miner-gandalf:6429`; `GANDALF_URL` is required by the agent controller.
+
 ## Scorer and agent rounds
 
 `scorer.yaml` runs the feedback scorer (`miner-scorer:6430`). It and the
@@ -108,7 +129,6 @@ ends at `awaiting_operator_seal` instead of sealing.
 - Dashboard: `kubectl -n bizon port-forward svc/miner-dashboard 6431:6431`,
   then http://localhost:6431/benchmark.
 
-Not yet done: Gandalf on the cluster (agents skip TRAPI checks), a
-NetworkPolicy limiting the agent's egress (it can currently reach the
+Not yet done: a NetworkPolicy limiting the agent's egress (it can currently reach the
 internet, so "no external information" is enforced only by the prompt), and
 the morning checker and taste-file judge.

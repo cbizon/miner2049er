@@ -21,7 +21,6 @@ data:
     No new instruction from the operator for tonight. Continue from your
     previous round's final summary: pursue your top-ranked proposed direction,
     and apply your stated default to every question the operator did not answer.
-    Gandalf/TRAPI is not deployed: skip its checks and say so in limitations.
     Keep every scratch file, including pickled query pulls, under $TMPDIR and
     never under a literal /tmp: the container's /tmp has a 512Mi disk quota.
   instruction.md: |
@@ -31,4 +30,3 @@ data:
     Keep a simplification when the training lower-bound precision holds up, and
     record each ablation as a research event. Submit to feedback only the few
     simplified rules that survive. Prefer the simpler rule when two are close.
-    Gandalf/TRAPI is not deployed: skip its checks and say so in limitations.

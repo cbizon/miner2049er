@@ -463,6 +463,36 @@ def test_container_claude_token_comes_from_environment(monkeypatch):
     assert _container_claude_token() == "token"
 
 
+SERVICE_ENVIRONMENT = {
+    "NEO4J_URI": "bolt://miner-neo4j:7687",
+    "NEO4J_USER": "neo4j",
+    "NEO4J_PASSWORD": "secret",
+    "GANDALF_URL": "http://miner-gandalf:6429",
+    "SCORER_URL": "http://miner-scorer:6430",
+}
+
+
+def test_controller_passes_only_service_variables():
+    from miner2049er.agent_runner import controller_service_environment
+
+    environment = controller_service_environment({**SERVICE_ENVIRONMENT, "OTHER": "x"})
+
+    assert environment == SERVICE_ENVIRONMENT
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_controller_requires_gandalf_url(value):
+    from miner2049er.agent_runner import controller_service_environment
+
+    environ = {**SERVICE_ENVIRONMENT}
+    if value is None:
+        del environ["GANDALF_URL"]
+    else:
+        environ["GANDALF_URL"] = value
+    with pytest.raises(ValueError, match="GANDALF_URL"):
+        controller_service_environment(environ)
+
+
 def test_container_mode_leaves_sealing_to_the_operator(tmp_path):
     from miner2049er.agent_runner import _seal_controller_round
 

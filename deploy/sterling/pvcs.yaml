@@ -1,5 +1,5 @@
 # Storage for the Translator 1.0.2 benchmark on Sterling (namespace quota 128Gi).
-# Total requested: 31Gi. All classes allow expansion.
+# Total requested: 61Gi. All classes allow expansion.
 # Neo4j's store is not here: every class is NFS, which Neo4j can't import onto,
 # so it lives in memory for now (see neo4j.yaml).
 apiVersion: v1
@@ -47,3 +47,15 @@ spec:
   accessModes: [ReadWriteOnce]
   storageClassName: basic
   resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: miner-gandalf
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: gandalf}
+spec:
+  # Published Gandalf mmap store (build-gandalf-job.yaml), served read-only by
+  # gandalf.yaml. Expect 20-30GB; the class allows expansion if it is larger.
+  accessModes: [ReadWriteMany]
+  storageClassName: basic
+  resources: {requests: {storage: 30Gi}}

@@ -27,6 +27,7 @@ dev = [
 miner-build-manifest = "miner2049er.manifest:main"
 miner-benchmark-setup = "miner2049er.benchmark_setup:main"
 miner-build-gandalf = "miner2049er.gandalf_build:main"
+miner-check-gandalf-holdout = "miner2049er.gandalf_holdout_check:main"
 miner-build-rule-features = "miner2049er.rule_features:main"
 miner-campaign-probes = "miner2049er.campaign_probes:main"
 miner-debrief = "miner2049er.debrief:main"
