@@ -36,7 +36,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: build
-          image: &image ghcr.io/cbizon/miner2049er:PIN-ME
+          image: &image ghcr.io/cbizon/miner2049er:1.0.2-2ef7ffd@sha256:fe1905e63b66c0490879535e2d9cba352a6ba4232562f043b3b7c76de5a4e3c4
           command: [sh, -euc]
           args:
             - |
