@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "benchmark_id": "translator-treats-1.0.2-v1",
-  "graph_version": "1.0.2",
+  "benchmark_id": "translator-treats-1.0.2.1-v1",
+  "graph_version": "1.0.2.1",
   "biolink": {
     "version": "4.4.4",
     "predicate_expansion": "descendants"

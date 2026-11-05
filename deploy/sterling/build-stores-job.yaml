@@ -1,7 +1,13 @@
-# One-shot build: fetch 1.0.2 -> split labels -> export Parquet. The Parquet on
-# miner-import is what the Neo4j pod imports from (see neo4j.yaml).
+# One-shot build: fetch 1.0.2 -> derive 1.0.2.1 -> split labels -> export Parquet.
+# 1.0.2.1 is 1.0.2 with stereo-unspecified drug nodes merged into their one
+# drug stereoisomer (config/graph-1.0.2.1-replacements.tsv); see
+# src/miner2049er/graph_derivation.py. The Parquet on miner-import is what the
+# Neo4j pod imports from (see neo4j.yaml).
 # Each step skips work a previous attempt finished, so the Job can be rerun
 # (delete and re-apply) after a failure without starting over.
+# miner-source and miner-import are RWO: the Job must land on the node holding
+# them, so stop Neo4j (scale to 0) before applying, and pin the node below if
+# another pod has miner-source attached.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -24,7 +30,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: fetch-source
-          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
+          image: IMAGE
           command: [sh, -euc]
           args:
             - |
@@ -43,21 +49,38 @@ spec:
           securityContext: &locked
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
-        - name: prepare-split
-          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
+        - name: derive-graph
+          image: IMAGE
           command: [sh, -euc]
           args:
             - |
-              if ls /sealed/*/sealed-manifest.json >/dev/null 2>&1; then
-                echo "split already prepared"
+              if [ -f "/source/$GRAPH_VERSION/derivation-manifest.json" ]; then
+                echo "graph already derived"; cat "/source/$GRAPH_VERSION/derivation-manifest.json"
               else
-                miner-benchmark-setup prepare --source-dir /source \
-                  --public-dir /work/benchmark --sealed-dir /sealed
+                miner-derive-graph --source-dir /source \
+                  --replacements "/app/config/graph-$GRAPH_VERSION-replacements.tsv" \
+                  --output-dir "/source/$GRAPH_VERSION" --graph-version "$GRAPH_VERSION"
               fi
           env: &source_env
             - {name: HOME, value: /tmp}
             - {name: SOURCE_COMPRESSION, value: zstd}
-            - {name: GRAPH_VERSION, value: "1.0.2"}
+            - {name: GRAPH_VERSION, value: "1.0.2.1"}
+          volumeMounts: [{name: source, mountPath: /source}]
+          resources: *python
+          securityContext: *locked
+        - name: prepare-split
+          image: IMAGE
+          command: [sh, -euc]
+          args:
+            - |
+              SPLIT=$(python -c 'from miner2049er.benchmark_config import load_benchmark_config as l; print(l().split_id)')
+              if [ -f "/sealed/$SPLIT/sealed-manifest.json" ]; then
+                echo "split $SPLIT already prepared"
+              else
+                miner-benchmark-setup prepare --source-dir "/source/$GRAPH_VERSION" \
+                  --public-dir /work/benchmark --sealed-dir /sealed
+              fi
+          env: *source_env
           volumeMounts:
             - {name: source, mountPath: /source, readOnly: true}
             - {name: work, mountPath: /work}
@@ -66,15 +89,17 @@ spec:
           securityContext: *locked
       containers:
         - name: export-parquet
-          image: ghcr.io/cbizon/miner2049er:1.0.2-92c4e3d@sha256:dfe4af88faed95db863f0c526ac23b173d62c46b30febed75b5449a8abaec3fc
+          image: IMAGE
           command: [sh, -euc]
           args:
             - |
-              if [ -f /import/neo4j-import/edges.parquet ]; then
-                echo "parquet already exported"
+              if [ "$(cat /import/neo4j-import/graph-version 2>/dev/null)" = "$GRAPH_VERSION" ]; then
+                echo "parquet for $GRAPH_VERSION already exported"
               else
                 miner-benchmark-setup build-stores --stores neo4j --store-root /import \
-                  --source-dir /source --public-dir /work/benchmark --sealed-dir /sealed
+                  --source-dir "/source/$GRAPH_VERSION" --public-dir /work/benchmark \
+                  --sealed-dir /sealed --overwrite
+                echo "$GRAPH_VERSION" > /import/neo4j-import/graph-version
               fi
           env: *source_env
           volumeMounts:
