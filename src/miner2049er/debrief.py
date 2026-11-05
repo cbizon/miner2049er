@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from miner2049er.benchmark_config import DEFAULT_BENCHMARK_CONFIG, load_benchmark_config
+from miner2049er.checker import DEFAULT_REVIEWS_DIR, latest_verdicts, load_reviews
 from miner2049er.run_artifacts import DEFAULT_EVALUATIONS_DIR, DEFAULT_RUNS_DIR, load_run
 from miner2049er.schema_validation import read_jsonl
 from miner2049er.settings import ROOT
@@ -52,6 +53,7 @@ def build_debrief(
     rule_set_evaluations_dir: Path,
     agents_dir: Path,
     budget: int,
+    reviews_dir: Path = DEFAULT_REVIEWS_DIR,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     now = now or datetime.now(UTC)
@@ -92,8 +94,24 @@ def build_debrief(
     ]
     used = _feedback_used(run_id, run["evaluations"], rule_set_evaluations_dir)
 
+    reviews = load_reviews(reviews_dir, run_id)
+    round_review = next((item for item in reviews if item["round_id"] == round_id), None)
+    verdicts = latest_verdicts(reviews)
+    for rule in new_rules:
+        rule["checker_verdict"] = verdicts.get(rule["rule_id"], {}).get("verdict")
+
     attention: list[str] = []
     finished = summary is not None
+    if round_review:
+        counts = {
+            verdict: sum(entry["verdict"] == verdict for entry in round_review["reviews"])
+            for verdict in ("broken", "doubtful")
+        }
+        if counts["broken"] or counts["doubtful"]:
+            attention.append(
+                f"the checker found {counts['broken']} broken and "
+                f"{counts['doubtful']} doubtful claim(s)"
+            )
     if now >= deadline and not finished:
         attention.append(f"{round_id} passed its deadline without a final summary")
     if agent_state and now >= deadline and agent_state.get("status") not in FINISHED_STATES:
@@ -127,6 +145,7 @@ def build_debrief(
         "questions": questions,
         "proposed_directions": (summary or {}).get("proposed_directions", []),
         "new_rules": new_rules,
+        "checker": round_review,
         "rules_total": len(run["rules"]),
         "feedback_used": used,
         "feedback_budget": budget,
@@ -187,6 +206,16 @@ def render_markdown(debrief: dict[str, Any]) -> str:
         ):
             if final.get(key):
                 lines += ["", f"**{title}**", *[f"- {item}" for item in final[key]]]
+    if debrief["checker"]:
+        review = debrief["checker"]
+        lines += ["", "## The checker's review", "", review["summary"]]
+        for entry in review["reviews"]:
+            lines += ["", f"- **{entry['verdict']}**: {entry['plain_claim']}"]
+            lines += [f"  - {attack['finding']}" for attack in entry["attacks"]]
+            if entry.get("what_would_resolve"):
+                lines.append(f"  - To resolve: {entry['what_would_resolve']}")
+    elif debrief["final_summary"]:
+        lines += ["", "## The checker's review", "", "(The checker hasn't reviewed this round.)"]
     if debrief["questions"]:
         lines += ["", "## Questions for you"]
         for number, item in enumerate(debrief["questions"], start=1):
@@ -206,8 +235,8 @@ def render_markdown(debrief: dict[str, Any]) -> str:
             "",
             "## Rules this round",
             "",
-            "| Rule | Tier | Precision | Recall | Status |",
-            "| --- | --- | --- | --- | --- |",
+            "| Rule | Tier | Precision | Recall | Status | Checker |",
+            "| --- | --- | --- | --- | --- | --- |",
         ]
         for rule in sorted(
             debrief["new_rules"],
@@ -216,7 +245,8 @@ def render_markdown(debrief: dict[str, Any]) -> str:
             lines.append(
                 f"| {rule['name']} (`{rule['rule_id']}`) | {rule['evidence_tier']} | "
                 f"{_percent(rule['feedback_precision'])} | "
-                f"{_percent(rule['feedback_recall'])} | {rule['status']} |"
+                f"{_percent(rule['feedback_recall'])} | {rule['status']} | "
+                f"{rule.get('checker_verdict') or 'not reviewed'} |"
             )
     return "\n".join(lines) + "\n"
 
@@ -232,6 +262,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_RULE_SET_EVALUATIONS_DIR,
     )
     parser.add_argument("--agents-dir", type=Path, default=DEFAULT_AGENTS_DIR)
+    parser.add_argument("--reviews-dir", type=Path, default=DEFAULT_REVIEWS_DIR)
     parser.add_argument("--config", type=Path, default=DEFAULT_BENCHMARK_CONFIG)
     parser.add_argument(
         "--check",
@@ -248,6 +279,7 @@ def main() -> None:
         evaluations_dir=args.evaluations_dir,
         rule_set_evaluations_dir=args.rule_set_evaluations_dir,
         agents_dir=args.agents_dir,
+        reviews_dir=args.reviews_dir,
         budget=load_benchmark_config(args.config).scoring.maximum_feedback_submissions_per_run,
     )
     if args.check:

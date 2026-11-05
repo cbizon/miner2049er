@@ -33,7 +33,7 @@ spec:
       initContainers:
         - name: work-layout
           image: ghcr.io/cbizon/miner2049er:1.0.2-214f5b8@sha256:9c63824c8101029f3505ffc7d94a3fb6de0be1f65c431ac60cf298b2d1d97bc8
-          command: [sh, -euc, "mkdir -p /work/runs /work/evaluations /work/scorer-state /work/rule-sets /work/rule-set-evaluations /work/agents"]
+          command: [sh, -euc, "mkdir -p /work/runs /work/evaluations /work/scorer-state /work/rule-sets /work/rule-set-evaluations /work/agents /work/reviews /work/checker"]
           volumeMounts: [{name: work, mountPath: /work}]
           resources: &small
             requests: {cpu: 100m, memory: 512Mi, ephemeral-storage: 50Mi}

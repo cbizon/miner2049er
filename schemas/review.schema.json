@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://renci.org/miner2049er/schemas/review.schema.json",
+  "title": "Checker review of one round",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "round_id",
+    "reviewed_at",
+    "reviewer_model",
+    "summary",
+    "reviews"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "round_id": {"type": "string", "pattern": "^round-[0-9]{4}$"},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "reviewer_model": {"type": "string", "minLength": 1},
+    "summary": {"type": "string", "minLength": 20},
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule_id", "plain_claim", "verdict", "attacks"],
+        "properties": {
+          "rule_id": {"type": "string", "minLength": 1},
+          "plain_claim": {"type": "string", "minLength": 20},
+          "verdict": {"enum": ["holds", "doubtful", "broken"]},
+          "attacks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["check", "what_was_done", "finding"],
+              "properties": {
+                "check": {
+                  "enum": [
+                    "description_vs_query",
+                    "leakage",
+                    "concentration",
+                    "fair_baseline",
+                    "stability",
+                    "claimed_vs_graded",
+                    "other"
+                  ]
+                },
+                "what_was_done": {"type": "string", "minLength": 20},
+                "finding": {"type": "string", "minLength": 20}
+              }
+            }
+          },
+          "what_would_resolve": {"type": "string", "minLength": 20}
+        },
+        "if": {"properties": {"verdict": {"enum": ["doubtful", "broken"]}}},
+        "then": {"required": ["what_would_resolve"]}
+      }
+    }
+  }
+}

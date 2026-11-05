@@ -54,8 +54,12 @@ spec:
                     INSTRUCTION=/nightly/fallback.md
                   fi
                   echo "instruction: $INSTRUCTION"
+                  # Append the checker's open challenges so tonight has to answer them.
+                  cat "$INSTRUCTION" > /tmp/tonight.md
+                  miner-checker challenges --run-id "$RUN_ID" --reviews-dir /work/reviews >> /tmp/tonight.md
+                  cat /tmp/tonight.md
                   miner-benchmark-setup next-round --run-id "$RUN_ID" --deadline "$DEADLINE" \
-                    --instruction-file "$INSTRUCTION" \
+                    --instruction-file /tmp/tonight.md \
                     --runs-dir /work/runs --evaluations-dir /work/evaluations \
                     --public-dir /work/benchmark --sealed-dir /sealed
               env:

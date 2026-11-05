@@ -1,0 +1,79 @@
+# The checker: at 6:15 am New York time, after the night's agent has finished,
+# a fresh Claude session tries to break the round's claims and records one
+# review under /work/reviews. The debrief shows its verdicts; open challenges
+# are appended to the next night's instruction by nightly.yaml.
+#
+# Independence: it never saw the agent's reasoning, its brief
+# (prompts/checker.md) is adversarial, it reads the run and evaluations
+# read-only, queries Neo4j, and has no scorer and no sealed volume (the
+# controller refuses to start if either is visible).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: miner-checker
+  labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: checker}
+spec:
+  schedule: "15 6 * * *"
+  timeZone: America/New_York
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 1800
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    metadata:
+      labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: checker}
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 3000
+      ttlSecondsAfterFinished: 1209600
+      template:
+        metadata:
+          labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: checker}
+        spec:
+          restartPolicy: Never
+          imagePullSecrets: [{name: registry-credentials}]
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 7474
+            runAsGroup: 7474
+            fsGroup: 7474
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: checker
+              image: ghcr.io/cbizon/miner2049er:1.0.2-214f5b8@sha256:9c63824c8101029f3505ffc7d94a3fb6de0be1f65c431ac60cf298b2d1d97bc8
+              command: [sh, -euc]
+              args:
+                - |
+                  export NEO4J_PASSWORD="${NEO4J_AUTH#neo4j/}"; unset NEO4J_AUTH
+                  exec miner-checker run --run-id "$RUN_ID" \
+                    --runs-dir /work/runs --evaluations-dir /work/evaluations \
+                    --reviews-dir /work/reviews --runtime-dir /work/checker \
+                    --sealed-root /sealed --model "$MODEL" --minutes 40
+              env:
+                - {name: HOME, value: /tmp}
+                - {name: MINER_EVALUATIONS_DIR, value: /work/evaluations}
+                - {name: MINER_REVIEWS_DIR, value: /work/reviews}
+                - name: RUN_ID
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: run_id}}
+                - name: MODEL
+                  valueFrom: {configMapKeyRef: {name: miner-nightly, key: model}}
+                - {name: NEO4J_URI, value: "bolt://miner-neo4j:7687"}
+                - {name: NEO4J_USER, value: neo4j}
+                - name: NEO4J_AUTH
+                  valueFrom: {secretKeyRef: {name: miner-neo4j-auth, key: NEO4J_AUTH}}
+                - name: CLAUDE_CODE_OAUTH_TOKEN
+                  valueFrom: {secretKeyRef: {name: claude-provider-credentials, key: CLAUDE_CODE_OAUTH_TOKEN}}
+              volumeMounts:
+                - {name: work, mountPath: /work/runs, subPath: runs, readOnly: true}
+                - {name: work, mountPath: /work/evaluations, subPath: evaluations, readOnly: true}
+                - {name: work, mountPath: /work/reviews, subPath: reviews}
+                - {name: work, mountPath: /work/checker, subPath: checker}
+              resources:
+                requests: {cpu: 500m, memory: 2Gi, ephemeral-storage: 100Mi}
+                limits: {cpu: "2", memory: 6Gi, ephemeral-storage: 512Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: {drop: [ALL]}
+          volumes:
+            - {name: work, persistentVolumeClaim: {claimName: miner-work}}
