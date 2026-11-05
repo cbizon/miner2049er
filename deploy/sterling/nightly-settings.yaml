@@ -9,7 +9,7 @@ metadata:
   name: miner-nightly
   labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: nightly}
 data:
-  run_id: sterling-2026-11-01-r2
+  run_id: sterling-2026-11-05
   model: claude-opus-5-5
   effort: high
   deadline_hours: "7"

@@ -1,4 +1,4 @@
-# Neo4j serving the 1.0.2 store. Needs ConfigMap miner-neo4j-indexes
+# Neo4j serving the 1.0.2.1 store. Needs ConfigMap miner-neo4j-indexes
 # (kubectl create configmap miner-neo4j-indexes --from-file=../../cypher/indexes.cypher).
 # Bolt is reachable in-namespace only (the
 # namespace's default policy admits ingress from its own pods).

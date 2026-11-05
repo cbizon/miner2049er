@@ -32,7 +32,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: work-layout
-          image: ghcr.io/cbizon/miner2049er:1.0.2-8265b5a@sha256:d66d01c544fc50922ec4e83770f7beb007e295ad5d6d6bdc8814081becb05637
+          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
           command: [sh, -euc, "mkdir -p /work/runs /work/evaluations /work/scorer-state /work/rule-sets /work/rule-set-evaluations /work/agents /work/reviews /work/checker"]
           volumeMounts: [{name: work, mountPath: /work}]
           resources: &small
@@ -43,14 +43,14 @@ spec:
             capabilities: {drop: [ALL]}
       containers:
         - name: scorer
-          image: ghcr.io/cbizon/miner2049er:1.0.2-8265b5a@sha256:d66d01c544fc50922ec4e83770f7beb007e295ad5d6d6bdc8814081becb05637
+          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
           command: [uvicorn, "miner2049er.scorer_server:APP", --host, 0.0.0.0, --port, "6430"]
           env:
             - {name: HOME, value: /tmp}
             - {name: BENCHMARK_CONFIG, value: /app/config/benchmark.json}
-            - {name: BENCHMARK_SEALED_MANIFEST, value: /sealed/bf9f8f5300edac94/sealed-manifest.json}
-            - {name: SCORER_AUTHORIZED_RUNS_DIR, value: /sealed/bf9f8f5300edac94/authorized-runs}
-            - {name: SCORER_STATE_DB, value: /work/scorer-state/submissions-v2.sqlite3}
+            - {name: BENCHMARK_SEALED_MANIFEST, value: /sealed/5af559a4ac4c95e2/sealed-manifest.json}
+            - {name: SCORER_AUTHORIZED_RUNS_DIR, value: /sealed/5af559a4ac4c95e2/authorized-runs}
+            - {name: SCORER_STATE_DB, value: /work/scorer-state/submissions-1.0.2.1.sqlite3}
             - {name: SCORER_EVALUATIONS_DIR, value: /work/evaluations}
             - {name: SCORER_RULE_SET_ROOT, value: /work/rule-sets}
             - {name: SCORER_RULE_SET_EVALUATIONS_DIR, value: /work/rule-set-evaluations}

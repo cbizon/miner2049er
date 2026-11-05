@@ -1,4 +1,14 @@
-# Sterling deployment: Translator 1.0.2 query stores
+# Sterling deployment: Translator 1.0.2.1 query stores
+
+The benchmark runs on graph 1.0.2.1: Translator 1.0.2 with 751
+stereo-unspecified drug nodes merged into their one drug stereoisomer
+(`config/graph-1.0.2.1-replacements.tsv`, `miner-derive-graph`). The build Job
+fetches 1.0.2, derives 1.0.2.1 into `/source/1.0.2.1`, splits it (split
+`5af559a4ac4c95e2`) and exports the Parquet. The 1.0.2 split's public files
+are archived under `/work/archive/benchmark/`, out of the agent's mounts,
+because pairs the merge moved between partitions are visible there under their
+old ids. Runs from 1.0.2 (`sterling-2026-11-01-r2`) stay in `/work/runs` for
+reference; `config/benchmark-1.0.2.json` reproduces their split.
 
 Builds the benchmark's Neo4j store on Sterling (namespace `bizon`). Gandalf,
 the scorer, the dashboard and the nightly agent CronJob come later.
@@ -32,7 +42,7 @@ held is exported on its own.
 
    ```bash
    docker buildx build --platform linux/amd64 -f Dockerfile.benchmark \
-     -t ghcr.io/cbizon/miner2049er:1.0.2-$(git rev-parse --short HEAD) --push .
+     -t ghcr.io/cbizon/miner2049er:1.0.2.1-$(git rev-parse --short HEAD) --push .
    ```
 
    The existing `registry-credentials` pull secret covers `ghcr.io/cbizon`.
@@ -49,6 +59,7 @@ held is exported on its own.
 
 ```bash
 kubectl apply -f pvcs.yaml
+kubectl patch statefulset miner-neo4j -p '{"spec":{"replicas":0}}'  # frees miner-import
 kubectl apply -f build-stores-job.yaml
 kubectl logs -f job/miner-build-stores --all-containers
 ```
