@@ -32,7 +32,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: work-layout
-          image: ghcr.io/cbizon/miner2049er:1.0.2-214f5b8@sha256:9c63824c8101029f3505ffc7d94a3fb6de0be1f65c431ac60cf298b2d1d97bc8
+          image: ghcr.io/cbizon/miner2049er:1.0.2-8265b5a@sha256:d66d01c544fc50922ec4e83770f7beb007e295ad5d6d6bdc8814081becb05637
           command: [sh, -euc, "mkdir -p /work/runs /work/evaluations /work/scorer-state /work/rule-sets /work/rule-set-evaluations /work/agents /work/reviews /work/checker"]
           volumeMounts: [{name: work, mountPath: /work}]
           resources: &small
@@ -43,7 +43,7 @@ spec:
             capabilities: {drop: [ALL]}
       containers:
         - name: scorer
-          image: ghcr.io/cbizon/miner2049er:1.0.2-214f5b8@sha256:9c63824c8101029f3505ffc7d94a3fb6de0be1f65c431ac60cf298b2d1d97bc8
+          image: ghcr.io/cbizon/miner2049er:1.0.2-8265b5a@sha256:d66d01c544fc50922ec4e83770f7beb007e295ad5d6d6bdc8814081becb05637
           command: [uvicorn, "miner2049er.scorer_server:APP", --host, 0.0.0.0, --port, "6430"]
           env:
             - {name: HOME, value: /tmp}
