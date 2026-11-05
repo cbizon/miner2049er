@@ -12,8 +12,7 @@ Builds the benchmark's Neo4j and Gandalf stores on Sterling (namespace
 | `miner-work` | basic | 10Gi | public split, runs, evaluations | build Job, later agent and scorer |
 | `miner-import` | basic | 10Gi | Parquet the Neo4j pod imports from | build Job, Neo4j (read-only) |
 | Neo4j `/data` | emptyDir, memory | 36Gi | Neo4j store (~31GB) | Neo4j |
-| `miner-gandalf` | basic | 30Gi | published Gandalf mmap store | Gandalf build Job, Gandalf (read-only) |
-| Gandalf build scratch | nvme-ephemeral, per pod | 55Gi | store being built | Gandalf build Job only |
+| `miner-gandalf` | basic | 75Gi | Gandalf mmap store (~35-40GB) and, during a build, its temp files | Gandalf build Job, Gandalf (read-only) |
 
 Every storage class available to `bizon` is NetApp `ontap-nas` (NFS). Neo4j
 doesn't support NFS for its store: `neo4j-admin import` onto `basic-noatime`
@@ -77,11 +76,18 @@ kubectl apply -f gandalf.yaml
 ```
 
 The build uses the same held-out split as Neo4j (`build-stores --stores
-gandalf`, filtering through `graph_filter.edge_is_visible`). It builds on
-pod-scoped NVMe scratch, then serves the result on localhost and requires over
-TRAPI that sampled feedback and final pairs are absent and sampled training
-pairs present (`miner-check-gandalf-holdout`, counts only). Only a store that
-passes is copied to `miner-gandalf`. Agents reach it at
+gandalf`, filtering through `graph_filter.edge_is_visible`). It builds in place
+on `miner-gandalf`, then serves the result on localhost and requires over TRAPI
+that sampled feedback and final pairs are absent and sampled training pairs
+present (`miner-check-gandalf-holdout`, counts only). Only a store that passes
+is renamed to the path the server loads.
+
+Storage notes: the build peaks at ~65-70G because Gandalf keeps the unsorted
+(31G) and sorted (~30G) edge-property LMDBs at once, hence the 75Gi volume,
+which cannot shrink afterwards. `nvme-ephemeral` was tried first: the namespace
+has 60Gi of quota, but Sterling's single NVMe node refused even a 10Gi claim
+(2026-11-05). LMDB writes on NFS worked for this build; only Neo4j's import is
+known to fail on NFS. Agents reach it at
 `http://miner-gandalf:6429`; `GANDALF_URL` is required by the agent controller.
 
 ## Scorer and agent rounds

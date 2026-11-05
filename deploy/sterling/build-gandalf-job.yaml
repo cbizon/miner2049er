@@ -1,18 +1,21 @@
-# One-shot Gandalf store build, published to miner-gandalf for gandalf.yaml.
+# One-shot Gandalf store build onto miner-gandalf, served by gandalf.yaml.
 #
 # The held-out split is the same one Neo4j uses: build-stores --stores gandalf
 # drops every target-closure edge whose pair is in the sealed feedback or final
 # labels (graph_filter.edge_is_visible, shared with the Neo4j export). Like the
 # existing build, only this Job and the operator Jobs mount miner-sealed.
 #
-#   1. build: graph -> mmap store on a local NVMe scratch volume. LMDB is
-#      written here, not on NFS (Neo4j's import already failed on NFS).
-#   2. check: serve the scratch store on localhost and require over TRAPI that
+# Everything happens on the one miner-gandalf volume (NFS): Sterling's only NVMe
+# node had no free space, and a separate scratch volume plus the store would
+# exceed the namespace storage quota.
+#   1. build: graph -> /gandalf/partial/gandalf, temp files in /gandalf/tmp
+#      (removed afterwards). Peaks at ~65-70G.
+#   2. check: serve the partial store on localhost and require over TRAPI that
 #      sampled feedback and final pairs are absent and training pairs present.
-#   3. publish: copy the checked store to miner-gandalf, then rename it into
-#      place, so the server never sees a partial or unchecked store.
-# The scratch volume is deleted with the pod. If the store is already
-# published, every step skips; to rebuild, delete it from the PVC first.
+#   3. publish: rename the checked store to /gandalf/$SPLIT, the path the
+#      server loads, so it never sees a partial or unchecked store.
+# If the store is already published, every step skips; to rebuild, delete
+# /gandalf/$SPLIT first. A failed attempt's partial and tmp are cleared on rerun.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -41,13 +44,15 @@ spec:
           args:
             - |
               if [ -d "/gandalf/$SPLIT" ]; then echo "store already published"; exit 0; fi
-              mkdir -p /scratch/tmp
-              miner-benchmark-setup build-stores --stores gandalf --store-root /scratch \
+              rm -rf /gandalf/partial /gandalf/tmp
+              mkdir -p /gandalf/tmp
+              miner-benchmark-setup build-stores --stores gandalf --store-root /gandalf/partial \
                 --source-dir /source --public-dir /work/benchmark --sealed-dir /sealed
-              du -sh /scratch/gandalf
+              rm -rf /gandalf/tmp
+              du -sh /gandalf/partial/gandalf
           env: &env
             - {name: HOME, value: /tmp}
-            - {name: TMPDIR, value: /scratch/tmp}
+            - {name: TMPDIR, value: /gandalf/tmp}
             - {name: SOURCE_COMPRESSION, value: zstd}
             - {name: GRAPH_VERSION, value: "1.0.2"}
             - {name: SPLIT, value: bf9f8f5300edac94}
@@ -55,7 +60,6 @@ spec:
             - {name: source, mountPath: /source, readOnly: true}
             - {name: work, mountPath: /work/benchmark, subPath: benchmark, readOnly: true}
             - {name: sealed, mountPath: /sealed, readOnly: true}
-            - {name: scratch, mountPath: /scratch}
             - {name: gandalf, mountPath: /gandalf}
           resources:
             requests: {cpu: "2", memory: 24Gi, ephemeral-storage: 100Mi}
@@ -69,7 +73,7 @@ spec:
           args:
             - |
               if [ -d "/gandalf/$SPLIT" ]; then echo "store already published"; exit 0; fi
-              GANDALF_GRAPH_PATH=/scratch/gandalf GANDALF_GRAPH_FORMAT=mmap \
+              GANDALF_GRAPH_PATH=/gandalf/partial/gandalf GANDALF_GRAPH_FORMAT=mmap \
               GANDALF_LOAD_MMAPS_INTO_MEMORY=false GANDALF_OTEL_ENABLED=false \
                 uvicorn miner2049er.gandalf_server:APP --host 127.0.0.1 --port 6429 &
               server=$!
@@ -97,31 +101,18 @@ spec:
           args:
             - |
               if [ -d "/gandalf/$SPLIT" ]; then echo "store already published"; exit 0; fi
-              rm -rf "/gandalf/$SPLIT.partial"
-              cp -a /scratch/gandalf "/gandalf/$SPLIT.partial"
-              mv "/gandalf/$SPLIT.partial" "/gandalf/$SPLIT"
+              mv /gandalf/partial/gandalf "/gandalf/$SPLIT"
+              rmdir /gandalf/partial
               du -sh "/gandalf/$SPLIT"
           env: *env
           volumeMounts:
-            - {name: scratch, mountPath: /scratch, readOnly: true}
             - {name: gandalf, mountPath: /gandalf}
           resources:
-            requests: {cpu: 500m, memory: 1Gi, ephemeral-storage: 50Mi}
-            limits: {cpu: "2", memory: 4Gi, ephemeral-storage: 256Mi}
+            requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 50Mi}
+            limits: {cpu: 500m, memory: 1Gi, ephemeral-storage: 256Mi}
           securityContext: *locked
       volumes:
         - {name: source, persistentVolumeClaim: {claimName: miner-source, readOnly: true}}
         - {name: sealed, persistentVolumeClaim: {claimName: miner-sealed, readOnly: true}}
         - {name: work, persistentVolumeClaim: {claimName: miner-work, readOnly: true}}
         - {name: gandalf, persistentVolumeClaim: {claimName: miner-gandalf}}
-        - name: scratch
-          ephemeral:
-            volumeClaimTemplate:
-              metadata:
-                labels: {app.kubernetes.io/part-of: miner2049er, app.kubernetes.io/component: build}
-              spec:
-                # Temp + sorted edge LMDBs (each >16GB for a 29M-edge graph)
-                # coexist during the build. Namespace nvme quota is 60Gi.
-                accessModes: [ReadWriteOnce]
-                storageClassName: nvme-ephemeral
-                resources: {requests: {storage: 55Gi}}
