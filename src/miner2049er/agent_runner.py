@@ -9,7 +9,7 @@ import signal
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -1052,6 +1052,14 @@ def _recover_and_finish_after_deadline(
     )
 
 
+def controller_service_environment(environ: Mapping[str, str]) -> dict[str, str]:
+    """The service variables handed to the agent; every one is required."""
+    missing = [name for name in SAFE_SERVICE_VARIABLES if not environ.get(name)]
+    if missing:
+        raise ValueError(f"Controller is missing service variables: {', '.join(missing)}")
+    return {name: environ[name] for name in SAFE_SERVICE_VARIABLES}
+
+
 def run_controller(args: argparse.Namespace) -> int:
     _validate_duration_arguments(args)
     context = load_run_context(args.run_dir)
@@ -1078,21 +1086,7 @@ def run_controller(args: argparse.Namespace) -> int:
             authorization_dir=authorization_dir,
             config_path=args.config,
         )
-    service_environment = {
-        name: os.environ[name]
-        for name in SAFE_SERVICE_VARIABLES
-        if os.environ.get(name)
-    }
-    # Gandalf is not deployed on the cluster yet; container rounds say so in
-    # their round instruction instead of requiring GANDALF_URL.
-    optional = {"GANDALF_URL"} if isolation == "container" else set()
-    missing = [
-        name
-        for name in SAFE_SERVICE_VARIABLES
-        if name not in service_environment and name not in optional
-    ]
-    if missing:
-        raise ValueError(f"Controller is missing service variables: {', '.join(missing)}")
+    service_environment = controller_service_environment(os.environ)
     environment = build_agent_environment(
         runtime_dir=runtime_dir,
         service_environment=service_environment,
