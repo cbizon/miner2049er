@@ -3,7 +3,8 @@
 For a trial that lists exactly one intervention, and whose intervention doesn't name a combination, the KP
 should assert one subject. When it asserts several, and after the 1.0.2.2 node merges exactly one of them has a
 DrugBank or DrugCentral identifier, that one is kept and the trial is removed from the other subjects' edges.
-Trials where none or several subjects have such an identifier are left alone.
+Trials where none or several subjects have such an identifier are left alone in the graph; their subjects are
+written to --unresolved-output so the holdout split can keep them together.
 
 Inputs: the KP's edges exported from the loaded graph (export_ct_edges.py), ClinicalTrials.gov interventions
 fetched for every trial, and the 1.0.2.2 merge tables. DrugBank and DrugCentral identifiers come from NodeNorm
@@ -16,11 +17,13 @@ fetched for every trial, and the 1.0.2.2 merge tables. DrugBank and DrugCentral 
         --replacements config/graph-1.0.2.2-parent-merges.tsv \
         --drug-ids data/upstream/ct-rule/nodenorm-drug-ids.json \
         --output config/graph-1.0.2.2-ct-study-removals.tsv.gz \
-        --report data/upstream/ct-rule/report.json
+        --report data/upstream/ct-rule/report.json \
+        --unresolved-output config/graph-1.0.2.2-ct-unresolved-sets.tsv
 """
 
 import argparse
 import gzip
+import io
 import json
 import re
 from collections import Counter, defaultdict
@@ -43,6 +46,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--drug-ids", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--unresolved-output", type=Path, required=True,
+                        help="TSV of the unresolved trials and their subjects, for holdout grouping")
     return parser.parse_args()
 
 
@@ -89,6 +94,7 @@ def main() -> None:
 
     counts: Counter = Counter()
     removals: list[tuple[str, str]] = []
+    unresolved: list[tuple[str, str, list[str]]] = []
     for nct, subjects in trial_edges.items():
         listed = interventions.get(nct)
         if listed is None or len(listed) != 1:
@@ -102,7 +108,9 @@ def main() -> None:
         counts["several_subjects"] += 1
         with_id = [s for s in subjects if has_drug_id[s]]
         if len(with_id) != 1:
-            counts["unresolved_none_with_id" if not with_id else "unresolved_several_with_id"] += 1
+            outcome = "unresolved_none_with_id" if not with_id else "unresolved_several_with_id"
+            counts[outcome] += 1
+            unresolved.append((nct, outcome, sorted(subjects)))
             continue
         counts["resolved"] += 1
         for subject, edge_ids in subjects.items():
@@ -112,10 +120,15 @@ def main() -> None:
     counts["edge_trial_removals"] = len(removals)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(args.output, "wt", encoding="utf-8") as out:
+    # mtime=0 so the same removals give a byte-identical file.
+    with io.TextIOWrapper(gzip.GzipFile(args.output, "wb", mtime=0), encoding="utf-8") as out:
         out.write("edge_id\tstudy_id\n")
         for edge_id, study_id in sorted(removals):
             out.write(f"{edge_id}\t{study_id}\n")
+    with open(args.unresolved_output, "w", encoding="utf-8") as out:
+        out.write("nct_id\toutcome\tsubject_ids\n")
+        for nct, outcome, subjects in sorted(unresolved):
+            out.write(f"{nct}\t{outcome}\t{','.join(subjects)}\n")
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(dict(sorted(counts.items())), indent=2) + "\n")
     print(json.dumps(dict(sorted(counts.items())), indent=2))
