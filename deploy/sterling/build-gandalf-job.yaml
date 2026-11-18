@@ -39,7 +39,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: build
-          image: &image ghcr.io/cbizon/miner2049er:1.0.2-2ef7ffd@sha256:fe1905e63b66c0490879535e2d9cba352a6ba4232562f043b3b7c76de5a4e3c4
+          image: &image @IMAGE@
           command: [sh, -euc]
           args:
             - |
@@ -47,15 +47,15 @@ spec:
               rm -rf /gandalf/partial /gandalf/tmp
               mkdir -p /gandalf/tmp
               miner-benchmark-setup build-stores --stores gandalf --store-root /gandalf/partial \
-                --source-dir /source --public-dir /work/benchmark --sealed-dir /sealed
+                --source-dir /source/1.0.2.2 --public-dir /work/benchmark --sealed-dir /sealed
               rm -rf /gandalf/tmp
               du -sh /gandalf/partial/gandalf
           env: &env
             - {name: HOME, value: /tmp}
             - {name: TMPDIR, value: /gandalf/tmp}
             - {name: SOURCE_COMPRESSION, value: zstd}
-            - {name: GRAPH_VERSION, value: "1.0.2"}
-            - {name: SPLIT, value: bf9f8f5300edac94}
+            - {name: GRAPH_VERSION, value: "1.0.2.2"}
+            - {name: SPLIT, value: 05c192b71dfed1ba}
           volumeMounts: &mounts
             - {name: source, mountPath: /source, readOnly: true}
             - {name: work, mountPath: /work/benchmark, subPath: benchmark, readOnly: true}

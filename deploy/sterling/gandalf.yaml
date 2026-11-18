@@ -1,4 +1,4 @@
-# Gandalf TRAPI server for the 1.0.2 store built by build-gandalf-job.yaml
+# Gandalf TRAPI server for the 1.0.2.2 store built by build-gandalf-job.yaml
 # (held-out treats edges removed, checked over TRAPI before publishing).
 # Reachable in-namespace only, at http://miner-gandalf:6429.
 #
@@ -37,11 +37,11 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: gandalf
-          image: ghcr.io/cbizon/miner2049er:1.0.2-2ef7ffd@sha256:fe1905e63b66c0490879535e2d9cba352a6ba4232562f043b3b7c76de5a4e3c4
+          image: @IMAGE@
           command: [uvicorn, "miner2049er.gandalf_server:APP", --host, 0.0.0.0, --port, "6429"]
           env:
             - {name: HOME, value: /tmp}
-            - {name: GANDALF_GRAPH_PATH, value: /gandalf/bf9f8f5300edac94}
+            - {name: GANDALF_GRAPH_PATH, value: /gandalf/05c192b71dfed1ba}
             - {name: GANDALF_GRAPH_FORMAT, value: mmap}
             - {name: GANDALF_LOAD_MMAPS_INTO_MEMORY, value: "false"}
             - {name: GANDALF_OTEL_ENABLED, value: "false"}
