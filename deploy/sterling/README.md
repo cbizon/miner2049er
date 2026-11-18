@@ -1,14 +1,27 @@
-# Sterling deployment: Translator 1.0.2.1 query stores
+# Sterling deployment: Translator 1.0.2.2 query stores
 
-The benchmark runs on graph 1.0.2.1: Translator 1.0.2 with 751
-stereo-unspecified drug nodes merged into their one drug stereoisomer
-(`config/graph-1.0.2.1-replacements.tsv`, `miner-derive-graph`). The build Job
-fetches 1.0.2, derives 1.0.2.1 into `/source/1.0.2.1`, splits it (split
-`5af559a4ac4c95e2`) and exports the Parquet. The 1.0.2 split's public files
-are archived under `/work/archive/benchmark/`, out of the agent's mounts,
-because pairs the merge moved between partitions are visible there under their
-old ids. Runs from 1.0.2 (`sterling-2026-11-01-r2`) stay in `/work/runs` for
-reference; `config/benchmark-1.0.2.json` reproduces their split.
+The benchmark runs on graph 1.0.2.2: Translator 1.0.2 patched until upstream
+fixes land (`miner-derive-graph`; the decisions are in
+`docs/identity-review-log.md`):
+
+- node merges: the 1.0.2.1 stereo table, 773 more stereo merges, and 12,899
+  charge-state and salt merges from Babel's ChemicalParent conflation
+  (NCATSTranslator/Babel#1214), `config/graph-1.0.2.*-*merges.tsv`
+- the TMKP cleanup lists (RobokopU24/ORION#455), which the Job fetches into
+  `/source/tmkp-cleanup`
+- clinical trials removed from the extra subjects the clinical-trials KP gave
+  single-intervention trials, `config/graph-1.0.2.2-ct-study-removals.tsv.gz`
+
+The build Job fetches 1.0.2, derives 1.0.2.2 into `/source/1.0.2.2`, splits it
+and exports the Parquet. The split (`05c192b71dfed1ba`, algorithm
+`sha256-ranked-cells-v1`) keeps related drugs
+(`config/graph-1.0.2.2-holdout-groups.tsv`) on one side for each disease.
+`/source/1.0.2.1` was deleted to make room; `config/benchmark-1.0.2.1.json`
+and the 1.0.2.1 table reproduce it. Earlier splits' public files must be moved
+out of the agent's mounts (to `/work/archive/benchmark/`), because pairs held
+out now may be training labels there. Runs from 1.0.2
+(`sterling-2026-11-01-r2`) stay in `/work/runs` for reference;
+`config/benchmark-1.0.2.json` reproduces their split.
 
 Builds the benchmark's Neo4j store on Sterling (namespace `bizon`). Gandalf,
 the scorer, the dashboard and the nightly agent CronJob come later.
