@@ -1,0 +1,10 @@
+# Only data/reference/biolink is copied into the image; the rest of data/ is
+# local working data (graph exports, upstream downloads) and can be many GB.
+data/*
+!data/reference/
+.venv
+runs
+logs
+results
+dist
+.git
