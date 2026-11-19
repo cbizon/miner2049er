@@ -1,7 +1,12 @@
-# One-shot build: fetch 1.0.2 -> derive 1.0.2.1 -> split labels -> export Parquet.
-# 1.0.2.1 is 1.0.2 with stereo-unspecified drug nodes merged into their one
-# drug stereoisomer (config/graph-1.0.2.1-replacements.tsv); see
-# src/miner2049er/graph_derivation.py. The Parquet on miner-import is what the
+# One-shot build: fetch 1.0.2 -> derive 1.0.2.2 -> split labels -> export Parquet.
+# 1.0.2.2 is 1.0.2 patched until the upstream fixes land (see
+# src/miner2049er/graph_derivation.py and docs/identity-review-log.md):
+# - node merges: the 1.0.2.1 stereo table, more stereo merges, and Babel's
+#   ChemicalParent conflation (NCATSTranslator/Babel#1214), config/graph-1.0.2.*-*merges.tsv
+# - TMKP cleanup lists (RobokopU24/ORION#455), fetched into /source/tmkp-cleanup
+# - clinical-trials KP trials removed from extra subjects (config/graph-1.0.2.2-ct-study-removals.tsv.gz)
+# The split keeps related drugs (config/graph-1.0.2.2-holdout-groups.tsv) on one
+# side per disease. The Parquet on miner-import is what the
 # Neo4j pod imports from (see neo4j.yaml).
 # Each step skips work a previous attempt finished, so the Job can be rerun
 # (delete and re-apply) after a failure without starting over.
@@ -30,7 +35,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       initContainers:
         - name: fetch-source
-          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
+          image: ghcr.io/cbizon/miner2049er:1.0.2.2-dbd948f@sha256:cd40fda702b9210e6e01357be1f4595fc86bef6b65761fbd097bc241906790e9
           command: [sh, -euc]
           args:
             - |
@@ -49,8 +54,40 @@ spec:
           securityContext: &locked
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
+        - name: fetch-tmkp-cleanup
+          image: ghcr.io/cbizon/miner2049er:1.0.2.2-dbd948f@sha256:cd40fda702b9210e6e01357be1f4595fc86bef6b65761fbd097bc241906790e9
+          command: [sh, -euc]
+          args:
+            - |
+              mkdir -p /source/tmkp-cleanup
+              python - <<'PY'
+              import hashlib, json, pathlib, urllib.request
+              out = pathlib.Path("/source/tmkp-cleanup")
+              stars = "https://stars.renci.org/var/translator/ingests/tmkp/"
+              files = {f"{stars}{name}": name for name in [
+                  "tmkp_treats_jev_v3_dropped_edges.txt.gz",
+                  *[f"tmkp_{family}_{kind}" for family in ("chem_gene", "gene_gene", "chem_disease")
+                    for kind in ("dropped_edges.txt.gz", "pruned_sentences.txt.gz", "repaired_edges.tsv.gz")],
+              ]}
+              files["https://storage.googleapis.com/translator-text-workflow-dev-public/kgx/UniProt/edges.tsv.gz"] = "edges.tsv.gz"
+              manifest = {}
+              for url, name in files.items():
+                  target = out / name
+                  if not target.exists():
+                      partial = target.with_name(name + ".partial")
+                      urllib.request.urlretrieve(url, partial)
+                      partial.replace(target)
+                  manifest[name] = hashlib.sha256(target.read_bytes()).hexdigest()
+              (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+              print(json.dumps(manifest, indent=2))
+              PY
+          env:
+            - {name: HOME, value: /tmp}
+          volumeMounts: [{name: source, mountPath: /source}]
+          resources: *python
+          securityContext: *locked
         - name: derive-graph
-          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
+          image: ghcr.io/cbizon/miner2049er:1.0.2.2-dbd948f@sha256:cd40fda702b9210e6e01357be1f4595fc86bef6b65761fbd097bc241906790e9
           command: [sh, -euc]
           args:
             - |
@@ -58,18 +95,22 @@ spec:
                 echo "graph already derived"; cat "/source/$GRAPH_VERSION/derivation-manifest.json"
               else
                 miner-derive-graph --source-dir /source \
-                  --replacements "/app/config/graph-$GRAPH_VERSION-replacements.tsv" \
+                  --replacements /app/config/graph-1.0.2.1-replacements.tsv \
+                  --replacements /app/config/graph-1.0.2.2-stereo-merges.tsv \
+                  --replacements /app/config/graph-1.0.2.2-parent-merges.tsv \
+                  --tmkp-cleanup-dir /source/tmkp-cleanup \
+                  --study-removals /app/config/graph-1.0.2.2-ct-study-removals.tsv.gz \
                   --output-dir "/source/$GRAPH_VERSION" --graph-version "$GRAPH_VERSION"
               fi
           env: &source_env
             - {name: HOME, value: /tmp}
             - {name: SOURCE_COMPRESSION, value: zstd}
-            - {name: GRAPH_VERSION, value: "1.0.2.1"}
+            - {name: GRAPH_VERSION, value: "1.0.2.2"}
           volumeMounts: [{name: source, mountPath: /source}]
           resources: *python
           securityContext: *locked
         - name: prepare-split
-          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
+          image: ghcr.io/cbizon/miner2049er:1.0.2.2-dbd948f@sha256:cd40fda702b9210e6e01357be1f4595fc86bef6b65761fbd097bc241906790e9
           command: [sh, -euc]
           args:
             - |
@@ -89,7 +130,7 @@ spec:
           securityContext: *locked
       containers:
         - name: export-parquet
-          image: ghcr.io/cbizon/miner2049er:1.0.2.1-554e02d@sha256:008cde0c554cc897ef3fc6917718b92a8cdd5e836570229a83f5e7319efa0205
+          image: ghcr.io/cbizon/miner2049er:1.0.2.2-dbd948f@sha256:cd40fda702b9210e6e01357be1f4595fc86bef6b65761fbd097bc241906790e9
           command: [sh, -euc]
           args:
             - |

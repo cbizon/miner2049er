@@ -1,17 +1,30 @@
-# Sterling deployment: Translator 1.0.2.1 query stores
+# Sterling deployment: Translator 1.0.2.2 query stores
 
-The benchmark runs on graph 1.0.2.1: Translator 1.0.2 with 751
-stereo-unspecified drug nodes merged into their one drug stereoisomer
-(`config/graph-1.0.2.1-replacements.tsv`, `miner-derive-graph`). The build Job
-fetches 1.0.2, derives 1.0.2.1 into `/source/1.0.2.1`, splits it (split
-`5af559a4ac4c95e2`) and exports the Parquet. The 1.0.2 split's public files
-are archived under `/work/archive/benchmark/`, out of the agent's mounts,
-because pairs the merge moved between partitions are visible there under their
-old ids. Runs from 1.0.2 (`sterling-2026-11-01-r2`) stay in `/work/runs` for
-reference; `config/benchmark-1.0.2.json` reproduces their split.
+The benchmark runs on graph 1.0.2.2: Translator 1.0.2 patched until upstream
+fixes land (`miner-derive-graph`; the decisions are in
+`docs/identity-review-log.md`):
 
-Builds the benchmark's Neo4j store on Sterling (namespace `bizon`). Gandalf,
-the scorer, the dashboard and the nightly agent CronJob come later.
+- node merges: the 1.0.2.1 stereo table, 773 more stereo merges, and 12,899
+  charge-state and salt merges from Babel's ChemicalParent conflation
+  (NCATSTranslator/Babel#1214), `config/graph-1.0.2.*-*merges.tsv`
+- the TMKP cleanup lists (RobokopU24/ORION#455), which the Job fetches into
+  `/source/tmkp-cleanup`
+- clinical trials removed from the extra subjects the clinical-trials KP gave
+  single-intervention trials, `config/graph-1.0.2.2-ct-study-removals.tsv.gz`
+
+The build Job fetches 1.0.2, derives 1.0.2.2 into `/source/1.0.2.2`, splits it
+and exports the Parquet. The split (`05c192b71dfed1ba`, algorithm
+`sha256-ranked-cells-v1`) keeps related drugs
+(`config/graph-1.0.2.2-holdout-groups.tsv`) on one side for each disease.
+`/source/1.0.2.1` was deleted to make room; `config/benchmark-1.0.2.1.json`
+and the 1.0.2.1 table reproduce it. Earlier splits' public files must be moved
+out of the agent's mounts (to `/work/archive/benchmark/`), because pairs held
+out now may be training labels there. Runs from 1.0.2
+(`sterling-2026-11-01-r2`) stay in `/work/runs` for reference;
+`config/benchmark-1.0.2.json` reproduces their split.
+
+Builds the benchmark's Neo4j and Gandalf stores on Sterling (namespace
+`bizon`) and runs the scorer, the dashboard and the nightly agent CronJob.
 
 ## Storage
 
@@ -22,6 +35,7 @@ the scorer, the dashboard and the nightly agent CronJob come later.
 | `miner-work` | basic | 10Gi | public split, runs, evaluations | build Job, later agent and scorer |
 | `miner-import` | basic | 10Gi | Parquet the Neo4j pod imports from | build Job, Neo4j (read-only) |
 | Neo4j `/data` | emptyDir, memory | 36Gi | Neo4j store (~31GB) | Neo4j |
+| `miner-gandalf` | basic | 75Gi | Gandalf mmap store (~35-40GB) and, during a build, its temp files | Gandalf build Job, Gandalf (read-only) |
 
 Every storage class available to `bizon` is NetApp `ontap-nas` (NFS). Neo4j
 doesn't support NFS for its store: `neo4j-admin import` onto `basic-noatime`
@@ -73,6 +87,32 @@ kubectl apply -f neo4j.yaml
 kubectl logs -f miner-neo4j-0 -c import
 kubectl logs -f job/miner-neo4j-indexes
 ```
+
+## Gandalf
+
+Needs `pvcs.yaml` applied (for `miner-gandalf`) and the split prepared by
+`miner-build-stores`.
+
+```bash
+kubectl apply -f build-gandalf-job.yaml
+kubectl logs -f job/miner-build-gandalf --all-containers
+kubectl apply -f gandalf.yaml
+```
+
+The build uses the same held-out split as Neo4j (`build-stores --stores
+gandalf`, filtering through `graph_filter.edge_is_visible`). It builds in place
+on `miner-gandalf`, then serves the result on localhost and requires over TRAPI
+that sampled feedback and final pairs are absent and sampled training pairs
+present (`miner-check-gandalf-holdout`, counts only). Only a store that passes
+is renamed to the path the server loads.
+
+Storage notes: the build peaks at ~65-70G because Gandalf keeps the unsorted
+(31G) and sorted (~30G) edge-property LMDBs at once, hence the 75Gi volume,
+which cannot shrink afterwards. `nvme-ephemeral` was tried first: the namespace
+has 60Gi of quota, but Sterling's single NVMe node refused even a 10Gi claim
+(2026-11-05). LMDB writes on NFS worked for this build; only Neo4j's import is
+known to fail on NFS. Agents reach it at
+`http://miner-gandalf:6429`; `GANDALF_URL` is required by the agent controller.
 
 ## Scorer and agent rounds
 
@@ -145,7 +185,6 @@ The cycle:
 - Dashboard: `kubectl -n bizon port-forward svc/miner-dashboard 6431:6431`,
   then http://localhost:6431/benchmark.
 
-Not yet done: Gandalf on the cluster (agents skip TRAPI checks), a
-NetworkPolicy limiting the agent's egress (it can currently reach the
+Not yet done: a NetworkPolicy limiting the agent's egress (it can currently reach the
 internet, so "no external information" is enforced only by the prompt), and
 the taste-file judge.

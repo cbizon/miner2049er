@@ -151,3 +151,79 @@ def test_target_pair_aggregation_and_filter_preserve_non_target_edges(tmp_path):
         {"biolink:treats"},
         holdouts,
     )
+
+
+def _cells_config(groups_path: Path) -> BenchmarkConfig:
+    import hashlib
+
+    return BenchmarkConfig.from_dict(
+        {
+            "schema_version": "1.0",
+            "benchmark_id": "test-benchmark",
+            "graph_version": "1.0.2",
+            "biolink": {"version": BIOLINK_VERSION, "predicate_expansion": "descendants"},
+            "target": {
+                "predicate": "biolink:treats",
+                "predicate_closure": [
+                    "biolink:treats",
+                    "biolink:ameliorates_condition",
+                    "biolink:preventative_for_condition",
+                ],
+            },
+            "split": {
+                "algorithm": "sha256-ranked-cells-v1",
+                "seed": "test-seed",
+                "training_fraction": 0.6,
+                "feedback_fraction": 0.2,
+                "final_fraction": 0.2,
+                "subject_groups": str(groups_path),
+                "subject_groups_sha256": hashlib.sha256(groups_path.read_bytes()).hexdigest(),
+            },
+            "scoring": {"minimum_predictions": 2, "maximum_feedback_submissions_per_run": 3,
+                        "metric_decimal_places": 6},
+        }
+    )
+
+
+def test_cells_keep_a_subject_group_together_per_disease(tmp_path: Path):
+    from miner2049er.partitioning import TargetPair, assign_partitions, load_subject_groups
+
+    groups_path = tmp_path / "groups.tsv"
+    groups_path.write_text("node_id\tgroup_id\tnote\nCHEBI:1\tCHEBI:1\t\nCHEBI:2\tCHEBI:1\t\nCHEBI:3\tCHEBI:1\t\n")
+    config = _cells_config(groups_path)
+    groups = load_subject_groups(groups_path, config.split.subject_groups_sha256)
+    pairs = {}
+    for drug in range(1, 8):
+        for disease in range(1, 6):
+            pair = (f"CHEBI:{drug}", f"MONDO:{disease}")
+            pairs[pair] = TargetPair(subject_id=pair[0], object_id=pair[1])
+
+    assignments = assign_partitions(pairs, config, groups)
+
+    where = {(p.subject_id, p.object_id): name for name, members in assignments.items() for p in members}
+    assert len(where) == len(pairs)
+    for disease in range(1, 6):
+        sides = {where[(f"CHEBI:{drug}", f"MONDO:{disease}")] for drug in (1, 2, 3)}
+        assert len(sides) == 1
+    # The split still follows the fractions, within one cell's size.
+    assert abs(len(assignments["training"]) - 0.6 * len(pairs)) <= 3
+
+
+def test_cells_split_fails_on_an_unpinned_groups_file(tmp_path: Path):
+    import pytest
+
+    from miner2049er.partitioning import load_subject_groups
+
+    groups_path = tmp_path / "groups.tsv"
+    groups_path.write_text("node_id\tgroup_id\nCHEBI:1\tCHEBI:1\n")
+    with pytest.raises(ValueError, match="pins"):
+        load_subject_groups(groups_path, "0" * 64)
+
+
+def test_cells_algorithm_requires_groups():
+    import pytest
+
+    from miner2049er.benchmark_config import SplitConfig
+
+    with pytest.raises(ValueError, match="needs subject_groups"):
+        SplitConfig("sha256-ranked-cells-v1", "seed", 0.7, 0.2, 0.1).validate()

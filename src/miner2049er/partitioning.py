@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -13,6 +14,7 @@ from typing import Any
 import orjson
 
 from miner2049er.benchmark_config import (
+    CELLS_ALGORITHM,
     DEFAULT_BENCHMARK_CONFIG,
     BenchmarkConfig,
     load_benchmark_config,
@@ -86,19 +88,55 @@ def pair_digest(config: BenchmarkConfig, pair: Pair) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+def load_subject_groups(path: Path, expected_sha256: str) -> dict[str, str]:
+    """Map node id -> group id from a TSV with node_id and group_id; fails if the file isn't the pinned one."""
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError(f"{path} has sha256 {digest}, but the split config pins {expected_sha256}")
+    groups: dict[str, str] = {}
+    with path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            if row["node_id"] in groups:
+                raise ValueError(f"{row['node_id']} is in two groups in {path}")
+            groups[row["node_id"]] = row["group_id"]
+    return groups
+
+
 def assign_partitions(
     pairs: dict[Pair, TargetPair],
     config: BenchmarkConfig,
+    subject_groups: dict[str, str] | None = None,
 ) -> dict[str, list[TargetPair]]:
-    ordered = sorted(pairs, key=lambda pair: (pair_digest(config, pair), pair))
-    total = len(ordered)
+    """Rank units by digest and fill training, feedback and final to their fractions of all pairs.
+
+    With sha256-ranked-pairs-v1 a unit is one pair. With sha256-ranked-cells-v1 a unit is a cell, (the subject's
+    group, object), and a cell's pairs go to the partition that is filling when the cell is reached, so a cell is
+    never split.
+    """
+    total = len(pairs)
     training_end = round(total * config.split.training_fraction)
     feedback_end = training_end + round(total * config.split.feedback_fraction)
-    assignments = {
-        "training": ordered[:training_end],
-        "feedback": ordered[training_end:feedback_end],
-        "final": ordered[feedback_end:],
-    }
+    if config.split.algorithm != CELLS_ALGORITHM:
+        ordered = sorted(pairs, key=lambda pair: (pair_digest(config, pair), pair))
+        assignments = {
+            "training": ordered[:training_end],
+            "feedback": ordered[training_end:feedback_end],
+            "final": ordered[feedback_end:],
+        }
+    else:
+        if subject_groups is None:
+            raise ValueError(f"{CELLS_ALGORITHM} needs subject groups")
+        cells: dict[Pair, list[Pair]] = {}
+        for pair in pairs:
+            cell = (subject_groups.get(pair[0], pair[0]), pair[1])
+            cells.setdefault(cell, []).append(pair)
+        assignments = {"training": [], "feedback": [], "final": []}
+        placed = 0
+        for cell in sorted(cells, key=lambda cell: (pair_digest(config, cell), cell)):
+            partition = "training" if placed < training_end else "feedback" if placed < feedback_end else "final"
+            members = sorted(cells[cell])
+            assignments[partition].extend(members)
+            placed += len(members)
     return {
         partition: [pairs[pair] for pair in partition_pairs]
         for partition, partition_pairs in assignments.items()
@@ -134,7 +172,10 @@ def build_partition_artifacts(
         )
 
     pairs = collect_target_pairs(source, config.target_predicates)
-    assignments = assign_partitions(pairs, config)
+    subject_groups = None
+    if config.split.algorithm == CELLS_ALGORITHM:
+        subject_groups = load_subject_groups(ROOT / config.split.subject_groups, config.split.subject_groups_sha256)
+    assignments = assign_partitions(pairs, config, subject_groups)
     public_dir = public_root / config.split_id
     sealed_dir = sealed_root / config.split_id
     public_dir.mkdir(parents=True, exist_ok=True)
@@ -186,6 +227,7 @@ def build_partition_artifacts(
             **config.split.__dict__,
             "counts": {
                 "total_pairs": len(pairs),
+                **({"cells": len({(subject_groups.get(s, s), o) for s, o in pairs})} if subject_groups else {}),
                 "training": len(assignments["training"]),
                 "feedback": len(assignments["feedback"]),
                 "final": len(assignments["final"]),

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "benchmark_id": "translator-treats-1.0.2.1-v1",
-  "graph_version": "1.0.2.1",
+  "benchmark_id": "translator-treats-1.0.2.2-v1",
+  "graph_version": "1.0.2.2",
   "biolink": {
     "version": "4.4.4",
     "predicate_expansion": "descendants"
@@ -15,11 +15,13 @@
     ]
   },
   "split": {
-    "algorithm": "sha256-ranked-pairs-v1",
+    "algorithm": "sha256-ranked-cells-v1",
     "seed": "translator-treats-1.0.2-v1",
     "training_fraction": 0.7,
     "feedback_fraction": 0.2,
-    "final_fraction": 0.1
+    "final_fraction": 0.1,
+    "subject_groups": "config/graph-1.0.2.2-holdout-groups.tsv",
+    "subject_groups_sha256": "d0ee50aae3ce58309b82e6f77b9e33e36f9f191c3c82ca8ea2d17b87f80c3507"
   },
   "scoring": {
     "minimum_predictions": 5,

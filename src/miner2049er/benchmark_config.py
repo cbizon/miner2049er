@@ -13,6 +13,13 @@ from miner2049er.settings import ROOT
 DEFAULT_BENCHMARK_CONFIG = ROOT / "config" / "benchmark.json"
 
 
+PAIRS_ALGORITHM = "sha256-ranked-pairs-v1"
+# Cells are (subject group, object): every pair whose subject is in one group of related drugs and whose object is
+# the same disease goes to one partition. Groups come from a pinned TSV (node_id, group_id); a subject in no group
+# is its own group.
+CELLS_ALGORITHM = "sha256-ranked-cells-v1"
+
+
 @dataclass(frozen=True)
 class SplitConfig:
     algorithm: str
@@ -20,10 +27,17 @@ class SplitConfig:
     training_fraction: float
     feedback_fraction: float
     final_fraction: float
+    subject_groups: str | None = None
+    subject_groups_sha256: str | None = None
 
     def validate(self) -> None:
-        if self.algorithm != "sha256-ranked-pairs-v1":
+        if self.algorithm not in (PAIRS_ALGORITHM, CELLS_ALGORITHM):
             raise ValueError(f"Unsupported split algorithm: {self.algorithm}")
+        uses_groups = self.algorithm == CELLS_ALGORITHM
+        if uses_groups != bool(self.subject_groups) or uses_groups != bool(self.subject_groups_sha256):
+            raise ValueError(
+                f"{CELLS_ALGORITHM} needs subject_groups and subject_groups_sha256; {PAIRS_ALGORITHM} takes neither"
+            )
         fractions = (
             self.training_fraction,
             self.feedback_fraction,
